@@ -131,11 +131,15 @@ def optimize_pathway(wm, params, scen: Scenario, lam: float = 0.0,
                       cost=float(_cost(g, h, scen)))
 
 
-def pareto_frontier(wm, params, scen: Scenario, lams, steps: int = 800):
-    """Trace the cost vs cumulative-emissions efficient frontier over a sweep of lam."""
+def pareto_frontier(wm, params, scen: Scenario, budgets_gt, steps: int = 1200,
+                    penalty: float = 2.0):
+    """Trace the cost-of-abatement frontier: for each cumulative carbon budget, the
+    minimum transition effort that achieves it. Budgets looser than business-as-usual
+    cost ~0; budgets near the feasibility floor cost the most."""
     pts = []
-    for lam in lams:
-        r = optimize_pathway(wm, params, scen, lam=lam, steps=steps)
-        pts.append({"lam": float(lam), "cum_gt": r.cum_gt, "cost": r.cost,
+    for bud in budgets_gt:
+        r = optimize_pathway(wm, params, scen, budget_gt=float(bud), penalty=penalty,
+                             steps=steps)
+        pts.append({"budget_gt": float(bud), "cum_gt": r.cum_gt, "cost": r.cost,
                     "final_global_mt": float(r.global_co2[-1])})
     return pts

@@ -41,9 +41,11 @@ def main() -> None:
     print(f"MAX feasible 2050: {mx.global_co2[-1]:,.0f} Mt  (cum 2023-50 = {mx.cum_gt:,.0f} Gt)  "
           f"= -{100*(1-mx.global_co2[-1]/bau.global_co2[-1]):.0f}% vs BAU")
 
-    # Cost-emissions Pareto frontier.
-    lams = [0.0, 0.01, 0.03, 0.08, 0.2, 0.5, 1.5, 5.0]
-    frontier = O.pareto_frontier(wm, params, scen, lams, steps=700)
+    # Cost-of-abatement frontier: sweep budgets from near the feasibility floor up to
+    # business-as-usual.
+    lo, hi = mx.cum_gt, bau.cum_gt
+    budgets = list(np.linspace(lo + 5, hi - 5, 8))
+    frontier = O.pareto_frontier(wm, params, scen, budgets, steps=1000)
 
     # Climate translation.
     clim = cfg.climate

@@ -73,7 +73,7 @@ def effective_ef(params, ef):
     return ef[None, :] * jnp.exp(params["log_ef_corr"])[:, None]  # [C, F]
 
 
-def rollout(params, static, norm, ef, inits, drivers, controls, hp):
+def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None):
     """Autoregressive differentiable rollout over the whole horizon.
 
     Shapes: C countries, T years, F fuels.
@@ -81,6 +81,9 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp):
       drivers:  dict(gdp [C,T], pop [C,T], process [C,T])
       controls: dict(u_int [C,T], u_deploy [C,T,F])
       hp:       dict(max_share, max_int)
+      tfrac:    optional [T] array of the calendar time-feature; defaults to t/(T-1).
+                For future projection, pass values capped at 1.0 so the secular
+                time-trend is held at its end-of-history level rather than extrapolated.
     Returns dict of trajectories, each [C,T] (or [C,T,F] for mix/energy).
     """
     gdp, pop, process = drivers["gdp"], drivers["pop"], drivers["process"]
@@ -91,18 +94,22 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp):
     growth = gdp_next - logGDP  # [C,T] log-growth to next year
     ef_eff = effective_ef(params, ef)  # [C,F]
     max_share, max_int = hp["max_share"], hp["max_int"]
+    if tfrac is None:
+        tfrac = jnp.arange(T) / (T - 1)
+    else:
+        tfrac = jnp.asarray(tfrac)
 
     def step(carry, t):
         I_t, s_t, I_prev, s_prev = carry
         logGDP_t = logGDP[:, t]
         D_t = gdp[:, t] * jnp.exp(I_t)          # [C] TWh
         logD_t = jnp.log(D_t + 1e-6)
-        tfrac = t / (T - 1)
+        tfrac_t = tfrac[t]
         dI_prev = I_t - I_prev
         ds_prev = s_t - s_prev
 
         x = _features(params, static, norm, s_t, I_t, logD_t, logGDP_t,
-                      growth[:, t], logPop[:, t], tfrac, dI_prev, ds_prev)
+                      growth[:, t], logPop[:, t], tfrac_t, dI_prev, ds_prev)
         h = jax.nn.silu(mlp_apply(params["trunk"], x))
         mix_logits = h @ params["mix_head"]["w"] + params["mix_head"]["b"]   # [C,F]
         int_raw = h @ params["int_head"]["w"] + params["int_head"]["b"]      # [C,1]

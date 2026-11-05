@@ -42,8 +42,14 @@ def _std(x, stat):
     return (x - stat[0]) / (stat[1] + 1e-8)
 
 
-def _features(params, static, norm, s_t, I_t, logD_t, logGDP_t, growth_t, logPop_t, tfrac):
-    """Build the per-country network input matrix [C, din]."""
+def _features(params, static, norm, s_t, I_t, logD_t, logGDP_t, growth_t, logPop_t, tfrac,
+              dI_prev, ds_prev):
+    """Build the per-country network input matrix [C, din].
+
+    `dI_prev` (last year's change in log-intensity) and `ds_prev` (last year's change
+    in each fuel share) give the model momentum, so it can continue trends rather than
+    reverting -- essential for multi-year extrapolation.
+    """
     C = s_t.shape[0]
     cont = jnp.stack(
         [
@@ -52,11 +58,12 @@ def _features(params, static, norm, s_t, I_t, logD_t, logGDP_t, growth_t, logPop
             _std(growth_t, norm.growth),
             _std(logPop_t, norm.logPop),
             _std(I_t, norm.intensity),
+            dI_prev,  # already a small delta, no standardisation needed
         ],
         axis=1,
-    )  # [C, 5]
+    )  # [C, 6]
     time = jnp.stack([tfrac * jnp.ones(C), (tfrac ** 2) * jnp.ones(C)], axis=1)  # [C,2]
-    x = jnp.concatenate([s_t, cont, time, static, params["embed"]], axis=1)
+    x = jnp.concatenate([s_t, cont, time, ds_prev, static, params["embed"]], axis=1)
     return x
 
 
@@ -86,14 +93,16 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp):
     max_share, max_int = hp["max_share"], hp["max_int"]
 
     def step(carry, t):
-        I_t, s_t = carry
+        I_t, s_t, I_prev, s_prev = carry
         logGDP_t = logGDP[:, t]
         D_t = gdp[:, t] * jnp.exp(I_t)          # [C] TWh
         logD_t = jnp.log(D_t + 1e-6)
         tfrac = t / (T - 1)
+        dI_prev = I_t - I_prev
+        ds_prev = s_t - s_prev
 
         x = _features(params, static, norm, s_t, I_t, logD_t, logGDP_t,
-                      growth[:, t], logPop[:, t], tfrac)
+                      growth[:, t], logPop[:, t], tfrac, dI_prev, ds_prev)
         h = jax.nn.silu(mlp_apply(params["trunk"], x))
         mix_logits = h @ params["mix_head"]["w"] + params["mix_head"]["b"]   # [C,F]
         int_raw = h @ params["int_head"]["w"] + params["int_head"]["b"]      # [C,1]
@@ -116,9 +125,10 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp):
             "co2": co2_t,
             "intensity": I_t,
         }
-        return (I_next, s_next), out
+        return (I_next, s_next, I_t, s_t), out
 
-    (_, _), outs = jax.lax.scan(step, (inits["I0"], inits["s0"]), jnp.arange(T))
+    init_carry = (inits["I0"], inits["s0"], inits["I0"], inits["s0"])
+    _, outs = jax.lax.scan(step, init_carry, jnp.arange(T))
     # scan stacks along axis 0 (time) -> move to [C, T, ...].
     traj = {}
     for k, v in outs.items():

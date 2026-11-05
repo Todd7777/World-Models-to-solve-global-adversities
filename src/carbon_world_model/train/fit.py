@@ -31,11 +31,21 @@ def _targets(panel) -> dict:
     }
 
 
-def year_window_mask(panel, year_max: int | None) -> jnp.ndarray:
-    """[C,T] mask = observed AND year <= year_max (for temporal holdout training)."""
+def year_window_mask(panel, year_max: int | None, recency_halflife: float | None = None) -> jnp.ndarray:
+    """[C,T] weighted mask = observed AND year <= year_max, with optional recency weighting.
+
+    Recent years get exponentially more weight (half-weight `recency_halflife` years
+    before the cutoff), so the fitted dynamics reflect the regime relevant for
+    forward projection rather than the distant past.
+    """
     m = panel.mask.copy()
+    anchor = year_max if year_max is not None else int(panel.years[-1])
     if year_max is not None:
         m = m * (panel.years[None, :] <= year_max)
+    if recency_halflife is not None and recency_halflife > 0:
+        age = (anchor - panel.years).clip(min=0)
+        w = 0.5 ** (age / recency_halflife)
+        m = m * w[None, :]
     return jnp.asarray(m)
 
 
@@ -44,7 +54,7 @@ def fit(panel, cfg: Config, wm: WorldModel | None = None, train_year_max: int | 
     wm = WorldModel.build(panel, cfg) if wm is None else wm
     params = wm.init_params(seed=cfg.train.seed if seed is None else seed)
     targets = _targets(panel)
-    mask = year_window_mask(panel, train_year_max)
+    mask = year_window_mask(panel, train_year_max, cfg.train.recency_halflife)
 
     sched = optax.cosine_decay_schedule(cfg.train.lr, cfg.train.steps, alpha=0.1)
     opt = optax.chain(

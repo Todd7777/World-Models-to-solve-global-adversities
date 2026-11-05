@@ -26,9 +26,11 @@
     "w_demand": 0.5,
     "w_mix": 1.0,
     "w_smooth": 0.01,
-    "tf_min": 0.3,
+    "w_aggregate": 0.5,
+    "w_level": 0.2,
     "grad_clip": 1.0,
-    "seed": 0
+    "seed": 0,
+    "recency_halflife": 0.0
   },
   "climate": {
     "tcre_degC_per_ttco2": 0.45,

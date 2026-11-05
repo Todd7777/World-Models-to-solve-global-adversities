@@ -48,7 +48,9 @@ class WorldModel:
         norm = _norm_from_panel(panel)
         C, S = panel.static.shape
         F = panel.n_fuels
-        din = F + 5 + 2 + S + cfg.model.embed_dim
+        # inputs: shares(F) + continuous(6, incl. dI_prev) + time(2) + ds_prev(F)
+        #         + static(S) + embedding(E)
+        din = F + 6 + 2 + F + S + cfg.model.embed_dim
         hp = {
             "max_share": cfg.model.max_share_change_per_year,
             "max_int": cfg.model.max_intensity_change_per_year,

@@ -30,9 +30,24 @@ def loss_terms(traj, targets, mask, cfg):
     d2 = traj["intensity"][:, 2:] - 2 * traj["intensity"][:, 1:-1] + traj["intensity"][:, :-2]
     l_smooth = jnp.mean(d2 ** 2)
 
-    total = (tr.w_emissions * l_co2 + tr.w_demand * l_dem
-             + tr.w_mix * l_mix + tr.w_smooth * l_smooth)
-    terms = {"co2": l_co2, "demand": l_dem, "mix": l_mix, "smooth": l_smooth}
+    # Aggregate: fit the global-sum emissions path (the policy-relevant quantity, and
+    # the one scale-free per-country losses neglect). Year counts if any country is in
+    # the mask that year.
+    year_mask = (jnp.sum(mask, axis=0) > 0).astype(mask.dtype)
+    agg_pred = jnp.sum(traj["co2"] * mask, axis=0)
+    agg_true = jnp.sum(targets["co2"] * mask, axis=0)
+    l_agg = _masked_logmse(agg_pred, agg_true, year_mask)
+
+    # Emissions-weighted level term: large emitters must be right in absolute terms, so
+    # they do not drift over long rollouts. Weight ~ sqrt(share of panel emissions).
+    w = mask * jnp.sqrt(targets["co2"] / (jnp.mean(targets["co2"]) + 1e-6))
+    rel = ((traj["co2"] - targets["co2"]) / (targets["co2"] + 1.0)) ** 2
+    l_level = jnp.sum(w * rel) / (jnp.sum(w) + 1e-8)
+
+    total = (tr.w_emissions * l_co2 + tr.w_demand * l_dem + tr.w_mix * l_mix
+             + tr.w_smooth * l_smooth + tr.w_aggregate * l_agg + tr.w_level * l_level)
+    terms = {"co2": l_co2, "demand": l_dem, "mix": l_mix, "smooth": l_smooth,
+             "agg": l_agg, "level": l_level}
     return total, terms
 
 

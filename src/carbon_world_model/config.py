@@ -93,10 +93,13 @@ class TrainConfig:
     w_demand: float = 0.5
     w_mix: float = 1.0
     w_smooth: float = 1e-2
-    # Scheduled sampling: fraction of teacher forcing decays from 1 -> min over training.
-    tf_min: float = 0.3
+    w_aggregate: float = 0.5  # fit the global-sum emissions trajectory (policy quantity)
+    w_level: float = 0.2      # emissions-weighted level term (stops big emitters drifting)
     grad_clip: float = 1.0
     seed: int = 0
+    # Recency weighting: recent years carry more weight in the loss (0 = off). Tested
+    # and left off: emphasising recent years worsened China's extrapolation.
+    recency_halflife: float = 0.0
 
 
 @dataclass(frozen=True)

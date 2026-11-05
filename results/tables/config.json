@@ -1,0 +1,39 @@
+{
+  "data": {
+    "co2_csv": "data/raw/owid_co2/owid-co2-data.csv",
+    "energy_csv": "data/raw/owid_energy/owid-energy-data.csv",
+    "processed_npz": "data/processed/panel.npz",
+    "meta_json": "data/processed/panel_meta.json",
+    "year_start": 1990,
+    "year_end": 2022,
+    "min_primary_energy_twh": 50.0,
+    "min_year_coverage": 0.9,
+    "max_countries": 60
+  },
+  "model": {
+    "hidden": 64,
+    "embed_dim": 8,
+    "depth": 2,
+    "max_share_change_per_year": 0.05,
+    "max_intensity_change_per_year": 0.08,
+    "seed": 0
+  },
+  "train": {
+    "lr": 0.003,
+    "steps": 4000,
+    "weight_decay": 0.0001,
+    "w_emissions": 1.0,
+    "w_demand": 0.5,
+    "w_mix": 1.0,
+    "w_smooth": 0.01,
+    "tf_min": 0.3,
+    "grad_clip": 1.0,
+    "seed": 0
+  },
+  "climate": {
+    "tcre_degC_per_ttco2": 0.45,
+    "tcre_low": 0.27,
+    "tcre_high": 0.63,
+    "warming_baseline_degC": 1.24
+  }
+}

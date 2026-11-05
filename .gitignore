@@ -1,0 +1,21 @@
+# Large raw datasets (fetch with scripts/download_data.sh)
+data/raw/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# Large / regenerable model checkpoints (keep small committed ones under results/)
+*.ckpt
+checkpoints/

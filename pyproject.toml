@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carbon-world-model"
+version = "0.1.0"
+description = "A differentiable mechanistic-neural world model of the global energy-emissions system for decarbonization planning."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Carbon World Model contributors" }]
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "jax>=0.4",
+    "optax>=0.1.7",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100

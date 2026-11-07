@@ -19,3 +19,8 @@ venv/
 # Large / regenerable model checkpoints (keep small committed ones under results/)
 *.ckpt
 checkpoints/
+
+# Rolling-origin sweep caches (regenerable with scripts/06_sweep.py); keep the reports.
+results/sweep_*/*
+!results/sweep_*/report.json
+results/sweep_*.log

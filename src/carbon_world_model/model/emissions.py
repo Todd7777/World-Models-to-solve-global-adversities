@@ -38,7 +38,7 @@ class EmissionFactors:
         return self.ef
 
 
-def estimate_emission_factors(panel, method: str = "nnls") -> EmissionFactors:
+def estimate_emission_factors(panel, method: str = "nnls", upto_idx: int | None = None) -> EmissionFactors:
     """Fit per-fuel emission factors from the panel.
 
     Target is the per-fuel combustion CO2 (coal+oil+gas sources). We fit the three
@@ -47,7 +47,9 @@ def estimate_emission_factors(panel, method: str = "nnls") -> EmissionFactors:
     """
     energy = panel.energy  # [C, T, F]
     co2_src = panel.co2_by_source  # [C, T, 3] coal/oil/gas
-    mask = panel.mask.astype(bool)  # [C, T]
+    mask = panel.mask.astype(bool).copy()  # [C, T]
+    if upto_idx is not None:          # leak-free: only years up to the fit cutoff
+        mask[:, upto_idx + 1:] = False
 
     # Build pooled design matrix over valid country-years.
     A = energy[:, :, FOSSIL_IDX][mask]           # [N, 3] fossil energy (TWh)

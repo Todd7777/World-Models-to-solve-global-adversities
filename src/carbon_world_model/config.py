@@ -81,6 +81,13 @@ class ModelConfig:
     # Bounds on annual energy-intensity improvement the dynamics can express.
     max_intensity_change_per_year: float = 0.08
     seed: int = 0
+    # Feature / structure switches (see model/dynamics.py). Defaults = original model.
+    time_features: bool = True     # calendar time inputs (t, t^2)
+    level_mode: str = "absolute"   # 'absolute' | 'per_capita'
+    momentum: str = "1yr"          # 'none' | '1yr' | 'ema'
+    ema_decay: float = 0.7         # EMA smoothing for momentum='ema'
+    damped_trend: bool = False     # change = phi*momentum + bounded learned correction
+    phi_init: float = 0.6          # initial damping for the damped trend
 
 
 @dataclass(frozen=True)
@@ -100,6 +107,14 @@ class TrainConfig:
     # Recency weighting: recent years carry more weight in the loss (0 = off). Tested
     # and left off: emphasising recent years worsened China's extrapolation.
     recency_halflife: float = 0.0
+    # Multiple shooting: also train on H-year rollouts started from the OBSERVED state
+    # in every year of the training window, so the model learns to forecast from where
+    # the world actually is (not only to reproduce one long run from 1990).
+    multi_shoot: bool = False
+    shoot_horizon: int = 8
+    shoot_stride: int = 1
+    w_full: float = 1.0            # weight of the long free run from the first year
+    w_shoot: float = 1.0           # weight of the multiple-shooting loss
 
 
 @dataclass(frozen=True)

@@ -1,22 +1,32 @@
 """Learned differentiable dynamics (Module B): the world-model core.
 
-Each country's energy system is described by two state variables:
+Each trajectory (one country, starting from some year) is described by:
 
     I_t  = log energy intensity   = log(primary_energy_t / GDP_t)      [scalar]
     s_t  = fuel-mix shares on the simplex                              [F]
+    m_t  = momentum: recent *natural* rate of change of (I, s)         [1 + F]
 
 Primary energy is reconstructed mechanistically as  D_t = GDP_t * exp(I_t), and
 emissions follow the fixed physics of Module A. GDP and population are *drivers*
-(observed in training, scenario inputs in planning). A shared neural network predicts
-the bounded annual change in intensity and mix; inertia bounds encode that energy
-systems turn over slowly (capital stock lifetimes). Per-country embeddings let one set
-of shared dynamics specialise to 60 different countries -- the "world model" that
-transfers structure across places.
+(observed in training; realised, SSP or other scenario paths when forecasting). A
+shared neural network predicts the bounded annual change in intensity and mix; the
+bounds encode capital-stock inertia. Per-country embeddings let one set of shared
+dynamics specialise to many countries.
 
-Controls (for the planner) enter additively and are zero during fitting, so the fitted
-model reproduces observed behaviour and the planner perturbs it causally:
-    u_int    extra intensity improvement  (energy efficiency effort)
-    u_deploy extra per-fuel share push     (clean-energy deployment effort)
+Feature/structure options (``hp``), all switchable for ablation:
+  time_features  calendar-time inputs (t, t^2). Extrapolate poorly beyond training.
+  level_mode     'absolute'   : log energy, log GDP, log population (size-dependent)
+                 'per_capita' : log energy/cap, log GDP/cap (development stage) and a
+                                squashed log population; keeps the largest economies
+                                in-distribution when they grow past historic maxima.
+  momentum       'none' | '1yr' (last natural change) | 'ema' (exponentially smoothed)
+  damped_trend   change = phi * momentum + bounded learned correction, with learnable
+                 damping phi in (0,1): the damped-trend structure known to be among the
+                 most robust multi-year forecasters, nested inside the world model.
+
+Controls (for the planner) enter additively and are zero during fitting. Momentum is
+updated from the *natural* (uncontrolled) change only, so a planner cannot get
+"free" future reductions by exciting the momentum state.
 """
 from __future__ import annotations
 
@@ -30,114 +40,147 @@ from .nn import mlp_apply
 
 @dataclass(frozen=True)
 class Norm:
-    """Standardisation stats for continuous network inputs (plain floats/arrays)."""
+    """Standardisation statistics, computed only from data up to the fit cutoff."""
     logD: tuple[float, float]
     logGDP: tuple[float, float]
     growth: tuple[float, float]
     logPop: tuple[float, float]
     intensity: tuple[float, float]
+    logDpc: tuple[float, float]
+    logGDPpc: tuple[float, float]
+    dI_scale: float            # typical |annual change| in log intensity
+    ds_scale: tuple[float, ...]  # typical |annual change| per fuel share
 
 
-def _std(x, stat):
+def _z(x, stat):
     return (x - stat[0]) / (stat[1] + 1e-8)
 
 
-def _features(params, static, norm, s_t, I_t, logD_t, logGDP_t, growth_t, logPop_t, tfrac,
-              dI_prev, ds_prev):
-    """Build the per-country network input matrix [C, din].
-
-    `dI_prev` (last year's change in log-intensity) and `ds_prev` (last year's change
-    in each fuel share) give the model momentum, so it can continue trends rather than
-    reverting -- essential for multi-year extrapolation.
-    """
-    C = s_t.shape[0]
-    cont = jnp.stack(
-        [
-            _std(logD_t, norm.logD),
-            _std(logGDP_t, norm.logGDP),
-            _std(growth_t, norm.growth),
-            _std(logPop_t, norm.logPop),
-            _std(I_t, norm.intensity),
-            dI_prev,  # already a small delta, no standardisation needed
-        ],
-        axis=1,
-    )  # [C, 6]
-    time = jnp.stack([tfrac * jnp.ones(C), (tfrac ** 2) * jnp.ones(C)], axis=1)  # [C,2]
-    x = jnp.concatenate([s_t, cont, time, ds_prev, static, params["embed"]], axis=1)
-    return x
+def softclip(x, m):
+    return m * jnp.tanh(x / m)
 
 
-def effective_ef(params, ef):
-    """Per-country emission factors with a learned multiplicative correction (fossil)."""
-    # log_ef_corr: [C]; applies to all fuels but EF is 0 for low-carbon so only fossil moves.
-    return ef[None, :] * jnp.exp(params["log_ef_corr"])[:, None]  # [C, F]
+def n_features(n_fuels: int, n_static: int, embed_dim: int, hp: dict) -> int:
+    n = n_fuels + 5                      # shares + 5 continuous level/growth features
+    if hp["momentum"] != "none":
+        n += 1 + n_fuels
+    if hp["time_features"]:
+        n += 2
+    return n + n_static + embed_dim
 
 
-def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None):
-    """Autoregressive differentiable rollout over the whole horizon.
+def _features(embed_b, static_b, norm, hp, s_t, I_t, logD, logGDP, growth, logPop, tfrac_t,
+              mom_I, mom_s):
+    B = s_t.shape[0]
+    if hp["level_mode"] == "absolute":
+        cont = [_z(logD, norm.logD), _z(logGDP, norm.logGDP), _z(growth, norm.growth),
+                _z(logPop, norm.logPop), _z(I_t, norm.intensity)]
+    elif hp["level_mode"] == "per_capita":
+        cont = [_z(logD - logPop, norm.logDpc), _z(logGDP - logPop, norm.logGDPpc),
+                _z(growth, norm.growth), _z(I_t, norm.intensity),
+                jnp.tanh(0.5 * _z(logPop, norm.logPop))]
+    else:
+        raise ValueError(hp["level_mode"])
+    parts = [s_t, jnp.stack(cont, axis=1)]
+    if hp["momentum"] != "none":
+        parts.append((mom_I / norm.dI_scale)[:, None])
+        parts.append(mom_s / jnp.asarray(norm.ds_scale)[None, :])
+    if hp["time_features"]:
+        tt = jnp.broadcast_to(tfrac_t, (B,))
+        parts.append(jnp.stack([tt, tt ** 2], axis=1))
+    parts += [static_b, embed_b]
+    return jnp.concatenate(parts, axis=1)
 
-    Shapes: C countries, T years, F fuels.
-      inits:    dict(I0 [C], s0 [C,F])
-      drivers:  dict(gdp [C,T], pop [C,T], process [C,T])
-      controls: dict(u_int [C,T], u_deploy [C,T,F])
-      hp:       dict(max_share, max_int)
-      tfrac:    optional [T] array of the calendar time-feature; defaults to t/(T-1).
-                For future projection, pass values capped at 1.0 so the secular
-                time-trend is held at its end-of-history level rather than extrapolated.
-    Returns dict of trajectories, each [C,T] (or [C,T,F] for mix/energy).
+
+def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None,
+            country_idx=None):
+    """Autoregressive differentiable rollout.
+
+    Shapes: B trajectories (countries, or country x start-year pairs), T steps, F fuels.
+      inits:    I0 [B], s0 [B,F], optional mom_I0 [B], mom_s0 [B,F] (observed warm start)
+      drivers:  gdp [B,T], pop [B,T], process [B,T]
+      controls: None or dict(u_int [B,T], u_deploy [B,T,F])
+      tfrac:    calendar time feature, [T] or [B,T]; defaults to t/(T-1)
+      country_idx: [B] int; gathers per-country embedding / static / EF correction.
+    Returns dict of trajectories, each [B,T] (or [B,T,F]).
     """
     gdp, pop, process = drivers["gdp"], drivers["pop"], drivers["process"]
-    C, T = gdp.shape
+    B, T = gdp.shape
+    F = inits["s0"].shape[1]
     logGDP = jnp.log(gdp + 1e-6)
     logPop = jnp.log(pop + 1e-6)
-    gdp_next = jnp.concatenate([logGDP[:, 1:], logGDP[:, -1:]], axis=1)
-    growth = gdp_next - logGDP  # [C,T] log-growth to next year
-    ef_eff = effective_ef(params, ef)  # [C,F]
-    max_share, max_int = hp["max_share"], hp["max_int"]
-    if tfrac is None:
-        tfrac = jnp.arange(T) / (T - 1)
+    growth = jnp.concatenate([logGDP[:, 1:], logGDP[:, -1:]], axis=1) - logGDP
+
+    if country_idx is None:
+        embed_b, static_b, efc_b = params["embed"], static, params["log_ef_corr"]
     else:
-        tfrac = jnp.asarray(tfrac)
+        embed_b = params["embed"][country_idx]
+        static_b = static[country_idx]
+        efc_b = params["log_ef_corr"][country_idx]
+    ef_eff = ef[None, :] * jnp.exp(efc_b)[:, None]          # [B,F]
+
+    if controls is None:
+        u_int_all = jnp.zeros((B, T))
+        u_dep_all = jnp.zeros((B, T, F))
+    else:
+        u_int_all, u_dep_all = controls["u_int"], controls["u_deploy"]
+
+    if tfrac is None:
+        tfrac = jnp.arange(T) / max(T - 1, 1)
+    tfrac = jnp.asarray(tfrac, dtype=jnp.float32)
+    tf_bt = tfrac if tfrac.ndim == 2 else jnp.broadcast_to(tfrac[None, :], (B, T))
+
+    max_share, max_int = hp["max_share"], hp["max_int"]
+    rho = hp.get("ema_decay", 0.7)
+    mode = hp["momentum"]
+    damped = hp.get("damped_trend", False) and mode != "none"
+    phi_I = jax.nn.sigmoid(params["phi"][0]) if damped else 0.0
+    phi_s = jax.nn.sigmoid(params["phi"][1]) if damped else 0.0
+
+    mom_I0 = inits.get("mom_I0", jnp.zeros(B))
+    mom_s0 = inits.get("mom_s0", jnp.zeros((B, F)))
 
     def step(carry, t):
-        I_t, s_t, I_prev, s_prev = carry
-        logGDP_t = logGDP[:, t]
-        D_t = gdp[:, t] * jnp.exp(I_t)          # [C] TWh
-        logD_t = jnp.log(D_t + 1e-6)
-        tfrac_t = tfrac[t]
-        dI_prev = I_t - I_prev
-        ds_prev = s_t - s_prev
-
-        x = _features(params, static, norm, s_t, I_t, logD_t, logGDP_t,
-                      growth[:, t], logPop[:, t], tfrac_t, dI_prev, ds_prev)
+        I_t, s_t, mom_I, mom_s = carry
+        D_t = gdp[:, t] * jnp.exp(I_t)
+        logD = jnp.log(D_t + 1e-6)
+        x = _features(embed_b, static_b, norm, hp, s_t, I_t, logD, logGDP[:, t],
+                      growth[:, t], logPop[:, t], tf_bt[:, t], mom_I, mom_s)
         h = jax.nn.silu(mlp_apply(params["trunk"], x))
-        mix_logits = h @ params["mix_head"]["w"] + params["mix_head"]["b"]   # [C,F]
-        int_raw = h @ params["int_head"]["w"] + params["int_head"]["b"]      # [C,1]
+        mix_logits = h @ params["mix_head"]["w"] + params["mix_head"]["b"]
+        int_raw = (h @ params["int_head"]["w"] + params["int_head"]["b"])[:, 0]
 
-        # Observables at time t (from current state).
-        energy_t = D_t[:, None] * s_t                                        # [C,F] TWh
-        co2_t = jnp.sum(ef_eff * energy_t, axis=1) + process[:, t]           # [C] Mt
+        energy_t = D_t[:, None] * s_t
+        co2_t = jnp.sum(ef_eff * energy_t, axis=1) + process[:, t]
 
-        # Advance state to t+1.
-        dI = max_int * jnp.tanh(int_raw[:, 0]) - controls["u_int"][:, t]
-        I_next = I_t + dI
-        d_s = max_share * jnp.tanh(mix_logits) + controls["u_deploy"][:, t]  # [C,F]
-        s_raw = jax.nn.relu(s_t + d_s)
+        # Natural (uncontrolled) proposed changes.
+        if damped:
+            dI_nat = softclip(phi_I * mom_I + max_int * jnp.tanh(int_raw), max_int)
+            ds_nat = softclip(phi_s * mom_s + max_share * jnp.tanh(mix_logits), max_share)
+        else:
+            dI_nat = max_int * jnp.tanh(int_raw)
+            ds_nat = max_share * jnp.tanh(mix_logits)
+
+        # Actual next state includes controls.
+        I_next = I_t + dI_nat - u_int_all[:, t]
+        s_raw = jax.nn.relu(s_t + ds_nat + u_dep_all[:, t])
         s_next = s_raw / (jnp.sum(s_raw, axis=1, keepdims=True) + 1e-9)
 
-        out = {
-            "D": D_t,
-            "shares": s_t,
-            "energy": energy_t,
-            "co2": co2_t,
-            "intensity": I_t,
-        }
-        return (I_next, s_next, I_t, s_t), out
+        # Momentum from the natural step only.
+        s_nat_raw = jax.nn.relu(s_t + ds_nat)
+        s_nat = s_nat_raw / (jnp.sum(s_nat_raw, axis=1, keepdims=True) + 1e-9)
+        nI, ns = dI_nat, s_nat - s_t
+        if mode == "1yr":
+            mom_I_next, mom_s_next = nI, ns
+        elif mode == "ema":
+            mom_I_next = rho * mom_I + (1 - rho) * nI
+            mom_s_next = rho * mom_s + (1 - rho) * ns
+        else:
+            mom_I_next, mom_s_next = mom_I, mom_s
 
-    init_carry = (inits["I0"], inits["s0"], inits["I0"], inits["s0"])
+        out = {"D": D_t, "shares": s_t, "energy": energy_t, "co2": co2_t, "intensity": I_t}
+        return (I_next, s_next, mom_I_next, mom_s_next), out
+
+    init_carry = (inits["I0"], inits["s0"], mom_I0, mom_s0)
     _, outs = jax.lax.scan(step, init_carry, jnp.arange(T))
-    # scan stacks along axis 0 (time) -> move to [C, T, ...].
-    traj = {}
-    for k, v in outs.items():
-        traj[k] = jnp.moveaxis(v, 0, 1)
-    return traj
+    return {k: jnp.moveaxis(v, 0, 1) for k, v in outs.items()}

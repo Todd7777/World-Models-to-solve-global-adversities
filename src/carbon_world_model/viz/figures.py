@@ -173,3 +173,127 @@ def fig_mix(panel, years, bau_agg, max_agg) -> plt.Figure:
     ax2.legend(fontsize=8, loc="center left", bbox_to_anchor=(1.01, 0.5))
     fig.tight_layout()
     return fig
+
+
+# --------------------------------------------------------------------------- v2 figures
+SSP_COLORS = {"SSP1": OI["green"], "SSP2": OI["blue"], "SSP3": OI["red"],
+              "SSP4": OI["orange"], "SSP5": OI["purple"]}
+
+
+def fig_ablation(abl: dict, selected: str) -> plt.Figure:
+    """Validation score (country MAPE% + mean |aggregate error|%) for every config."""
+    names = sorted(abl, key=lambda n: abl[n]["world_model"]["score"])
+    wm = [abl[n]["world_model"]["score"] for n in names]
+    any_ = abl[names[0]]
+    fig, ax = plt.subplots(figsize=(8.5, 0.42 * len(names) + 1.6))
+    colors = [OI["red"] if n == selected else OI["sky"] for n in names]
+    ax.barh(names, wm, color=colors)
+    ax.invert_yaxis()
+    for ref, c, ls in (("trend_kaya", OI["green"], "--"), ("growth_persistence", OI["grey"], ":")):
+        if ref in any_:
+            ax.axvline(any_[ref]["score"], color=c, ls=ls, lw=1.6, label=ref.replace("_", " "))
+    for i, v in enumerate(wm):
+        ax.text(v + 0.15, i, f"{v:.1f}", va="center", fontsize=9)
+    ax.set(xlabel="validation score (lower = better)",
+           title="Ablation on validation folds (cutoffs 2005/2007/2009)")
+    ax.legend(loc="lower right", fontsize=9)
+    return _finish(fig)
+
+
+def fig_test(test: dict, china: dict) -> plt.Figure:
+    methods = ["world_model", "trend_kaya", "growth_persistence", "persistence", "frozen_kaya"]
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.8))
+    x = np.arange(len(methods))
+    w = 0.38
+    for j, (drv, c) in enumerate((("realized", OI["blue"]), ("ssp", OI["orange"]))):
+        s = test[drv]["summary"]
+        vals = [100 * s[m]["country_mape"] for m in methods]
+        ax1.bar(x + (j - 0.5) * w, vals, w, color=c,
+                label="realised drivers" if drv == "realized" else "SSP2 (2014 vintage) ex-ante")
+        for xi, v in zip(x + (j - 0.5) * w, vals):
+            ax1.text(xi, v + 0.15, f"{v:.1f}", ha="center", fontsize=8)
+    ax1.set_xticks(x, [m.replace("_", "\n") for m in methods], fontsize=9)
+    ax1.set(ylabel="per-country MAPE (%)", title="Test folds (cutoffs 2015/2016/2017)")
+    ax1.legend(fontsize=9)
+
+    cuts = sorted(china, key=int)
+    ax2.bar(np.arange(len(cuts)) - 0.2, [100 * china[c]["co2_err"] for c in cuts], 0.4,
+            color=OI["red"], label="world model")
+    ax2.bar(np.arange(len(cuts)) + 0.2, [100 * china[c]["trend_kaya_co2_err"] for c in cuts], 0.4,
+            color=OI["green"], label="trend-Kaya")
+    ax2.axhline(0, color="#444444", lw=0.8)
+    ax2.set_xticks(np.arange(len(cuts)), [f"from {c}\n(to {china[c]['year']})" for c in cuts])
+    ax2.set(ylabel="China final-year CO2 error (%)", title="The China gap, by forecast origin")
+    ax2.legend(fontsize=9)
+    return _finish(fig)
+
+
+def fig_china_forecasts(panel, cutoff: int, series: dict) -> plt.Figure:
+    """series: name -> (years, co2) forecasts for China from `cutoff`."""
+    i = panel.country_index("China")
+    fig, ax = plt.subplots(figsize=(7.5, 4.6))
+    ax.plot(panel.years, panel.co2[i] / 1000, color=OI["black"], lw=2.4, label="observed")
+    styles = [OI["red"], OI["grey"], OI["green"], OI["orange"], OI["purple"]]
+    for (name, (yrs, v)), c in zip(series.items(), styles):
+        ax.plot(yrs, np.asarray(v) / 1000, color=c, lw=2, ls="--" if "orig" in name else "-",
+                label=name)
+    ax.axvline(cutoff, color="#bbbbbb", lw=1)
+    ax.set(xlabel="year", ylabel="CO2 (Gt)", title=f"China: forecasts from the observed {cutoff} state",
+           xlim=(2000, int(panel.years[-1]) + 0.5))
+    ax.legend(fontsize=9)
+    return _finish(fig)
+
+
+def fig_ssp_drivers(panel, v9, v3, ssp_driver_paths, ssps) -> plt.Figure:
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.8))
+    yrs = np.arange(2015, int(panel.years[-1]) + 1)
+    for name, c in (("China", OI["red"]), ("Brazil", OI["green"]), ("United States", OI["blue"])):
+        i = panel.country_index(name)
+        k = int(np.where(panel.years == 2015)[0][0])
+        ax1.plot(yrs, panel.gdp[i, k:] / panel.gdp[i, k], color=c, lw=2.4, label=f"{name} realised")
+        g, _ = ssp_driver_paths(panel, v9, "SSP2", 2015, yrs)
+        ax1.plot(yrs, g[i] / g[i, 0], color=c, lw=1.6, ls="--", label=f"{name} SSP2 (2014 vintage)")
+    ax1.set(xlabel="year", ylabel="GDP index (2015 = 1)",
+            title="Ex-ante drivers: 2014-vintage SSPs vs what happened")
+    ax1.legend(fontsize=8)
+    fut = np.arange(int(panel.years[-1]), 2051)
+    i = panel.country_index("China")
+    for s in ssps:
+        g, _ = ssp_driver_paths(panel, v3, s, int(panel.years[-1]), fut)
+        ax2.plot(fut, g[i] / g[i, 0], color=SSP_COLORS[s], lw=2, label=s)
+    ax2.set(xlabel="year", ylabel="China GDP index (2022 = 1)",
+            title="Forward drivers: SSP database v3.2 (2025)")
+    ax2.legend(fontsize=9)
+    return _finish(fig)
+
+
+def fig_ssp_pathways(panel, plan: dict) -> plt.Figure:
+    yrs = np.array(plan["years"])
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.8))
+    ax1.plot(panel.years, panel.co2.sum(0) / 1000, color=OI["black"], lw=2.2, label="observed")
+    for name, d in plan["scenarios"].items():
+        s = name.split()[0]
+        if s not in SSP_COLORS:
+            continue
+        ax1.plot(yrs, np.array(d["bau_global_mt"]) / 1000, color=SSP_COLORS[s], lw=2, label=f"{s} BAU")
+        ax1.plot(yrs, np.array(d["max_global_mt"]) / 1000, color=SSP_COLORS[s], lw=1.4, ls="--")
+    ax1.set(xlabel="year", ylabel="CO2 (Gt/yr)",
+            title="Business-as-usual (solid) and max feasible effort (dashed)")
+    ax1.legend(fontsize=8, ncol=2)
+
+    rb = plan["robust"]
+    ssps = list(rb["robust_cum_by_ssp"])
+    x = np.arange(len(ssps))
+    ax2.bar(x - 0.2, [rb["tailored_cum_by_ssp"][s] for s in ssps], 0.4, color=OI["grey"],
+            label=f"plan tuned to SSP2 (effort {rb['tailored_cost']:.2f})")
+    ax2.bar(x + 0.2, [rb["robust_cum_by_ssp"][s] for s in ssps], 0.4, color=OI["blue"],
+            label=f"robust plan (effort {rb['robust_cost']:.2f})")
+    ax2.axhline(rb["budget_gt"], color=OI["red"], lw=1.6, ls="--", label="carbon budget")
+    lo = min(min(rb["tailored_cum_by_ssp"].values()), min(rb["robust_cum_by_ssp"].values()))
+    ax2.set_ylim(lo * 0.9, None)
+    ax2.set_xticks(x, ssps)
+    ax2.set(ylabel="cumulative 2023-2050 CO2 (Gt)",
+            title=f"Robust planning: +{rb['price_of_robustness_pct']:.0f}% effort buys "
+                  "compliance in every SSP")
+    ax2.legend(fontsize=8)
+    return _finish(fig)

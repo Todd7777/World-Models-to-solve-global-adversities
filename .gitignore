@@ -19,3 +19,7 @@ venv/
 # Large / regenerable model checkpoints (keep small committed ones under results/)
 *.ckpt
 checkpoints/
+
+# Space Solar World Model: regenerable link-coverage cache and run logs
+results/space_solar/cache/
+results/space_solar/*.log

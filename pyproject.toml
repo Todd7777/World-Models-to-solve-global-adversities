@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "carbon-world-model"
 version = "0.1.0"
-description = "A differentiable mechanistic-neural world model of the global energy-emissions system for decarbonization planning."
+description = "Differentiable world models for global problems: the Carbon World Model (decarbonisation planning) and the Space Solar World Model (where to put solar arrays in space)."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

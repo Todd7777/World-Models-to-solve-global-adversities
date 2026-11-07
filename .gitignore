@@ -24,3 +24,6 @@ checkpoints/
 results/sweep_*/*
 !results/sweep_*/report.json
 results/sweep_*.log
+
+# Local Claude Code tooling state (e.g. agent worktrees); never part of the project
+.claude/

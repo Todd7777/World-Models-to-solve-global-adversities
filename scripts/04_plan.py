@@ -70,7 +70,10 @@ def main() -> None:
     # margin, i.e. a demanding target that all futures can still meet.
     worst_max = max(per_ssp[s.name]["max_cum_gt"] for s in scens)
     best_bau = min(per_ssp[s.name]["bau_cum_gt"] for s in scens)
-    budget = worst_max + 0.25 * (best_bau - worst_max)
+    # A quarter of the way from the worst-case feasibility floor towards the best-case
+    # BAU; if the SSPs do not overlap that way, sit just above the worst-case floor.
+    budget = (worst_max + 0.25 * (best_bau - worst_max) if best_bau > worst_max
+              else 1.02 * worst_max)
     tailored = O.optimize_pathway(wm, params, ssp2, budget_gt=budget, penalty=2.0, steps=1500)
     ev_tail = O.evaluate_controls(wm, params, scens, tailored.g, tailored.h)
     robust = O.robust_pathway(wm, params, scens, budget_gt=budget, penalty=2.0, mode="all",

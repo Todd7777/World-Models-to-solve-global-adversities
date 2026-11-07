@@ -40,6 +40,7 @@ class Panel:
     mask: np.ndarray           # [C, T]     1.0 where co2 & energy originally observed
     static: np.ndarray         # [C, S]     per-country static features (standardised)
     static_names: list[str]
+    iso_codes: list[str] | None = None  # [C] ISO3 codes (for joining SSP drivers)
 
     # ---- derived convenience ----
     @property
@@ -83,6 +84,7 @@ class Panel:
             "static_names": self.static_names,
             "year_start": int(self.years[0]),
             "year_end": int(self.years[-1]),
+            "iso_codes": self.iso_codes,
         }
         with open(cfg.data.meta_json, "w") as fh:
             json.dump(meta, fh, indent=2)
@@ -106,6 +108,7 @@ class Panel:
             mask=d["mask"],
             static=d["static"],
             static_names=list(meta["static_names"]),
+            iso_codes=meta.get("iso_codes"),
         )
 
 
@@ -131,6 +134,8 @@ def _fill_gaps(x: np.ndarray, clip_nonneg: bool = True) -> np.ndarray:
 def build_panel(cfg: Config, verbose: bool = True) -> Panel:
     co2_df, en_df = load_raw(cfg)
     countries = select_countries(en_df, cfg)
+    iso_map = en_df.dropna(subset=["iso_code"]).drop_duplicates("country").set_index("country")["iso_code"]
+    iso_codes = [str(iso_map[c]) for c in countries]
     years = np.arange(cfg.data.year_start, cfg.data.year_end + 1)
     C, T, F = len(countries), len(years), len(FUELS)
 
@@ -193,6 +198,7 @@ def build_panel(cfg: Config, verbose: bool = True) -> Panel:
         mask=mask,
         static=static,
         static_names=static_names,
+        iso_codes=iso_codes,
     )
     if verbose:
         _report(panel)

@@ -16,7 +16,13 @@
     "depth": 2,
     "max_share_change_per_year": 0.05,
     "max_intensity_change_per_year": 0.08,
-    "seed": 0
+    "seed": 0,
+    "time_features": true,
+    "level_mode": "absolute",
+    "momentum": "1yr",
+    "ema_decay": 0.7,
+    "damped_trend": false,
+    "phi_init": 0.6
   },
   "train": {
     "lr": 0.003,
@@ -30,7 +36,12 @@
     "w_level": 0.2,
     "grad_clip": 1.0,
     "seed": 0,
-    "recency_halflife": 0.0
+    "recency_halflife": 0.0,
+    "multi_shoot": false,
+    "shoot_horizon": 8,
+    "shoot_stride": 1,
+    "w_full": 1.0,
+    "w_shoot": 1.0
   },
   "climate": {
     "tcre_degC_per_ttco2": 0.45,

@@ -22,20 +22,32 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-08: 40 pass, 3 fail (see below)
+pytest             # 2026-11-09: 43 pass
 ```
 
-## State on 2026-11-08
+If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
+`python -m pytest`.
 
-- **Three tests fail on this branch:** `test_trained_insample_accuracy` (r² 0.54, needs > 0.98),
-  `test_max_ambition_below_bau` and `test_effort_monotonic`. Commit `3fc2559` changed the dynamics, and the
-  committed checkpoint `results/model/params_full.pkl` predates it, as that commit's message says. Its parent
-  `77b9669` passes all ten dynamics and planning tests. The fix is the retrain that follows the rolling-origin
-  selection sweep (`scripts/06_sweep.py`, with a SLURM kit in `scripts/slurm/`).
-- The README's headline numbers and `results/tables/` also predate `3fc2559`. Regenerate them after the retrain.
+## State on 2026-11-09
+
+- **All 43 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-09 with the default (`orig`)
+  configuration because model selection is still pending. `scripts/02_train.py` reproduces it bit for bit
+  (seed 0). The green suite depends on that seed: `scripts/seed_sensitivity.py` shows that with seed 1
+  `test_max_ambition_below_bau` and `test_effort_monotonic` fail, and that the seed-0 projections oscillate.
+- **Selection is pending.** `results/sweep_val/report.json` holds round 1 only (12 configs, 2 seeds), run with
+  `--steps 3000`, which the report does not record; `02_train.py` trains for 4000. Round 2 (`ms_ema`,
+  `ms_damped`, `ms_percap`, `ms_percap_damped`) has not run. Select at the training length you deploy.
+- `06_sweep.py` rewrites `<root>/report.json` with only the configs passed. Use `--root` for side runs.
+- After selection, make the selected config the default in `config.py` before retraining. `02_train.py`, the
+  tests, `04_plan.py` and `05_make_figures.py` all use `default_config()`. `03_evaluate.py --config X` loads
+  `params_full.pkl` whatever it was trained with.
+- The out-of-sample tables (test folds, calibration, transfer) and the figures wait for selection.
+  `results/figures/` predates `3fc2559`. The pre-`3fc2559` backtest, calibration and transfer tables leaked
+  post-cutoff data and were removed.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
 
 ## Where the next steps are
 
-README "Limitations (read these)" and `results/sweep_val/report.json`.
+README "Limitations (read these)" and "What changed on 2026-11-09", `results/sweep_val/report.json`, and
+`results/tables/seed_sensitivity.json`.

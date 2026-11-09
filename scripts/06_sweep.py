@@ -3,6 +3,11 @@ processes (resumable: finished jobs are cached on disk), then score and summaris
 
 Model selection must use --phase val only. --phase test is for the final report.
 
+Every job output records how it was trained. Before fitting anything the sweep refuses
+cached outputs that were not trained the way this run would train them (for example with
+another --steps): the sweep would otherwise reuse them. Report entries record the step
+count of the outputs they score.
+
 Usage:
   python scripts/06_sweep.py --phase val --configs orig,ms,ms_full --seeds 0,1 --jobs 4
   python scripts/06_sweep.py --phase test --configs ms_full,orig --seeds 0,1,2 --jobs 4 --ssp
@@ -15,9 +20,10 @@ import time
 
 from carbon_world_model.config import default_config
 from carbon_world_model.data.panel import Panel
+from carbon_world_model.eval.configs import REGISTRY, ProvenanceError, make_config
 from carbon_world_model.eval.rolling import (
-    VAL_CUTOFFS, VAL_HORIZON, TEST_CUTOFFS, TEST_HORIZON, job_path, evaluate, summarise,
-    save_json,
+    VAL_CUTOFFS, VAL_HORIZON, TEST_CUTOFFS, TEST_HORIZON, job_path, evaluate, report_entry,
+    stale_jobs, save_json,
 )
 
 
@@ -56,9 +62,22 @@ def main() -> None:
     a = ap.parse_args()
 
     configs = a.configs.split(",")
+    unknown = [c for c in configs if c not in REGISTRY]
+    if unknown:
+        ap.error(f"unknown config(s) {', '.join(unknown)}; known: {', '.join(REGISTRY)}")
     seeds = [int(s) for s in a.seeds.split(",")]
     cutoffs, horizon = (VAL_CUTOFFS, VAL_HORIZON) if a.phase == "val" else (TEST_CUTOFFS, TEST_HORIZON)
     root = a.root or f"results/sweep_{a.phase}"
+    steps = {c: make_config(c, steps=a.steps).train.steps for c in configs}
+
+    # Refuse before fitting anything: cached outputs that the resumable sweep would reuse
+    # although they were trained differently.
+    stale = stale_jobs(root, configs, cutoffs, seeds, a.steps)
+    if stale:
+        raise ProvenanceError(
+            "these cached outputs were not trained the way this run would train them, and the "
+            "sweep would reuse them:\n  " + "\n  ".join(stale) + "\nDelete them to have them "
+            "rerun, or use a separate --root.")
 
     cmds = []
     for c in configs:
@@ -74,7 +93,8 @@ def main() -> None:
                     cmd += ["--ssp-vintage", "v9", "--ssps", "SSP1,SSP2,SSP3,SSP4,SSP5"]
                 cmds.append(cmd)
     print(f"[sweep] phase={a.phase} configs={configs} cutoffs={list(cutoffs)} seeds={seeds} "
-          f"-> {len(cmds)} jobs to run ({a.jobs} parallel)", flush=True)
+          f"steps={sorted(set(steps.values()))} -> {len(cmds)} jobs to run ({a.jobs} parallel)",
+          flush=True)
     run_pool(cmds, a.jobs)
 
     panel = Panel.load(default_config())
@@ -82,8 +102,8 @@ def main() -> None:
     report = {}
     for c in configs:
         for d in drivers:
-            res = evaluate(panel, c, cutoffs, seeds, root, driver=d)
-            report[f"{c}|{d}"] = {"summary": summarise(res), "detail": res}
+            res = evaluate(panel, c, cutoffs, seeds, root, driver=d, steps=steps[c])
+            report[f"{c}|{d}"] = report_entry(res)
     save_json(report, os.path.join(root, "report.json"))
 
     print(f"\n[{a.phase}] mean over cutoffs {list(cutoffs)} (lower is better; score = "
@@ -103,4 +123,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ProvenanceError as e:
+        sys.exit(f"06_sweep.py: {e}")

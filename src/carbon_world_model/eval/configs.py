@@ -1,9 +1,18 @@
-"""Named model/training configurations for ablation and model selection."""
+"""Named model/training configurations for ablation and model selection, and the checks
+that results were produced by the configuration they are used as."""
 from __future__ import annotations
 
 import dataclasses
+import json
 
 from ..config import Config, default_config
+
+# Config sections that determine a fitted model; `climate` only feeds planning.
+FIT_SECTIONS = ("data", "model", "train")
+
+
+class ProvenanceError(ValueError):
+    """Results cannot be used or combined as asked because of how they were trained."""
 
 # name -> (model overrides, train overrides). 'orig' reproduces the original model.
 REGISTRY: dict[str, tuple[dict, dict]] = {
@@ -42,3 +51,33 @@ def make_config(name: str, base: Config | None = None, steps: int | None = None)
     if steps is not None:
         cfg = dataclasses.replace(cfg, train=dataclasses.replace(cfg.train, steps=steps))
     return cfg
+
+
+def config_dict(cfg: Config) -> dict:
+    """`cfg` as plain JSON data, the form config.json and job outputs record."""
+    return json.loads(json.dumps(dataclasses.asdict(cfg)))
+
+
+class _Missing:
+    def __repr__(self) -> str:
+        return "<missing>"
+
+
+_MISSING = _Missing()
+
+
+def config_diff(a: dict, b: dict, sections=None) -> list[tuple[str, object, object]]:
+    """(dotted field, value in a, value in b) for each field where two config dicts differ,
+    optionally only within the given top-level sections."""
+    out = []
+
+    def walk(x, y, path):
+        if isinstance(x, dict) and isinstance(y, dict):
+            for k in list(x) + [k for k in y if k not in x]:
+                walk(x.get(k, _MISSING), y.get(k, _MISSING), f"{path}.{k}" if path else k)
+        elif x != y:
+            out.append((path, x, y))
+
+    for s in sections if sections is not None else list(a) + [k for k in b if k not in a]:
+        walk(a.get(s, _MISSING), b.get(s, _MISSING), s)
+    return out

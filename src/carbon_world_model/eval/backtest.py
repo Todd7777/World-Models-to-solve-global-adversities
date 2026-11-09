@@ -10,13 +10,12 @@ Out-of-sample point accuracy lives in eval/rolling.py. Here:
 """
 from __future__ import annotations
 
-import os
-
 import numpy as np
 
 from ..config import Config
 from . import metrics as M
-from .rolling import job_path
+from .configs import ProvenanceError, config_diff
+from .rolling import load_jobs
 
 
 def insample_report(panel, cfg: Config, params, wm) -> dict:
@@ -31,12 +30,8 @@ def insample_report(panel, cfg: Config, params, wm) -> dict:
     }
 
 
-def _rel_residuals(panel, config, root, cutoff, seeds):
-    """Relative residuals (pred-true)/true of the seed-mean forecast, [C, H]."""
-    runs = [np.load(job_path(root, config, cutoff, s)) for s in seeds
-            if os.path.exists(job_path(root, config, cutoff, s))]
-    if not runs:
-        return None, None
+def _rel_residuals(panel, runs, cutoff):
+    """Seed-mean forecast and its relative residuals (pred-true)/true, both [C, H]."""
     fc = np.mean([r["co2_realized"] for r in runs], axis=0)[:, 1:]
     k = int(np.where(panel.years == cutoff)[0][0])
     H = fc.shape[1]
@@ -45,13 +40,23 @@ def _rel_residuals(panel, config, root, cutoff, seeds):
 
 
 def conformal_split(panel, config: str, val_root: str, test_root: str, val_cutoffs,
-                    test_cutoffs, seeds, alpha: float = 0.2) -> dict:
+                    test_cutoffs, seeds, alpha: float = 0.2, steps: int | None = None) -> dict:
+    """Intervals calibrated on the validation outputs, coverage checked on the test outputs.
+    Both must have been trained the same way apart from the seed (for `steps` steps, if
+    given): intervals calibrated on one training run say nothing about another."""
+    val_runs, val_fit = load_jobs(val_root, config, val_cutoffs, seeds, steps=steps)
+    test_runs, test_fit = load_jobs(test_root, config, test_cutoffs, seeds, steps=steps)
+    if val_fit and test_fit and config_diff(val_fit, test_fit):
+        raise ProvenanceError(
+            f"refusing to calibrate {config!r} on validation outputs ({val_root}) trained "
+            f"differently from the test outputs ({test_root}): "
+            + ", ".join(f"{k} {x!r} vs {y!r}" for k, x, y in config_diff(val_fit, test_fit)))
     lo_q, hi_q = alpha / 2, 1 - alpha / 2
     by_h: dict[int, list] = {}
     for co in val_cutoffs:
-        _, r = _rel_residuals(panel, config, val_root, co, seeds)
-        if r is None:
+        if int(co) not in val_runs:
             continue
+        _, r = _rel_residuals(panel, val_runs[int(co)], co)
         for h in range(r.shape[1]):
             by_h.setdefault(h + 1, []).append(r[:, h])
     q = {h: (float(np.quantile(np.concatenate(v), lo_q)), float(np.quantile(np.concatenate(v), hi_q)))
@@ -60,9 +65,9 @@ def conformal_split(panel, config: str, val_root: str, test_root: str, val_cutof
     hits, n = 0, 0
     per_cut = {}
     for co in test_cutoffs:
-        fc, _ = _rel_residuals(panel, config, test_root, co, seeds)
-        if fc is None:
+        if int(co) not in test_runs:
             continue
+        fc, _ = _rel_residuals(panel, test_runs[int(co)], co)
         k = int(np.where(panel.years == co)[0][0])
         true = panel.co2[:, k + 1:k + fc.shape[1] + 1]
         cov = []

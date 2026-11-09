@@ -15,7 +15,7 @@ from carbon_world_model.model.world_model import WorldModel
 from carbon_world_model.model.emissions import estimate_emission_factors, reconstruction_report
 from carbon_world_model.train.fit import load_params
 from carbon_world_model.eval.configs import make_config
-from carbon_world_model.eval.rolling import job_path
+from carbon_world_model.eval.rolling import load_jobs
 from carbon_world_model.eval.baselines import trend_kaya
 from carbon_world_model.plan.scenario import build_scenario
 from carbon_world_model.plan import optimize as O
@@ -52,8 +52,7 @@ def main() -> None:
     yrs = panel.years[k:]
     series = {}
     for name, label in ((selected, f"world model ({selected})"), ("orig", "world model (original)")):
-        runs = [np.load(job_path("results/sweep_test", name, 2015, s)) for s in range(5)
-                if os.path.exists(job_path("results/sweep_test", name, 2015, s))]
+        runs = load_jobs("results/sweep_test", name, [2015], range(5))[0].get(2015, [])
         if runs:
             series[label] = (yrs, np.mean([r["co2_realized"] for r in runs], 0)[panel.country_index("China")])
     series["trend-Kaya"] = (yrs, trend_kaya(panel, 2015)[panel.country_index("China"), k:])

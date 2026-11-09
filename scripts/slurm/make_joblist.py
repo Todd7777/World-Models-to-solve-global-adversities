@@ -1,15 +1,19 @@
 """Write one line of scripts/run_job.py arguments per (config, cutoff, seed) job, for a
 SLURM array on FASRC Cannon (or any cluster). Jobs whose output already exists are
-skipped unless --all is given, so re-submitting only runs what is missing.
+skipped unless --all is given, so re-submitting only runs what is missing. An existing
+output that was not trained the way its job would be (for example with another --steps)
+is an error rather than a skip: delete it, pass --all, or use a separate --root.
 
 Usage:
   python scripts/slurm/make_joblist.py --phase test --configs ms,orig --seeds 0-9 --ssp > jobs.txt
 """
 import argparse
 import os
+import sys
 
+from carbon_world_model.eval.configs import REGISTRY, ProvenanceError
 from carbon_world_model.eval.rolling import (
-    VAL_CUTOFFS, VAL_HORIZON, TEST_CUTOFFS, TEST_HORIZON, job_path,
+    VAL_CUTOFFS, VAL_HORIZON, TEST_CUTOFFS, TEST_HORIZON, job_path, stale_jobs,
 )
 
 
@@ -36,9 +40,19 @@ def main() -> None:
     a = ap.parse_args()
     cutoffs, horizon = (VAL_CUTOFFS, VAL_HORIZON) if a.phase == "val" else (TEST_CUTOFFS, TEST_HORIZON)
     root = a.root or f"results/sweep_{a.phase}"
-    for c in a.configs.split(","):
+    configs, seeds = a.configs.split(","), parse_seeds(a.seeds)
+    unknown = [c for c in configs if c not in REGISTRY]
+    if unknown:
+        ap.error(f"unknown config(s) {', '.join(unknown)}; known: {', '.join(REGISTRY)}")
+    stale = [] if a.all else stale_jobs(root, configs, cutoffs, seeds, a.steps)
+    if stale:
+        raise ProvenanceError(
+            "these existing outputs were not trained the way their jobs would be, and would be "
+            "skipped:\n  " + "\n  ".join(stale) + "\nDelete them, pass --all to rerun every "
+            "job, or use a separate --root.")
+    for c in configs:
         for co in cutoffs:
-            for s in parse_seeds(a.seeds):
+            for s in seeds:
                 if not a.all and os.path.exists(job_path(root, c, co, s)):
                     continue
                 line = f"--config {c} --cutoff {co} --seed {s} --horizon {horizon} --root {root}"
@@ -50,4 +64,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ProvenanceError as e:
+        sys.exit(f"make_joblist.py: {e}")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import os
 
 from ..config import Config, default_config
 
@@ -81,3 +82,32 @@ def config_diff(a: dict, b: dict, sections=None) -> list[tuple[str, object, obje
     for s in sections if sections is not None else list(a) + [k for k in b if k not in a]:
         walk(a.get(s, _MISSING), b.get(s, _MISSING), s)
     return out
+
+
+def check_checkpoint_config(name: str, path: str) -> Config:
+    """Return make_config(name) after checking that the checkpoint was trained with it.
+
+    `path` is the config.json that scripts/02_train.py writes alongside the checkpoint. Raises
+    ProvenanceError if it is missing or differs from make_config(name) in a section that
+    determines the fit (FIT_SECTIONS).
+    """
+    cfg = make_config(name)
+    if not os.path.exists(path):
+        raise ProvenanceError(
+            f"{path} not found, so the configuration the checkpoint was trained with is "
+            "unknown. scripts/02_train.py writes it with the checkpoint; retrain to restore it.")
+    with open(path) as fh:
+        recorded = json.load(fh)
+    diff = config_diff(recorded, config_dict(cfg), FIT_SECTIONS)
+    if not diff:
+        return cfg
+    same = [n for n in REGISTRY
+            if not config_diff(recorded, config_dict(make_config(n)), FIT_SECTIONS)]
+    raise ProvenanceError(
+        f"the checkpoint was not trained with configuration {name!r}: {path}, written by "
+        f"scripts/02_train.py with the checkpoint, differs from make_config({name!r}) in\n"
+        + "\n".join(f"  {k}: checkpoint {x!r}, {name} {y!r}" for k, x, y in diff)
+        + "\nThe checkpoint matches "
+        + (", ".join(repr(n) for n in same) if same else "no named configuration")
+        + f". To evaluate {name!r}, make it the default in config.py and retrain with "
+        "scripts/02_train.py.")

@@ -13,11 +13,18 @@ full-data model; writes JSON tables to results/tables/:
   calibration.json               split-conformal intervals (val-calibrated, test-checked)
   transfer.json                  spatial transfer to held-out countries
 
+Refuses to run unless results/tables/config.json, which scripts/02_train.py writes with
+the checkpoint, matches make_config(<selected>): the in-sample table must describe the
+selected configuration, and a checkpoint of another configuration may not even run under
+it. Every sweep output read must have been trained for the same number of steps as the
+checkpoint.
+
 Usage:  python scripts/03_evaluate.py --config <selected>
 """
 import argparse
 import json
 import os
+import sys
 
 import numpy as np
 
@@ -27,15 +34,17 @@ from carbon_world_model.data.ssp import SSPS
 from carbon_world_model.model.world_model import WorldModel
 from carbon_world_model.model.emissions import estimate_emission_factors, reconstruction_report
 from carbon_world_model.train.fit import load_params
-from carbon_world_model.eval.configs import make_config
+from carbon_world_model.eval.configs import REGISTRY, ProvenanceError, check_checkpoint_config
 from carbon_world_model.eval.rolling import (
-    VAL_CUTOFFS, TEST_CUTOFFS, job_path, evaluate, summarise,
+    VAL_CUTOFFS, TEST_CUTOFFS, job_path, evaluate, summarise, load_jobs, describe_steps,
 )
 from carbon_world_model.eval.backtest import insample_report, conformal_split
 from carbon_world_model.eval.baselines import trend_kaya
 from carbon_world_model.eval.transfer import spatial_transfer
 
 OUT = "results/tables"
+CHECKPOINT = "results/model/params_full.pkl"
+CHECKPOINT_CONFIG = os.path.join(OUT, "config.json")  # written by 02_train.py with CHECKPOINT
 VAL_ROOT, TEST_ROOT = "results/sweep_val", "results/sweep_test"
 
 
@@ -50,11 +59,23 @@ def seeds_in(root, config, cutoff):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True)
+    ap.add_argument("--config", required=True, choices=list(REGISTRY))
     ap.add_argument("--skip-transfer", action="store_true")
     a = ap.parse_args()
+    # Check provenance before anything is written: the checkpoint must have been trained with
+    # this config, and every sweep output read below for as many steps as the checkpoint.
+    cfg = check_checkpoint_config(a.config, CHECKPOINT_CONFIG)
+    steps = cfg.train.steps
+    seeds = seeds_in(TEST_ROOT, a.config, TEST_CUTOFFS[0])
+    cal_seeds = sorted(set(seeds_in(VAL_ROOT, a.config, VAL_CUTOFFS[0])) & set(seeds))
+    try:
+        test_runs, _ = load_jobs(TEST_ROOT, a.config, TEST_CUTOFFS, range(10), steps=steps)
+        load_jobs(VAL_ROOT, a.config, VAL_CUTOFFS, cal_seeds, steps=steps)
+    except ProvenanceError as e:
+        raise ProvenanceError(f"{e} The checkpoint was trained for {steps} steps and these "
+                              "tables must describe that training, so rerun the sweep for "
+                              f"{a.config!r} at that length.") from None
     os.makedirs(OUT, exist_ok=True)
-    cfg = make_config(a.config)
     panel = Panel.load(default_config())
     china = panel.countries.index("China")
 
@@ -65,7 +86,7 @@ def main() -> None:
 
     # 2. in-sample fidelity of the final (full-data) model
     wm = WorldModel.build(panel, cfg)
-    ins = insample_report(panel, cfg, load_params("results/model/params_full.pkl"), wm)
+    ins = insample_report(panel, cfg, load_params(CHECKPOINT), wm)
     dump(ins, "insample.json")
     print(f"[B] in-sample co2 R2={ins['co2_r2']:.4f} MAPE={100*ins['co2_mape']:.1f}% "
           f"demand R2={ins['demand_r2']:.4f} mix MAE={ins['mix_mae']:.4f}")
@@ -74,12 +95,14 @@ def main() -> None:
     val_report = json.load(open(os.path.join(VAL_ROOT, "report.json")))
     abl = {k.split("|")[0]: v["summary"] for k, v in val_report.items() if k.endswith("|realized")}
     dump(abl, "ablation_val.json")
+    print(f"[ablation] {len(abl)} configs on the validation folds, trained for "
+          f"{describe_steps(v for k, v in val_report.items() if k.endswith('|realized'))}; "
+          f"the checkpoint was trained for {steps}")
 
     # 4. test folds: selected config vs baselines, realised and ex-ante drivers
-    seeds = seeds_in(TEST_ROOT, a.config, TEST_CUTOFFS[0])
     test = {}
     for drv in ("realized", "ssp"):
-        res = evaluate(panel, a.config, TEST_CUTOFFS, seeds, TEST_ROOT, driver=drv)
+        res = evaluate(panel, a.config, TEST_CUTOFFS, seeds, TEST_ROOT, driver=drv, steps=steps)
         test[drv] = {"summary": summarise(res), "detail": res}
     dump(test, "test.json")
     print(f"[C] test folds {TEST_CUTOFFS} (seeds {seeds}):")
@@ -93,7 +116,7 @@ def main() -> None:
     # 5. China decomposition (log error = demand part + carbon-intensity part)
     chd = {}
     for co in TEST_CUTOFFS:
-        runs = [np.load(job_path(TEST_ROOT, a.config, co, s)) for s in seeds_in(TEST_ROOT, a.config, co)]
+        runs = test_runs[co]
         k = int(np.where(panel.years == co)[0][0])
         D = np.mean([r["D_realized"] for r in runs], 0)[china, -1]
         co2 = np.mean([r["co2_realized"] for r in runs], 0)[china, -1]
@@ -111,7 +134,7 @@ def main() -> None:
     # 6. ex-ante driver decomposition: SSP-v9 forecast vs realised-driver forecast
     drv = {}
     for co in TEST_CUTOFFS:
-        runs = [np.load(job_path(TEST_ROOT, a.config, co, s)) for s in seeds_in(TEST_ROOT, a.config, co)]
+        runs = test_runs[co]
         if "co2_SSP2" not in runs[0]:
             continue
         real = np.mean([r["co2_realized"] for r in runs], 0)[:, -1].sum()
@@ -123,7 +146,7 @@ def main() -> None:
 
     # 7. split-conformal calibration
     cal = conformal_split(panel, a.config, VAL_ROOT, TEST_ROOT, VAL_CUTOFFS, TEST_CUTOFFS,
-                          sorted(set(seeds_in(VAL_ROOT, a.config, VAL_CUTOFFS[0])) & set(seeds)))
+                          cal_seeds, steps=steps)
     dump(cal, "calibration.json")
     print(f"[F] split-conformal 80% interval: test coverage {cal['test_coverage']:.3f}")
 
@@ -138,4 +161,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ProvenanceError as e:
+        sys.exit(f"03_evaluate.py: {e}")

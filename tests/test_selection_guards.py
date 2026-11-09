@@ -4,6 +4,8 @@
   differently (for example for another number of steps) are never pooled into one score.
 * scripts/06_sweep.py merges into an existing report instead of replacing it, and refuses
   to mix training lengths in one report or to reuse stale cached outputs.
+* scripts/03_evaluate.py refuses a checkpoint trained with another configuration, and sweep
+  outputs trained for another number of steps than the checkpoint, before writing anything.
 
 Job outputs are faked (a persistence forecast carrying a real training record) except in
 one end-to-end sweep with a tiny --steps. Everything is written under a temporary --root.
@@ -18,10 +20,11 @@ import sys
 import numpy as np
 import pytest
 
-from carbon_world_model.eval.configs import ProvenanceError, make_config
+from carbon_world_model.config import default_config
+from carbon_world_model.eval.configs import ProvenanceError, check_checkpoint_config, make_config
 from carbon_world_model.eval.rolling import (
-    LEGACY_REPORT_STEPS, VAL_CUTOFFS, VAL_HORIZON, describe_steps, entry_steps, evaluate,
-    horizon_for, job_path, job_record, summarise, training_record,
+    LEGACY_REPORT_STEPS, TEST_CUTOFFS, TEST_HORIZON, VAL_CUTOFFS, VAL_HORIZON, describe_steps,
+    entry_steps, evaluate, horizon_for, job_path, job_record, summarise, training_record,
 )
 
 COMMITTED_REPORT = "results/sweep_val/report.json"
@@ -215,3 +218,47 @@ def test_sweep_end_to_end_with_tiny_steps(panel, tmp_path, monkeypatch):
                        capture_output=True, text=True)
     assert p.returncode == 1
     assert "recorded 2, expected 3" in p.stderr and "Traceback" not in p.stderr
+
+
+# ------------------------------------------------- 3. 03_evaluate.py checks the checkpoint
+def test_checkpoint_config_guard(tmp_path):
+    path = str(tmp_path / "config.json")
+    default_config().to_json(path)  # what scripts/02_train.py writes with the checkpoint
+    assert check_checkpoint_config("orig", path) == make_config("orig")
+    # Same network shape, different training: the in-sample table would be silently wrong.
+    with pytest.raises(ProvenanceError, match=r"train\.multi_shoot: checkpoint False, ms True"):
+        check_checkpoint_config("ms", path)
+    # Different input width (no time features): the rollout would crash.
+    with pytest.raises(ProvenanceError, match=r"model\.time_features: checkpoint True") as e:
+        check_checkpoint_config("ms_full", path)
+    assert "The checkpoint matches 'orig'" in str(e.value)
+    with pytest.raises(ProvenanceError, match="not found"):
+        check_checkpoint_config("orig", str(tmp_path / "missing.json"))
+
+
+def evaluate_script(monkeypatch, tmp_path, config):
+    """scripts/03_evaluate.py with a default-config checkpoint record and every path under
+    tmp_path. The checkpoint itself does not exist: these runs must stop before reading it."""
+    out = tmp_path / "tables"
+    out.mkdir(exist_ok=True)
+    default_config().to_json(str(out / "config.json"))  # what 02_train.py writes
+    run_script(monkeypatch, "scripts/03_evaluate.py", "--config", config, "--skip-transfer",
+               OUT=str(out), CHECKPOINT_CONFIG=str(out / "config.json"),
+               CHECKPOINT=str(tmp_path / "missing.pkl"), VAL_ROOT=str(tmp_path / "val"),
+               TEST_ROOT=str(tmp_path / "test"))
+
+
+def test_evaluate_script_refuses_mismatched_checkpoint(tmp_path, monkeypatch):
+    with pytest.raises(ProvenanceError, match="not trained with configuration 'ms'"):
+        evaluate_script(monkeypatch, tmp_path, "ms")
+    assert os.listdir(tmp_path / "tables") == ["config.json"]  # nothing written
+
+
+def test_evaluate_script_refuses_outputs_of_another_length(panel, tmp_path, monkeypatch):
+    """Sweep outputs trained for 3000 steps cannot describe a checkpoint trained for 4000."""
+    for co in TEST_CUTOFFS:
+        fake_job(panel, tmp_path / "test", "orig", co, 0, steps=3000, horizon=TEST_HORIZON)
+    with pytest.raises(ProvenanceError, match=f"trained for 3000 steps, not the {DEFAULT_STEPS} "
+                                              "required.*rerun the sweep"):
+        evaluate_script(monkeypatch, tmp_path, "orig")
+    assert os.listdir(tmp_path / "tables") == ["config.json"]  # nothing written

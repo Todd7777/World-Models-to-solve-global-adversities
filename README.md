@@ -189,16 +189,19 @@ python scripts/02_train.py           # train the world model (~20 s, CPU)
 python scripts/03_backtest.py        # physics-layer and in-sample tables
 python scripts/04_plan.py            # BAU / max-ambition / frontier / warming, SSP1-5
 python scripts/seed_sensitivity.py   # retrain with seeds 0-3: stability and spread
-pytest -q                            # 43 tests
+pytest -q                            # 54 tests
 ```
 
 Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` runs the
 validation folds (`scripts/slurm/` runs the same jobs as a SLURM array). After
 selection, `scripts/03_evaluate.py --config <selected>` writes the test-fold,
 calibration and transfer tables, and `scripts/05_make_figures.py` draws the figures
-from them. The processed panel (`data/processed/panel.npz`, 125 KB) and a trained
-checkpoint are committed, so `03_backtest.py` and `04_plan.py` run without
-re-downloading or retraining.
+from them. Job outputs and report entries record how many steps each fit was trained
+for. The sweep merges into an existing report but refuses to mix training lengths in
+one, and `03_evaluate.py` refuses a checkpoint trained with another configuration.
+The processed panel (`data/processed/panel.npz`, 125 KB) and a trained checkpoint are
+committed, so `03_backtest.py` and `04_plan.py` run without re-downloading or
+retraining.
 
 ---
 

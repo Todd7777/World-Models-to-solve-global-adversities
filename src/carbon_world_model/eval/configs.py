@@ -84,6 +84,22 @@ def config_diff(a: dict, b: dict, sections=None) -> list[tuple[str, object, obje
     return out
 
 
+def _checkpoint_record(path: str) -> dict:
+    """The config.json that scripts/02_train.py writes alongside the checkpoint."""
+    if not os.path.exists(path):
+        raise ProvenanceError(
+            f"{path} not found, so the configuration the checkpoint was trained with is "
+            "unknown. scripts/02_train.py writes it with the checkpoint; retrain to restore it.")
+    with open(path) as fh:
+        return json.load(fh)
+
+
+def _not_trained_with(what: str, against: str, label: str, path: str, diff) -> str:
+    return (f"the checkpoint was not trained with {what}: {path}, written by "
+            f"scripts/02_train.py with the checkpoint, differs from {against} in\n"
+            + "\n".join(f"  {k}: checkpoint {x!r}, {label} {y!r}" for k, x, y in diff))
+
+
 def check_checkpoint_config(name: str, path: str) -> Config:
     """Return make_config(name) after checking that the checkpoint was trained with it.
 
@@ -92,22 +108,34 @@ def check_checkpoint_config(name: str, path: str) -> Config:
     determines the fit (FIT_SECTIONS).
     """
     cfg = make_config(name)
-    if not os.path.exists(path):
-        raise ProvenanceError(
-            f"{path} not found, so the configuration the checkpoint was trained with is "
-            "unknown. scripts/02_train.py writes it with the checkpoint; retrain to restore it.")
-    with open(path) as fh:
-        recorded = json.load(fh)
+    recorded = _checkpoint_record(path)
     diff = config_diff(recorded, config_dict(cfg), FIT_SECTIONS)
     if not diff:
         return cfg
     same = [n for n in REGISTRY
             if not config_diff(recorded, config_dict(make_config(n)), FIT_SECTIONS)]
     raise ProvenanceError(
-        f"the checkpoint was not trained with configuration {name!r}: {path}, written by "
-        f"scripts/02_train.py with the checkpoint, differs from make_config({name!r}) in\n"
-        + "\n".join(f"  {k}: checkpoint {x!r}, {name} {y!r}" for k, x, y in diff)
+        _not_trained_with(f"configuration {name!r}", f"make_config({name!r})", name, path, diff)
         + "\nThe checkpoint matches "
         + (", ".join(repr(n) for n in same) if same else "no named configuration")
         + f". To evaluate {name!r}, make it the default in config.py and retrain with "
         "scripts/02_train.py.")
+
+
+def check_default_checkpoint(path: str) -> Config:
+    """Return default_config() after checking that the checkpoint was trained with it.
+
+    For the scripts that run the checkpoint under the default configuration (03_backtest.py,
+    04_plan.py, 05_make_figures.py): once the default in config.py changes, the checkpoint
+    was trained with something else until scripts/02_train.py is rerun. Raises
+    ProvenanceError as check_checkpoint_config() does.
+    """
+    cfg = default_config()
+    diff = config_diff(_checkpoint_record(path), config_dict(cfg), FIT_SECTIONS)
+    if diff:
+        raise ProvenanceError(
+            _not_trained_with("the default configuration", "default_config()", "default",
+                              path, diff)
+            + "\nRetrain with scripts/02_train.py, which trains default_config() and rewrites "
+            "config.json, or restore the default the checkpoint was trained with.")
+    return cfg

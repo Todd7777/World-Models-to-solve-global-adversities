@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-09: 54 pass
+pytest             # 2026-11-09: 59 pass
 ```
 
 If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
@@ -30,7 +30,7 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## State on 2026-11-09
 
-- **All 54 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-09 with the default (`orig`)
+- **All 59 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-09 with the default (`orig`)
   configuration because model selection is still pending. `scripts/02_train.py` reproduces it bit for bit
   (seed 0). The green suite depends on that seed: `scripts/seed_sensitivity.py` shows that with seed 1
   `test_max_ambition_below_bau` and `test_effort_monotonic` fail, and that the seed-0 projections oscillate.
@@ -47,11 +47,14 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   committed report therefore needs `--steps 3000`. Selecting at 4000 needs a fresh `--root`, a run that
   re-scores every config in the report (all 16 then replace round 1), or `--overwrite` (which drops the configs
   not passed). Use `--root` for side runs.
-- After selection, make the selected config the default in `config.py` before retraining. `02_train.py`, the
+- After selection, make the selected config the default in `config.py`, then retrain at once. `02_train.py`, the
   tests, `03_backtest.py`, `04_plan.py` and `05_make_figures.py` all use `default_config()`, which is why
-  `02_train.py` has no `--config` flag. `03_evaluate.py --config X` refuses to run (before writing anything)
-  unless `results/tables/config.json`, written by `02_train.py` with the checkpoint, matches `make_config(X)`,
-  and unless every sweep output it reads was trained for as many steps as the checkpoint.
+  `02_train.py` has no `--config` flag. `results/tables/config.json`, written by `02_train.py` with the
+  checkpoint, records what it was trained with. Until the retrain it no longer matches `default_config()`, so
+  `test_committed_checkpoint_matches_default_config` fails and `03_backtest.py`, `04_plan.py` and
+  `05_make_figures.py` refuse to run. `03_evaluate.py --config X` refuses unless `config.json` matches
+  `make_config(X)` and every sweep output it reads was trained for as many steps as the checkpoint. All of
+  these scripts refuse before writing anything.
 - The out-of-sample tables (test folds, calibration, transfer) and the figures wait for selection.
   `results/figures/` predates `3fc2559`. The pre-`3fc2559` backtest, calibration and transfer tables leaked
   post-cutoff data and were removed.

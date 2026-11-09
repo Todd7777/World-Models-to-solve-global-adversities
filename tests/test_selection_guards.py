@@ -6,6 +6,8 @@
   to mix training lengths in one report or to reuse stale cached outputs.
 * scripts/03_evaluate.py refuses a checkpoint trained with another configuration, and sweep
   outputs trained for another number of steps than the checkpoint, before writing anything.
+* scripts/03_backtest.py, 04_plan.py and 05_make_figures.py, which run the checkpoint under
+  default_config(), refuse one trained otherwise, before writing anything.
 
 Job outputs are faked (a persistence forecast carrying a real training record) except in
 one end-to-end sweep with a tiny --steps. Everything is written under a temporary --root.
@@ -21,7 +23,9 @@ import numpy as np
 import pytest
 
 from carbon_world_model.config import default_config
-from carbon_world_model.eval.configs import ProvenanceError, check_checkpoint_config, make_config
+from carbon_world_model.eval.configs import (
+    ProvenanceError, check_checkpoint_config, check_default_checkpoint, make_config,
+)
 from carbon_world_model.eval.rolling import (
     LEGACY_REPORT_STEPS, TEST_CUTOFFS, TEST_HORIZON, VAL_CUTOFFS, VAL_HORIZON, describe_steps,
     entry_steps, evaluate, horizon_for, job_path, job_record, summarise, training_record,
@@ -262,3 +266,45 @@ def test_evaluate_script_refuses_outputs_of_another_length(panel, tmp_path, monk
                                               "required.*rerun the sweep"):
         evaluate_script(monkeypatch, tmp_path, "orig")
     assert os.listdir(tmp_path / "tables") == ["config.json"]  # nothing written
+
+
+# ------------------------------------------------- 4. scripts that run it under the default
+def test_default_checkpoint_guard(tmp_path):
+    path = str(tmp_path / "config.json")
+    default_config().to_json(path)
+    assert check_default_checkpoint(path) == default_config()
+    make_config("ms_full").to_json(path)  # as if the default changed without a retrain
+    with pytest.raises(ProvenanceError, match="not trained with the default configuration") as e:
+        check_default_checkpoint(path)
+    assert "model.time_features: checkpoint False, default True" in str(e.value)
+    assert "Retrain with scripts/02_train.py" in str(e.value)
+    with pytest.raises(ProvenanceError, match="not found"):
+        check_default_checkpoint(str(tmp_path / "missing.json"))
+
+
+def test_committed_checkpoint_matches_default_config():
+    """03_backtest.py, 04_plan.py, 05_make_figures.py and these tests run the committed
+    checkpoint under default_config(), so changing the default means retraining."""
+    assert check_default_checkpoint("results/tables/config.json") == default_config()
+
+
+@pytest.mark.parametrize("script, out_dirs", [
+    ("scripts/03_backtest.py", {"OUT": "tables"}),
+    ("scripts/04_plan.py", {"OUT": "tables"}),
+    ("scripts/05_make_figures.py", {"TAB": "tables", "FIG": "figures"}),
+])
+def test_default_config_scripts_refuse_another_checkpoint(tmp_path, monkeypatch, script,
+                                                          out_dirs):
+    """A checkpoint trained as ms has the default's network shape, so nothing would crash:
+    the script would silently report on a model it does not describe."""
+    tables = tmp_path / "tables"
+    tables.mkdir()
+    make_config("ms").to_json(str(tables / "config.json"))
+    (tmp_path / "params_full.pkl").write_bytes(b"")  # present, never read
+    with pytest.raises(ProvenanceError,
+                       match=r"train\.multi_shoot: checkpoint True, default False"):
+        run_script(monkeypatch, script, CHECKPOINT=str(tmp_path / "params_full.pkl"),
+                   CHECKPOINT_CONFIG=str(tables / "config.json"),
+                   **{name: str(tmp_path / d) for name, d in out_dirs.items()})
+    assert sorted(os.listdir(tmp_path)) == ["params_full.pkl", "tables"]  # nothing written
+    assert os.listdir(tables) == ["config.json"]

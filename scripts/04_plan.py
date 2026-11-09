@@ -7,14 +7,18 @@
 4. Robust planning: one plan that meets a cumulative budget in EVERY SSP, versus a plan
    tuned to SSP2 alone -- the price of robustness and the regret of not hedging.
 
+Refuses to run, before writing anything, unless results/tables/config.json, which
+scripts/02_train.py writes with the checkpoint, matches default_config(): the
+configuration the checkpoint is run under here.
+
 Usage:  python scripts/04_plan.py
 """
 import json
 import os
+import sys
 
 import numpy as np
 
-from carbon_world_model.config import default_config
 from carbon_world_model.data.panel import Panel
 from carbon_world_model.data.ssp import SSPS
 from carbon_world_model.model.world_model import WorldModel
@@ -22,15 +26,18 @@ from carbon_world_model.train.fit import load_params
 from carbon_world_model.plan.scenario import build_scenario, ssp_ensemble
 from carbon_world_model.plan import optimize as O
 from carbon_world_model.climate import tcre
+from carbon_world_model.eval.configs import ProvenanceError, check_default_checkpoint
 
 OUT = "results/tables"
+CHECKPOINT = "results/model/params_full.pkl"
+CHECKPOINT_CONFIG = os.path.join(OUT, "config.json")  # written by 02_train.py with CHECKPOINT
 
 
 def main() -> None:
-    cfg = default_config()
+    cfg = check_default_checkpoint(CHECKPOINT_CONFIG)  # before anything is written
     panel = Panel.load(cfg)
     wm = WorldModel.build(panel, cfg)
-    params = load_params("results/model/params_full.pkl")
+    params = load_params(CHECKPOINT)
     clim = cfg.climate
     base_2022 = float(panel.co2[:, -1].sum())
 
@@ -120,4 +127,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ProvenanceError as e:
+        sys.exit(f"04_plan.py: {e}")

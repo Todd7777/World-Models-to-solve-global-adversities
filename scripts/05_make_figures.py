@@ -2,19 +2,22 @@
 
 Usage:  python scripts/05_make_figures.py
 Requires scripts 01-04 (and the sweeps) to have produced the tables and checkpoint.
+Refuses to run, before writing anything, unless results/tables/config.json, which
+scripts/02_train.py writes with the checkpoint, matches default_config(): the
+configuration the checkpoint is run under here.
 """
 import json
 import os
+import sys
 
 import numpy as np
 
-from carbon_world_model.config import default_config
 from carbon_world_model.data.panel import Panel
 from carbon_world_model.data.ssp import SSPS, load_processed, ssp_driver_paths
 from carbon_world_model.model.world_model import WorldModel
 from carbon_world_model.model.emissions import estimate_emission_factors, reconstruction_report
 from carbon_world_model.train.fit import load_params
-from carbon_world_model.eval.configs import make_config
+from carbon_world_model.eval.configs import ProvenanceError, check_default_checkpoint
 from carbon_world_model.eval.rolling import load_jobs
 from carbon_world_model.eval.baselines import trend_kaya
 from carbon_world_model.plan.scenario import build_scenario
@@ -22,6 +25,8 @@ from carbon_world_model.plan import optimize as O
 from carbon_world_model.viz import figures as F
 
 FIG, TAB = "results/figures", "results/tables"
+CHECKPOINT = "results/model/params_full.pkl"
+CHECKPOINT_CONFIG = os.path.join(TAB, "config.json")  # written by 02_train.py with CHECKPOINT
 
 
 def load(name):
@@ -34,12 +39,12 @@ def save(fig, name):
 
 
 def main() -> None:
-    cfg = default_config()
+    cfg = check_default_checkpoint(CHECKPOINT_CONFIG)  # before anything is written
     panel = Panel.load(cfg)
     os.makedirs(FIG, exist_ok=True)
     selected = load("selected_config.json")["config"]
     wm = WorldModel.build(panel, cfg)
-    params = load_params("results/model/params_full.pkl")
+    params = load_params(CHECKPOINT)
 
     ef = estimate_emission_factors(panel, "nnls")
     save(F.fig_reconstruction(panel, ef, reconstruction_report(panel, ef)), "fig1_reconstruction.png")
@@ -83,4 +88,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ProvenanceError as e:
+        sys.exit(f"05_make_figures.py: {e}")

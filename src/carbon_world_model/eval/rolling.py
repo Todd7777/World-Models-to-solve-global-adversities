@@ -266,7 +266,7 @@ def summarise(res: dict, methods=None) -> dict:
 
 # ------------------------------------------------------------------ report.json entries
 # A report maps "<config>|<driver>" to {"steps", "summary", "detail"}, where "detail" is the
-# evaluate() result.
+# evaluate() result. One report holds one training length and one set of folds.
 
 def report_entry(res: dict) -> dict:
     """The report entry for one evaluate() result."""
@@ -291,6 +291,47 @@ def describe_steps(entries) -> str:
         text += (f" ({legacy} legacy entries record no step count and are read as the "
                  f"round-1 validation sweep, run with --steps {LEGACY_REPORT_STEPS})")
     return text
+
+
+def report_conflicts(old: dict, steps: dict, cutoffs) -> list[str]:
+    """Why entries for the configurations in `steps` (name -> training steps), scored at
+    `cutoffs`, cannot be merged into the report `old`; empty if they can."""
+    kept = {k: v for k, v in old.items() if entry_config(k) not in steps}
+    kept_steps = {entry_steps(v) for v in kept.values()}
+    new_steps = sorted(set(steps.values()))
+    problems = []
+    if len(new_steps) > 1:
+        problems.append("this run's configurations train for different numbers of steps ("
+                        + ", ".join(f"{c}: {n}" for c, n in steps.items()) + ")")
+    elif kept and kept_steps != set(new_steps):
+        n_kept = len({entry_config(k) for k in kept})
+        problems.append(f"it holds {n_kept} other configurations trained for "
+                        f"{describe_steps(kept.values())}, but this run trains for "
+                        f"{new_steps[0]} steps"
+                        + (f" (pass --steps {next(iter(kept_steps))} to match)"
+                           if len(kept_steps) == 1 else ""))
+    kept_cutoffs = {int(c) for v in kept.values() for c in v["detail"]["cutoffs"]}
+    if not kept_cutoffs <= set(cutoffs):
+        problems.append(f"its entries were scored at cutoffs {sorted(kept_cutoffs)}, not this "
+                        f"run's {list(cutoffs)}")
+    return problems
+
+
+def merge_report(old: dict, new: dict, configs) -> dict:
+    """`old` with the entries of `configs` replaced by theirs in `new`, in their old place
+    (configurations new to the report are appended). A configuration in `configs` without
+    entries in `new` is dropped."""
+    configs = set(configs)
+    out, placed = {}, set()
+    for k, v in old.items():
+        c = entry_config(k)
+        if c not in configs:
+            out[k] = v
+        elif c not in placed:
+            out.update({nk: nv for nk, nv in new.items() if entry_config(nk) == c})
+            placed.add(c)
+    out.update({k: v for k, v in new.items() if entry_config(k) not in placed})
+    return out
 
 
 def save_json(obj, path: str) -> None:

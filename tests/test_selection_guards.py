@@ -1,8 +1,9 @@
 """Guards on the model-selection workflow.
 
 * Job outputs and report entries record how they were trained, and outputs trained
-  differently (for example for another number of steps) are never pooled into one score,
-  nor reused from the cache by scripts/06_sweep.py or scripts/slurm/make_joblist.py.
+  differently (for example for another number of steps) are never pooled into one score.
+* scripts/06_sweep.py merges into an existing report instead of replacing it, and refuses
+  to mix training lengths in one report or to reuse stale cached outputs.
 
 Job outputs are faked (a persistence forecast carrying a real training record) except in
 one end-to-end sweep with a tiny --steps. Everything is written under a temporary --root.
@@ -10,6 +11,7 @@ one end-to-end sweep with a tiny --steps. Everything is written under a temporar
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -119,6 +121,50 @@ def test_committed_legacy_report_still_reads():
     assert "legacy entries" in describe_steps(legacy)
     for v in report.values():
         assert summarise(v["detail"]) == v["summary"]
+
+
+# ------------------------------------------------- 2. 06_sweep.py merges, never clobbers
+def test_sweep_merges_into_existing_report(panel, tmp_path, monkeypatch):
+    shutil.copy(COMMITTED_REPORT, tmp_path / "report.json")
+    legacy = json.load(open(tmp_path / "report.json"))
+    for co in VAL_CUTOFFS:
+        for s in (0, 1):
+            fake_job(panel, tmp_path, "orig", co, s, steps=LEGACY_REPORT_STEPS)
+            fake_job(panel, tmp_path, "ms_ema", co, s, steps=LEGACY_REPORT_STEPS)
+    sweep(monkeypatch, "--phase", "val", "--configs", "orig,ms_ema", "--seeds", "0,1",
+          "--steps", LEGACY_REPORT_STEPS, "--root", tmp_path)
+
+    merged = json.load(open(tmp_path / "report.json"))
+    assert list(merged) == list(legacy) + ["ms_ema|realized"]  # updated in place, new appended
+    for key in legacy:
+        if key != "orig|realized":
+            assert merged[key] == legacy[key]
+    assert merged["orig|realized"] != legacy["orig|realized"]
+    for key in ("orig|realized", "ms_ema|realized"):
+        assert merged[key]["steps"] == merged[key]["detail"]["train"]["steps"] == 3000
+
+
+def test_sweep_refuses_to_mix_reports_and_overwrites_on_request(panel, tmp_path, monkeypatch):
+    shutil.copy(COMMITTED_REPORT, tmp_path / "report.json")
+    before = (tmp_path / "report.json").read_bytes()
+    # Default steps differ from the legacy report's 3000; other folds are not this report's.
+    with pytest.raises(ProvenanceError, match=f"trains for {DEFAULT_STEPS} steps "
+                       r"\(pass --steps 3000 to match\).*--overwrite"):
+        sweep(monkeypatch, "--phase", "val", "--configs", "orig", "--seeds", "0",
+              "--root", tmp_path)
+    with pytest.raises(ProvenanceError, match=r"scored at cutoffs \[2005, 2007, 2009\], not "
+                       r"this run's \[2015, 2016, 2017\]"):
+        sweep(monkeypatch, "--phase", "test", "--configs", "orig", "--seeds", "0",
+              "--steps", 3000, "--root", tmp_path)
+    assert (tmp_path / "report.json").read_bytes() == before
+
+    for co in VAL_CUTOFFS:
+        fake_job(panel, tmp_path, "orig", co, 0)
+    sweep(monkeypatch, "--phase", "val", "--configs", "orig", "--seeds", "0",
+          "--root", tmp_path, "--overwrite")
+    report = json.load(open(tmp_path / "report.json"))
+    assert list(report) == ["orig|realized"]
+    assert report["orig|realized"]["steps"] == DEFAULT_STEPS
 
 
 def test_sweep_refuses_stale_cached_outputs(panel, tmp_path, monkeypatch):

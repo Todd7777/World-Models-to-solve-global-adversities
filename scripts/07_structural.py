@@ -28,12 +28,22 @@ ROOT = "results/model/structural"
 VAL_REPORT = "results/sweep_val/report.json"
 
 
-def tied_configs(path: str = VAL_REPORT, tol: float = TIE_TOL) -> list[tuple[str, float]]:
+FAMILIES = {
+    "all": lambda c: True,
+    "stab": lambda c: "_stab" in c,          # trained with the stability term
+    "unconstrained": lambda c: "_stab" not in c,
+}
+
+
+def tied_configs(path: str = VAL_REPORT, tol: float = TIE_TOL,
+                 family: str = "all") -> list[tuple[str, float]]:
+    """Configs in `family` within `tol` of the best validation score over ALL configs."""
     rep = json.load(open(path))
     scores = {k.split("|")[0]: v["summary"]["world_model"]["score"]
               for k, v in rep.items() if k.endswith("|realized")}
     best = min(scores.values())
-    return sorted(((c, s) for c, s in scores.items() if s <= best + tol), key=lambda x: x[1])
+    return sorted(((c, s) for c, s in scores.items()
+                   if s <= best + tol and FAMILIES[family](c)), key=lambda x: x[1])
 
 
 def ckpt(config: str, seed: int) -> str:
@@ -140,8 +150,11 @@ def main() -> None:
     ap.add_argument("--seeds", default="0,1")
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--ssp", default="SSP2")
+    ap.add_argument("--family", default="all", choices=sorted(FAMILIES))
     a = ap.parse_args()
-    tied = tied_configs()
+    tied = tied_configs(family=a.family)
+    if not tied:
+        raise SystemExit(f"no {a.family} configuration is tied on validation")
     print(f"[structural] tied on validation (within {TIE_TOL} of best): "
           + ", ".join(f"{c} ({s:.2f})" for c, s in tied))
     jobs = [(c, int(s)) for c, _ in tied for s in a.seeds.split(",")]
@@ -150,7 +163,10 @@ def main() -> None:
     out = analyse(jobs, a.ssp)
     out["tied"] = [{"config": c, "val_score": s} for c, s in tied]
     out["tie_tol"] = TIE_TOL
-    with open("results/tables/structural.json", "w") as fh:
+    out["family"] = a.family
+    out_path = ("results/tables/structural.json" if a.family == "all"
+                else f"results/tables/structural_{a.family}.json")
+    with open(out_path, "w") as fh:
         json.dump(out, fh, indent=2)
 
     print(f"\n{'model':24s} {'BAU2050':>8s} {'MAX2050':>8s} {'OL2050':>8s} {'cut':>5s} {'OLcut':>6s} "
@@ -165,7 +181,7 @@ def main() -> None:
     print(f"\nranges across {len(out['models'])} models ({a.ssp}):")
     for k, v in s.items():
         print(f"  {k:36s} {v}")
-    print("[ok] wrote results/tables/structural.json")
+    print(f"[ok] wrote {out_path}")
 
 
 if __name__ == "__main__":

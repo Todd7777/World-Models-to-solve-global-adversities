@@ -115,6 +115,13 @@ class TrainConfig:
     shoot_stride: int = 1
     w_full: float = 1.0            # weight of the long free run from the first year
     w_shoot: float = 1.0           # weight of the multiple-shooting loss
+    # Stability: penalise year-to-year changes in the model's own natural rates (the
+    # "acceleration" of log intensity and of the mix) on a free run of stab_horizon years
+    # beyond the training cutoff, driven by GDP/population extrapolated from data up to
+    # the cutoff only (train/fit.stability_batch). Targets learned oscillations without
+    # imposing where emissions go. 0 = off.
+    w_stab: float = 0.0
+    stab_horizon: int = 30
 
 
 @dataclass(frozen=True)

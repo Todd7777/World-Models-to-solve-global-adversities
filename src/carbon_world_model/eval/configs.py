@@ -33,6 +33,17 @@ REGISTRY: dict[str, tuple[dict, dict]] = {
                          {"multi_shoot": True}),
 }
 
+# Third round: the stability term (TrainConfig.w_stab, train/fit.stability_loss) on the
+# three configurations tied on validation. Decision rule, fixed before these were run:
+# a stabilised variant is preferred over the current selection if its validation score
+# is within the tie tolerance (scripts/07_structural.TIE_TOL = 0.5) of the best
+# validation score; among such variants, the lowest score wins.
+STAB_WEIGHTS = (10.0, 100.0)
+for _base in ("ms_percap_damped", "ms", "ms_full_shootonly"):
+    for _w in STAB_WEIGHTS:
+        _m, _t = REGISTRY[_base]
+        REGISTRY[f"{_base}_stab{int(_w)}"] = (dict(_m), {**_t, "w_stab": _w})
+
 # Selected on the VALIDATION folds only (results/sweep_val/report.json, lowest score =
 # country MAPE% + mean |aggregate error|%, 2-seed ensemble): 11.05, against 11.37 for
 # 'ms' and 21.20 for 'orig'. Single seeds score 11.5 and 13.3, so the margin over 'ms'

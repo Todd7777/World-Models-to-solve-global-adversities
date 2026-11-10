@@ -87,6 +87,53 @@ def shooting_batch(wm: WorldModel, panel, cut_idx: int, H: int, stride: int) -> 
     }
 
 
+# Probe drivers for the stability term. They only need to be plausible, not right.
+STAB_LOOKBACK = 10          # years of history used for trailing growth rates
+STAB_GDPPC_CLIP = (0.0, 0.05)
+STAB_GDPPC_LONGRUN = 0.015  # per-capita growth tapers linearly to this by the horizon end
+STAB_POP_CLIP = (-0.01, 0.03)
+
+
+def stability_batch(wm: WorldModel, panel, cut_idx: int, H: int) -> dict:
+    """Free-run batch for the stability term: every country rolled H years beyond the
+    cutoff from its OBSERVED cutoff state.
+
+    Drivers are extrapolated from data up to the cutoff only: per-capita GDP and
+    population grow at their trailing STAB_LOOKBACK-year mean log rates (clipped),
+    tapering linearly to STAB_GDPPC_LONGRUN and to zero population growth by year H.
+    Process CO2 is held at its cutoff value, and the calendar-time feature is frozen at
+    its cutoff value (as in planning). No year after the cutoff is read.
+    """
+    k0 = max(0, cut_idx - STAB_LOOKBACK)
+    span = max(cut_idx - k0, 1)
+    gdp, pop = panel.gdp[:, :cut_idx + 1], panel.population[:, :cut_idx + 1]
+    lpc = np.log(gdp / pop)
+    g_pc = np.clip((lpc[:, cut_idx] - lpc[:, k0]) / span, *STAB_GDPPC_CLIP)
+    g_pop = np.clip((np.log(pop[:, cut_idx]) - np.log(pop[:, k0])) / span, *STAB_POP_CLIP)
+    frac = np.arange(H + 1) / H                                   # 0 .. 1 over the horizon
+    r_pc = (1 - frac)[None, :] * g_pc[:, None] + frac[None, :] * STAB_GDPPC_LONGRUN
+    r_pop = (1 - frac)[None, :] * g_pop[:, None]
+    # cumulative log growth; step 0 is the observed cutoff year
+    cum_pc = np.concatenate([np.zeros((len(g_pc), 1)), np.cumsum(r_pc[:, 1:], axis=1)], axis=1)
+    cum_pop = np.concatenate([np.zeros((len(g_pop), 1)), np.cumsum(r_pop[:, 1:], axis=1)], axis=1)
+    pop_p = pop[:, cut_idx:cut_idx + 1] * np.exp(cum_pop)
+    gdp_p = gdp[:, cut_idx:cut_idx + 1] * np.exp(cum_pc + cum_pop)
+    proc = np.repeat(panel.process_co2[:, cut_idx:cut_idx + 1], H + 1, axis=1)
+    ini = observed_inits(panel, cut_idx, wm.hp["momentum"], wm.hp["ema_decay"])
+    tf = np.full(H + 1, float(wm.tfrac(cut_idx)))
+    return {"drivers": {"gdp": jnp.asarray(gdp_p), "pop": jnp.asarray(pop_p),
+                        "process": jnp.asarray(proc)},
+            "inits": {k: jnp.asarray(v) for k, v in ini.items()},
+            "tfrac": jnp.asarray(tf)}
+
+
+def stability_loss(traj) -> jnp.ndarray:
+    """Mean squared year-to-year change of the natural rates (intensity + mix)."""
+    aI = jnp.diff(traj["dI_nat"], axis=1)
+    as_ = jnp.diff(traj["ds_nat"], axis=1)
+    return jnp.mean(aI ** 2) + jnp.mean(jnp.sum(as_ ** 2, axis=-1))
+
+
 def shoot_loss(traj, batch, cfg):
     tr = cfg.train
     m, tg = batch["mask"], batch["targets"]
@@ -114,6 +161,8 @@ def fit(panel, cfg: Config, wm: WorldModel | None = None, train_year_max: int | 
     cut_idx = panel.n_years - 1 if train_year_max is None else _year_index(panel, train_year_max)
     batch = (shooting_batch(wm, panel, cut_idx, cfg.train.shoot_horizon, cfg.train.shoot_stride)
              if cfg.train.multi_shoot else None)
+    sbatch = (stability_batch(wm, panel, cut_idx, cfg.train.stab_horizon)
+              if cfg.train.w_stab > 0 else None)
     static, ef = jnp.asarray(wm.static), jnp.asarray(wm.ef)
 
     sched = optax.cosine_decay_schedule(cfg.train.lr, cfg.train.steps, alpha=0.1)
@@ -135,6 +184,12 @@ def fit(panel, cfg: Config, wm: WorldModel | None = None, train_year_max: int | 
             ls, ts_ = shoot_loss(trs, batch, cfg)
             total = total + cfg.train.w_shoot * ls
             terms.update(ts_)
+        if sbatch is not None:
+            trs = rollout(p, static, wm.norm, ef, sbatch["inits"], sbatch["drivers"], None,
+                          wm.hp, tfrac=sbatch["tfrac"])
+            lst = stability_loss(trs)
+            total = total + cfg.train.w_stab * lst
+            terms["stab"] = lst
         return total + ef_regulariser(p), terms
 
     @jax.jit

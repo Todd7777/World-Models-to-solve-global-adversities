@@ -62,3 +62,16 @@ def test_forecast_starts_from_observed_state(panel, cfg, wm, init_params):
     # process CO2 is held at the cutoff value (no future information)
     co2_0 = np.asarray(fc["co2"][:, 0])
     assert np.isfinite(co2_0).all()
+
+
+def test_stability_batch_ignores_future(panel, cfg):
+    from carbon_world_model.train.fit import stability_batch
+    k = int(np.where(panel.years == CUT)[0][0])
+    wm = WorldModel.build(panel, cfg, upto_year=CUT)
+    ba = stability_batch(wm, panel, k, H=30)
+    bb = stability_batch(wm, _scrambled(panel, CUT), k, H=30)
+    for key in ("gdp", "pop", "process"):
+        assert np.array_equal(np.asarray(ba["drivers"][key]), np.asarray(bb["drivers"][key]))
+    for key in ba["inits"]:
+        assert np.array_equal(np.asarray(ba["inits"][key]), np.asarray(bb["inits"][key]))
+    assert np.array_equal(np.asarray(ba["tfrac"]), np.asarray(bb["tfrac"]))

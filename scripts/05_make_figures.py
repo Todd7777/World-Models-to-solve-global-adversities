@@ -11,10 +11,8 @@ import numpy as np
 from carbon_world_model.config import default_config
 from carbon_world_model.data.panel import Panel
 from carbon_world_model.data.ssp import SSPS, load_processed, ssp_driver_paths
-from carbon_world_model.model.world_model import WorldModel
 from carbon_world_model.model.emissions import estimate_emission_factors, reconstruction_report
-from carbon_world_model.train.fit import load_params
-from carbon_world_model.eval.configs import make_config
+from carbon_world_model.train.fit import load_trained, checkpoint_config_name
 from carbon_world_model.eval.rolling import job_path
 from carbon_world_model.eval.baselines import trend_kaya
 from carbon_world_model.plan.scenario import build_scenario
@@ -34,12 +32,13 @@ def save(fig, name):
 
 
 def main() -> None:
-    cfg = default_config()
-    panel = Panel.load(cfg)
+    panel = Panel.load(default_config())
     os.makedirs(FIG, exist_ok=True)
     selected = load("selected_config.json")["config"]
-    wm = WorldModel.build(panel, cfg)
-    params = load_params("results/model/params_full.pkl")
+    cfg, wm, params = load_trained(panel)  # model built with the checkpoint's own config
+    if checkpoint_config_name() != selected:
+        raise SystemExit(f"checkpoint config {checkpoint_config_name()!r} != selected {selected!r}; "
+                         f"retrain with scripts/02_train.py --config {selected}")
 
     ef = estimate_emission_factors(panel, "nnls")
     save(F.fig_reconstruction(panel, ef, reconstruction_report(panel, ef)), "fig1_reconstruction.png")

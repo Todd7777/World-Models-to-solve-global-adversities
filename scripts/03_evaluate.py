@@ -24,9 +24,8 @@ import numpy as np
 from carbon_world_model.config import default_config
 from carbon_world_model.data.panel import Panel
 from carbon_world_model.data.ssp import SSPS
-from carbon_world_model.model.world_model import WorldModel
 from carbon_world_model.model.emissions import estimate_emission_factors, reconstruction_report
-from carbon_world_model.train.fit import load_params
+from carbon_world_model.train.fit import load_trained, checkpoint_config_name
 from carbon_world_model.eval.configs import make_config
 from carbon_world_model.eval.rolling import (
     VAL_CUTOFFS, TEST_CUTOFFS, job_path, evaluate, summarise,
@@ -64,8 +63,11 @@ def main() -> None:
     print(f"[A] physics reconstruction R2={rec['r2']:.4f} median err={100*rec['median_abs_pct_err']:.1f}%")
 
     # 2. in-sample fidelity of the final (full-data) model
-    wm = WorldModel.build(panel, cfg)
-    ins = insample_report(panel, cfg, load_params("results/model/params_full.pkl"), wm)
+    if checkpoint_config_name() != a.config:
+        raise SystemExit(f"checkpoint config {checkpoint_config_name()!r} != {a.config!r}; "
+                         f"retrain with scripts/02_train.py --config {a.config}")
+    _, wm, params = load_trained(panel)
+    ins = insample_report(panel, cfg, params, wm)
     dump(ins, "insample.json")
     print(f"[B] in-sample co2 R2={ins['co2_r2']:.4f} MAPE={100*ins['co2_mape']:.1f}% "
           f"demand R2={ins['demand_r2']:.4f} mix MAE={ins['mix_mae']:.4f}")

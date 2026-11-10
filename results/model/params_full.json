@@ -1,0 +1,10 @@
+{
+  "config": "ms_percap_damped",
+  "seed": 0,
+  "steps": 4000,
+  "train_years": [
+    1990,
+    2022
+  ],
+  "final_loss": 0.02289295755326748
+}

@@ -33,6 +33,12 @@ REGISTRY: dict[str, tuple[dict, dict]] = {
                          {"multi_shoot": True}),
 }
 
+# Selected on the VALIDATION folds only (results/sweep_val/report.json, lowest score =
+# country MAPE% + mean |aggregate error|%, 2-seed ensemble): 11.05, against 11.37 for
+# 'ms' and 21.20 for 'orig'. Single seeds score 11.5 and 13.3, so the margin over 'ms'
+# is within seed noise. The trend-Kaya baseline scores 9.85 on the same folds.
+SELECTED = "ms_percap_damped"
+
 
 def make_config(name: str, base: Config | None = None, steps: int | None = None) -> Config:
     base = default_config() if base is None else base

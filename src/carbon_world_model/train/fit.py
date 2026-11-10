@@ -166,3 +166,41 @@ def load_params(path: str):
     with open(path, "rb") as fh:
         arrs = pickle.load(fh)
     return jax.tree_util.tree_map(lambda x: jnp.asarray(x), arrs)
+
+
+# ---------------------------------------------------------------------------
+# Checkpoints that remember which configuration produced them
+# ---------------------------------------------------------------------------
+# A checkpoint is only meaningful together with the model structure it was trained
+# for (time features, level mode, momentum, damped trend). The name of the registered
+# configuration (eval/configs.py) is stored next to the parameters, and every consumer
+# rebuilds the model from that name instead of assuming the default configuration.
+DEFAULT_CHECKPOINT = "results/model/params_full.pkl"
+
+
+def checkpoint_meta_path(path: str) -> str:
+    return os.path.splitext(path)[0] + ".json"
+
+
+def save_checkpoint(params, path: str, config_name: str, extra: dict | None = None) -> None:
+    import json
+    save_params(params, path)
+    with open(checkpoint_meta_path(path), "w") as fh:
+        json.dump({"config": config_name, **(extra or {})}, fh, indent=2)
+
+
+def checkpoint_config_name(path: str = DEFAULT_CHECKPOINT) -> str:
+    """Configuration name recorded with a checkpoint ('orig' for legacy checkpoints)."""
+    import json
+    meta = checkpoint_meta_path(path)
+    if not os.path.exists(meta):
+        return "orig"
+    with open(meta) as fh:
+        return json.load(fh)["config"]
+
+
+def load_trained(panel, path: str = DEFAULT_CHECKPOINT):
+    """(config, world model, parameters) for a checkpoint, built with ITS configuration."""
+    from ..eval.configs import make_config
+    cfg = make_config(checkpoint_config_name(path))
+    return cfg, WorldModel.build(panel, cfg), load_params(path)

@@ -37,13 +37,12 @@ FAMILIES = {
 
 def tied_configs(path: str = VAL_REPORT, tol: float = TIE_TOL,
                  family: str = "all") -> list[tuple[str, float]]:
-    """Configs in `family` within `tol` of the best validation score over ALL configs."""
+    """Configs in `family` within `tol` of the best validation score in that family."""
     rep = json.load(open(path))
     scores = {k.split("|")[0]: v["summary"]["world_model"]["score"]
-              for k, v in rep.items() if k.endswith("|realized")}
+              for k, v in rep.items() if k.endswith("|realized") and FAMILIES[family](k)}
     best = min(scores.values())
-    return sorted(((c, s) for c, s in scores.items()
-                   if s <= best + tol and FAMILIES[family](c)), key=lambda x: x[1])
+    return sorted(((c, s) for c, s in scores.items() if s <= best + tol), key=lambda x: x[1])
 
 
 def ckpt(config: str, seed: int) -> str:
@@ -153,8 +152,6 @@ def main() -> None:
     ap.add_argument("--family", default="all", choices=sorted(FAMILIES))
     a = ap.parse_args()
     tied = tied_configs(family=a.family)
-    if not tied:
-        raise SystemExit(f"no {a.family} configuration is tied on validation")
     print(f"[structural] tied on validation (within {TIE_TOL} of best): "
           + ", ".join(f"{c} ({s:.2f})" for c, s in tied))
     jobs = [(c, int(s)) for c, _ in tied for s in a.seeds.split(",")]

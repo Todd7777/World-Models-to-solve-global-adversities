@@ -24,20 +24,21 @@ CWM couples three things that are usually kept apart:
 
 > **Status / honesty note.** This is a transparent research prototype, not a forecast of
 > the future and not policy advice. Its results are conditional on documented
-> assumptions. Its limitations (below) are reported as prominently as its results, and
-> the most important one is new: **the planning results depend more on unidentified
-> model structure than on anything the data pin down** (see "Planning").
+> assumptions, and its limitations (below) are reported as prominently as its results.
+> The most important: **planning results still depend on model structure the data do not
+> pin down.** A stability term in training (new) removes learned oscillations and narrows
+> that spread, but does not remove it (see "Planning").
 
 ---
 
 ## Headline results
 
 All evaluation is **leak-free**: every fit uses only data up to its cutoff year (emission
-factors, normalisation and static features included), and every forecast starts from the
-observed state at the cutoff, exactly as the baselines do. The model configuration was
-chosen on **validation** folds only (cutoffs 2005/2007/2009, 6-year horizons ending
-≤ 2015) and scored once on **test** folds (cutoffs 2015/2016/2017, 7-year horizons).
-Score = per-country MAPE % + mean |aggregate error| %; lower is better.
+factors, normalisation, static features and the stability term's probe drivers included),
+and every forecast starts from the observed state at the cutoff, exactly as the baselines
+do. Configurations are chosen on **validation** folds only (cutoffs 2005/2007/2009, 6-year
+horizons ending ≤ 2015) and scored once on **test** folds (cutoffs 2015/2016/2017, 7-year
+horizons). Score = per-country MAPE % + mean |aggregate error| %; lower is better.
 
 ### The physics layer and in-sample fit are faithful
 
@@ -45,102 +46,119 @@ Score = per-country MAPE % + mean |aggregate error| %; lower is better.
   4.7%), with emission factors recovered from data in the correct physical order:
   coal 0.316 > oil 0.231 > gas 0.198 MtCO₂/TWh.
 - Running free from 1990 (given only GDP and population), the trained model reproduces
-  33 years of history for all 60 countries: CO₂ **R² 0.9997** (MAPE 3.0%), primary energy
-  R² 0.9994 (MAPE 4.3%), fuel mix MAE 0.8 points. In-sample fit is necessary, not
-  evidence of forecasting skill.
+  33 years of history for all 60 countries: CO₂ **R² 0.9989** (MAPE 4.8%), primary energy
+  R² 0.9986 (MAPE 7.1%), fuel mix MAE 1.1 points. The selected configuration is trained
+  only on 8-year windows started from observed states, so it fits the long free run
+  slightly less closely than earlier versions (CO₂ MAPE 3.0%). In-sample fit is
+  necessary, not evidence of forecasting skill.
 
-### Forecasting: competitive, not dominant
+### Forecasting: best per-country accuracy, and now level with or ahead of the baselines
 
-Selected configuration `ms_percap_damped` (multiple-shooting training, per-capita levels,
-EMA momentum, damped trend; [`eval/configs.py`](src/carbon_world_model/eval/configs.py)).
-It had the lowest validation score of 16 configurations (11.05, against 21.20 for the
-original model), **but the margin over the runner-up `ms` (11.37) is within seed noise**:
-single seeds of the selected configuration score 11.5 and 13.3.
+Selected configuration `ms_full_shootonly_stab100`: multiple-shooting training only,
+per-capita levels, EMA momentum, damped trend, and the **stability term** at weight 100
+([`eval/configs.py`](src/carbon_world_model/eval/configs.py)). It had the lowest
+validation score of 22 configurations (9.85, level with trend-Kaya's 9.85), against 11.43
+for the same configuration without the stability term and 21.20 for the original model.
+22 configurations compared on 2 seeds make the best validation score optimistic, so the
+test folds are the real check.
 
 Test folds, mean over three cutoffs, five seeds:
 
 | drivers | method | country MAPE | mean \|agg. err.\| | final-year agg. err. | China final-year | score |
 |---|---|---|---|---|---|---|
-| realised GDP/pop | **world model** | **6.84%** | 4.40% | −8.9% | −18.5% | 11.25 |
-| | trend-Kaya | 7.83% | **1.67%** | −0.2% | −3.8% | **9.49** |
+| realised GDP/pop | **world model (stabilised)** | **6.86%** | 1.84% | −3.9% | −11.2% | **8.70** |
+| | world model, previous selection (`ms_percap_damped`) | 6.84% | 4.40% | −8.9% | −18.5% | 11.25 |
+| | trend-Kaya | 7.83% | **1.67%** | −0.2% | −3.8% | 9.49 |
 | | growth persistence | 8.84% | 2.31% | +0.7% | −8.4% | 11.15 |
 | | original model (`orig`) | 13.95% | 6.00% | +3.4% | +3.0% | 19.96 |
-| SSP2 (2014 vintage), ex-ante | **world model** | 8.87% | **1.72%** | −2.0% | −11.1% | **10.59** |
+| SSP2 (2014 vintage), ex-ante | world model (stabilised) | 9.69% | 2.12% | +1.0% | −7.4% | 11.81 |
 | | trend-Kaya | 10.96% | 6.52% | +9.6% | +6.5% | 17.48 |
-| | growth persistence | 8.84% | 2.31% | +0.7% | −8.4% | 11.15 |
+| | growth persistence | **8.84%** | 2.31% | +0.7% | −8.4% | **11.15** |
 
 What this does and does not show:
 
-- **Best per-country accuracy** of all methods with realised drivers, and a large
-  improvement over the original model (score 19.96 → 11.25).
-- **The simple trend-Kaya baseline still wins overall** with realised drivers, as it did on
-  validation (9.85 vs 11.05). The world model undershoots the aggregate by ~9% after
-  7 years.
-- **The undershoot is China's energy demand**: China's final-year CO₂ error (−16% to −20%)
-  is mostly demand (−12% to −17%), not carbon intensity (−2% to −5%)
+- **With realised drivers the world model now has the best score on held-out data**
+  (8.70 vs 9.49 for trend-Kaya) and the best per-country accuracy. Trend-Kaya still has a
+  slightly smaller aggregate error (1.67% vs 1.84%), and the margin rests on one test
+  period (2015–2022, including 2020).
+- **The China undershoot shrank but remains**: final-year China error −6% to −15% by
+  cutoff, now split between demand (−3% to −10%) and carbon intensity (−3% to −7%)
   ([`china_decomposition.json`](results/tables/china_decomposition.json)). The model
-  extrapolates China's historical decoupling too far, the same optimistic-decoupling bias
-  seen in integrated-assessment models.
-- **The ex-ante "win" is mostly error cancellation**: the 2014-vintage SSP GDP paths run
-  above realised GDP and raise the model's aggregate by +7 to +9% (SSP2), which offsets
-  its demand undershoot ([`driver_decomposition.json`](results/tables/driver_decomposition.json)).
-  Do not read it as skill.
+  still extrapolates some of China's historical decoupling too far.
+- **Ex-ante, growth persistence wins** (11.15 vs 11.81). The 2014-vintage SSP GDP paths
+  run above realised GDP and raise the model's final-year aggregate by about +5% (SSP2;
+  +4% to +8% across SSPs) ([`driver_decomposition.json`](results/tables/driver_decomposition.json)). With the
+  previous selection that shift happened to offset a larger undershoot; now it does not.
 - **Uncertainty is calibrated**: split-conformal 80% intervals, calibrated on validation
-  residuals, cover **82.9%** of test outcomes.
-- **Transfer to unseen countries**: trained on 48 countries and adapting only each held-out
-  country's small latent on pre-2016 data, CWM forecasts 12 unseen countries at R² 0.996
-  (MAPE 9.3%). That is evidence of transferable structure, but trend-Kaya does better
-  on the same countries (R² 0.999, MAPE 7.6%).
+  residuals, cover **83.2%** of test outcomes.
+- **Transfer to unseen countries got worse.** Trained on 48 countries and adapting only
+  each held-out country's latent on pre-2016 data, the model forecasts 12 unseen
+  countries at R² 0.990 (MAPE 12.9%), against MAPE 9.3% for the previous selection and
+  7.6% for trend-Kaya.
 
-### Planning: one robust conclusion, wide structural uncertainty
+### Planning: one robust conclusion, narrower but real structural uncertainty
 
 Feasibility limits come from the fastest *sustained* historical transitions: low-carbon
-share +1.8 points/yr, energy intensity −3.0%/yr. Two findings shape how every planning
-number should be read.
+share +1.8 points/yr, energy intensity −3.0%/yr.
 
-**1. The learned dynamics react to the plan, and how strongly is not identified.** Controls
-enter additively, but the network's own proposed change depends on the state, so a plan
-that moves a country off its historical path changes what the network proposes next. The
-**open-loop counterfactual** (same controls, natural changes pinned to business-as-usual)
-removes that reaction. With the selected model under SSP2, maximum feasible effort cuts
-2050 emissions **14%** below BAU with the fitted dynamics but **66%** in the open loop. The
-fitted dynamics keep 46% of the clean-mix push and **8%** of the efficiency push
+**The learned dynamics react to the plan.** Controls enter additively, but the network's
+own proposed change depends on the state, so a plan that moves a country off its
+historical path changes what the network proposes next. The **open-loop counterfactual**
+(same controls, natural changes pinned to business-as-usual) removes that reaction.
+With the selected model under SSP2, maximum feasible effort cuts 2050 emissions **49%**
+below BAU (39.2 → 19.9 Gt) with the fitted dynamics and **67%** in the open loop. The
+fitted dynamics keep 95% of the clean-mix push and 47% of the efficiency push
 ([`plan/diagnostics.py`](src/carbon_world_model/plan/diagnostics.py)). Historical data
 show how energy systems evolve on their own, not how they would respond to pushes far
 outside that range.
 
-**2. Configurations tied on validation disagree beyond the validation horizon.** The
-three configurations within 0.5 points of the best validation score (`ms_percap_damped`,
-`ms`, `ms_full_shootonly`; two seeds each) are indistinguishable on 6-year forecasts, yet
-under SSP2 ([`structural.json`](results/tables/structural.json), `scripts/07_structural.py`):
+**The stability term.** Without it, the previous selection's free run had a learned
+~12-year oscillation in China's energy intensity (annual change swinging between −0.07
+and +0.05, against a steady −0.03 historically), invisible over a 6-year validation
+horizon but dominant over 28 years. The term penalises year-to-year changes in the
+model's natural rates on a 30-year free run beyond the training cutoff. It does not
+say where emissions should go ([`train/fit.py`](src/carbon_world_model/train/fit.py),
+`stability_loss`). It reduces rate-acceleration under SSP2 inputs about 18-fold (30.9 →
+1.7 × 10⁻³ for the selected configuration's parent), costs no in-sample fit, and improved
+every one of the six configurations it was tried on, on validation. Under SSP2 the
+selected model projects China's energy intensity falling 1.9%/yr to 2030 and 1.2%/yr
+after, slower than the 2.9%/yr of 2012–2022. That is the model's own extrapolation,
+not something the term imposes.
 
-| quantity (SSP2, 60 countries) | range across the 6 tied models |
-|---|---|
-| business-as-usual 2050 emissions (2022: 34.8 Gt) | 31.9 – 56.7 Gt |
-| China BAU change 2022→2035 | +12% – +48% |
-| max-effort 2050 cut vs BAU, fitted dynamics | 12% – 46% |
-| max-effort 2050 cut vs BAU, open loop | 64% – 66% |
-| efficiency push retained by the fitted dynamics | 3% – 45% |
-| warming avoided by max effort (TCRE central) | 0.06 – 0.14 °C fitted, 0.18 – 0.27 °C open loop |
+**Structural spread.** The configurations within 0.5 validation points of the best in
+their family, two seeds each, under SSP2
+([`structural.json`](results/tables/structural.json),
+[`structural_unconstrained.json`](results/tables/structural_unconstrained.json),
+`scripts/07_structural.py`):
 
-The selected model's free-running BAU also shows a learned ~12-year oscillation in
-China's energy intensity (annual change swinging between about −0.06 and +0.04, against a
-steady −0.03 historically). That cycle is invisible over a 6-year validation horizon and
-dominates a 28-year run.
+| quantity (SSP2, 60 countries) | stabilised: 4 tied models | unconstrained: 6 tied models |
+|---|---|---|
+| business-as-usual 2050 emissions (2022: 34.8 Gt) | 39.2 – 48.4 Gt | 31.9 – 56.7 Gt |
+| China BAU change 2022→2035 | +19% – +29% | +12% – +48% |
+| max-effort 2050 cut vs BAU, fitted dynamics | 24% – 49% | 12% – 46% |
+| max-effort 2050 cut vs BAU, open loop | 66% – 68% | 64% – 66% |
+| efficiency push retained by the fitted dynamics | 12% – 47% | 3% – 45% |
+| warming avoided by max effort (TCRE central) | 0.09 – 0.14 °C fitted, 0.20 – 0.23 °C open loop | 0.06 – 0.14 °C, 0.18 – 0.27 °C |
+
+The range of 2050 BAU emissions shrinks from 25 to 9 Gt and that of China's 2035 change from
+36 to 10 points, though part of that comes from comparing 4 models with 6. The two
+stabilised configurations still disagree on how strongly the system pushes back against
+an efficiency drive, which drives the remaining spread in the fitted-dynamics cut.
 
 **The conclusion that survives all of this:** scaled to global, cumulative 2023–2050 CO₂
-under maximum feasible effort is **631 – 1,226 Gt** across all 12 cases (6 models × fitted
-or open-loop dynamics). **Every case exceeds the ≈578 Gt remaining 1.5 °C budget** (by 9%
-at the closest) and every case stays within the ≈1,689 Gt 2 °C budget. Within historically
-achieved transition rates, holding 1.5 °C without negative emissions is out of reach in
-this model. The 9% margin is smaller than the uncertainty in the budget itself, so read
-this as "at best marginal", not as a precise verdict.
+under maximum feasible effort is **647 – 1,026 Gt** across the 8 stabilised cases (4 models
+× fitted or open-loop dynamics), and 631 – 1,226 Gt across the 12 unconstrained cases.
+**Every case exceeds the ≈578 Gt remaining 1.5 °C budget** (by 12% at the closest
+stabilised case) and every case stays within the ≈1,689 Gt 2 °C budget. Within
+historically achieved transition rates, holding 1.5 °C without negative emissions is out
+of reach in this model. The margin is comparable to the uncertainty in the budget itself,
+so read this as "at best marginal", not as a precise verdict.
 
 The model also produces a cost-of-abatement frontier, per-country allocations and a
-**robust plan** optimised against all five SSPs at once (under the selected model's
-fitted dynamics, robustness to every SSP doubles the required effort, and a plan tuned
-to SSP2 alone overshoots the budget by 75 Gt under SSP5). These demonstrate the method;
-their magnitudes inherit the structural uncertainty above.
+**robust plan** optimised against all five SSPs at once. Under the selected model's
+fitted dynamics, meeting a budget in every SSP costs 25% more effort than a plan tuned
+to SSP2 alone, and that SSP2-only plan overshoots by 27 Gt under SSP5. These demonstrate
+the method; their magnitudes inherit the structural uncertainty above.
 
 ---
 
@@ -152,14 +170,14 @@ All in [`results/figures/`](results/figures), regenerated by `scripts/05_make_fi
 |---|---|
 | `fig1_reconstruction.png` | Physics layer: reconstructed vs reported CO₂; emission factors |
 | `fig2_insample.png` | Free-running 1990–2022 fit (global + five countries) |
-| `fig3_ablation_validation.png` | All 16 configurations on the validation folds |
+| `fig3_ablation_validation.png` | All 22 configurations on the validation folds |
 | `fig4_test_and_china.png` | Test folds vs baselines; China final-year error by origin |
 | `fig5_china_forecasts.png` | China forecasts from 2015: selected, original, trend-Kaya |
 | `fig6_ssp_drivers.png` | SSP GDP/population drivers, 2014 and 2025 vintages |
 | `fig7_ssp_pathways_robust.png` | BAU and max effort (fitted and open loop) per SSP; robust planning |
 | `fig8_mix_ssp2.png` | Fuel-mix transition, BAU vs maximum feasible effort (SSP2) |
 | `fig9_frontier_ssp2.png` | Cost-of-abatement frontier (SSP2) |
-| `fig10_structural_ssp2.png` | Planning results across all validation-tied models vs carbon budgets |
+| `fig10_structural_ssp2.png` | Planning results across the stabilised validation-tied models vs carbon budgets |
 
 ---
 
@@ -178,12 +196,19 @@ inputs in planning), the same framing integrated-assessment models use with SSP
 pathways. A shared SiLU MLP with per-country embeddings predicts the **bounded** annual
 change in intensity and mix (bounds encode capital-stock inertia); a learned per-country
 emission-factor correction absorbs refining/petrostate residuals. Structure switches
-(calendar-time features, absolute vs per-capita levels, momentum, damped trend) and
-multiple-shooting training are described in
-[`model/dynamics.py`](src/carbon_world_model/model/dynamics.py) and
-[`train/fit.py`](src/carbon_world_model/train/fit.py). Everything is written in JAX and
-trained end-to-end by differentiable simulation (`optax` AdamW, 4000 steps, about 4 min
-on one CPU core).
+(calendar-time features, absolute vs per-capita levels, momentum, damped trend) are
+described in [`model/dynamics.py`](src/carbon_world_model/model/dynamics.py). Everything
+is written in JAX and trained end-to-end by differentiable simulation (`optax` AdamW, 4000
+steps, about 4 min on one CPU core).
+
+Training objectives ([`train/fit.py`](src/carbon_world_model/train/fit.py)): a long free
+run from 1990, multiple shooting (8-year runs started from the observed state in every
+year), and the stability term. The stability term rolls every country 30 years beyond the
+training cutoff from its observed cutoff state. The probe drivers grow per-capita GDP and
+population at their trailing 10-year rates (clipped), tapering to 1.5%/yr and zero. It
+penalises the mean squared year-to-year change in the model's natural rates of intensity
+and mix change. A test checks that the probe drivers are unchanged when every value
+after the cutoff is scrambled.
 
 Checkpoints record the configuration that produced them (`results/model/*.json`), and
 every script rebuilds the model from that record; a test fails if the committed
@@ -199,7 +224,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 |---|---|---|
 | A: Physics | `model/emissions.py` | CO₂ = Σ EFₖ·energyₖ + process; factors fit by NNLS, held fixed |
 | B: Dynamics | `model/dynamics.py`, `model/world_model.py` | learned differentiable rollout of demand + mix |
-| Training | `train/fit.py`, `train/losses.py` | fit across countries by differentiable simulation |
+| Training | `train/fit.py`, `train/losses.py` | full run, multiple shooting, stability term |
 | Evaluation | `eval/` | rolling-origin protocol, baselines, transfer, conformal calibration |
 | C: Planning | `plan/optimize.py`, `plan/scenario.py`, `plan/diagnostics.py` | optimal and robust control; open-loop counterfactual; control retention |
 | D: Climate | `climate/tcre.py` | cumulative CO₂ → warming and carbon budgets |
@@ -210,22 +235,23 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 51 tests
+python -m pytest -q                  # 55 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
-later steps run without downloading data. Full pipeline (about 2 h on 4 CPU cores;
+later steps run without downloading data. Full pipeline (about 3 h on 4 CPU cores;
 `scripts/slurm/` runs the sweeps as a SLURM array):
 
 ```bash
 bash scripts/download_data.sh        # OWID CO2 + energy data (CC-BY); only for step 01
 python scripts/01_build_dataset.py   # 60-country panel
-python scripts/06_sweep.py --phase val --seeds 0,1 --configs orig,notime,percap,ema,damped,ms,ms_notime,ms_notime_percap,ms_notime_percap_ema,ms_full,ms_full_shootonly,notime_percap_damped,ms_ema,ms_damped,ms_percap,ms_percap_damped
+python scripts/06_sweep.py --phase val --seeds 0,1 --configs orig,notime,percap,ema,damped,ms,ms_notime,ms_notime_percap,ms_notime_percap_ema,ms_full,ms_full_shootonly,notime_percap_damped,ms_ema,ms_damped,ms_percap,ms_percap_damped,ms_percap_damped_stab10,ms_percap_damped_stab100,ms_stab10,ms_stab100,ms_full_shootonly_stab10,ms_full_shootonly_stab100
 python scripts/02_train.py           # full-data model, selected config (eval/configs.SELECTED)
-python scripts/06_sweep.py --phase test --configs ms_percap_damped,orig --seeds 0,1,2,3,4 --ssp
-python scripts/03_evaluate.py --config ms_percap_damped
+python scripts/06_sweep.py --phase test --configs ms_full_shootonly_stab100,ms_percap_damped,orig --seeds 0,1,2,3,4 --ssp
+python scripts/03_evaluate.py --config ms_full_shootonly_stab100
 python scripts/04_plan.py            # BAU / max effort (fitted + open loop) / frontier / robust
-python scripts/07_structural.py      # planning across all validation-tied models
+python scripts/07_structural.py                         # stabilised tied set -> structural.json
+python scripts/07_structural.py --family unconstrained  # -> structural_unconstrained.json
 python scripts/05_make_figures.py
 ```
 
@@ -233,21 +259,25 @@ python scripts/05_make_figures.py
 
 ## Limitations (read these)
 
-- **Planning results are dominated by structural uncertainty.** Configurations that are
-  indistinguishable on validation give 2050 BAU emissions from 32 to 57 Gt and
-  max-effort cuts from 12% to 46% (fitted dynamics). How strongly the learned dynamics
-  push back against a plan is not identified by historical data. Treat single-model
-  planning numbers as illustrations of the method, and use the ranges.
-- **Short-horizon validation does not validate long-horizon behaviour.** Selection used
-  6-year horizons; planning runs 28 years. The selected model's free-running projection
-  contains a learned oscillation (China's intensity) that no validation fold can see.
-  Adding long-horizon plausibility or stability constraints to training is open work.
-- **Short-horizon aggregate forecasting is not where this model wins.** Trend-Kaya beats it
-  on aggregate CO₂ on both validation and test folds, and on transfer to unseen countries.
-  The gap is driven by China's energy demand.
+- **Planning results still depend on unidentified structure.** Stabilised configurations
+  that are tied on validation give 2050 BAU emissions from 39 to 48 Gt and max-effort cuts
+  from 24% to 49% (fitted dynamics). How strongly the learned dynamics push back against a
+  plan, especially an efficiency drive, is not identified by historical data. Use the
+  ranges, not single-model planning numbers.
+- **Short-horizon validation still does not validate long-horizon behaviour.** The
+  stability term removes learned oscillations, but smooth is not the same as right. A
+  smooth model can still extrapolate a wrong trend for 28 years, and nothing here checks
+  long-run *levels* against data. China's slowing intensity decline is an example of
+  such an untested extrapolation.
+- **The forecasting advantage is narrow.** The stabilised model beats trend-Kaya on the
+  test folds with realised drivers (8.70 vs 9.49), but loses ex-ante to growth persistence,
+  transfers to unseen countries worse than trend-Kaya, and the test period is a single
+  7-year window that includes 2020.
+- **Selection is optimistic.** 22 configurations were compared on 2 seeds; the stability
+  weights (10, 100) were not tuned further. Seed-to-seed variation is comparable to the
+  gaps between top configurations.
 - **Drivers are exogenous.** GDP and population paths are assumptions, and results are
-  conditional on them. Ex-ante test results with 2014-vintage SSPs look better than
-  realised-driver results only because two errors cancel.
+  conditional on them.
 - **Feasibility bounds are judgement calls.** They come from the fastest *sustained*
   decade-long national rates, with caps to exclude petrostate GDP-volatility artefacts.
   Reasonable people would choose somewhat different numbers.
@@ -256,8 +286,6 @@ python scripts/05_make_figures.py
   trade between countries.
 - **Coverage is 60 countries (~93% of CO₂), not the whole world.** Global figures are
   scaled by that coverage, which is approximate.
-- **Few seeds.** Validation used 2 seeds and test 5; the full-data and structural models
-  use 1–2. Seed-to-seed variation is comparable to the gaps between top configurations.
 
 ---
 

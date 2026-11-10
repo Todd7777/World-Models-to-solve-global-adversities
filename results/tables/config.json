@@ -17,7 +17,7 @@
     "max_share_change_per_year": 0.05,
     "max_intensity_change_per_year": 0.08,
     "seed": 0,
-    "time_features": true,
+    "time_features": false,
     "level_mode": "per_capita",
     "momentum": "ema",
     "ema_decay": 0.7,
@@ -40,8 +40,10 @@
     "multi_shoot": true,
     "shoot_horizon": 8,
     "shoot_stride": 1,
-    "w_full": 1.0,
-    "w_shoot": 1.0
+    "w_full": 0.0,
+    "w_shoot": 1.0,
+    "w_stab": 100.0,
+    "stab_horizon": 30
   },
   "climate": {
     "tcre_degC_per_ttco2": 0.45,

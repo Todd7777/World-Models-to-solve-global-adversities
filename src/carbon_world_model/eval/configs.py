@@ -45,10 +45,12 @@ for _base in ("ms_percap_damped", "ms", "ms_full_shootonly"):
         REGISTRY[f"{_base}_stab{int(_w)}"] = (dict(_m), {**_t, "w_stab": _w})
 
 # Selected on the VALIDATION folds only (results/sweep_val/report.json, lowest score =
-# country MAPE% + mean |aggregate error|%, 2-seed ensemble): 11.05, against 11.37 for
-# 'ms' and 21.20 for 'orig'. Single seeds score 11.5 and 13.3, so the margin over 'ms'
-# is within seed noise. The trend-Kaya baseline scores 9.85 on the same folds.
-SELECTED = "ms_percap_damped"
+# country MAPE% + mean |aggregate error|%, 2-seed ensemble), by the round-3 rule above:
+# ms_full_shootonly_stab100 scores 9.85, against 9.96 for ms_percap_damped_stab10, 11.05
+# for the previous selection (ms_percap_damped) and 21.20 for 'orig'. The trend-Kaya
+# baseline also scores 9.85 on these folds. 22 configurations were compared on 2 seeds,
+# so the best validation score is optimistic; the test folds are the check.
+SELECTED = "ms_full_shootonly_stab100"
 
 
 def make_config(name: str, base: Config | None = None, steps: int | None = None) -> Config:

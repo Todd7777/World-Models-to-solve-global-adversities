@@ -143,7 +143,7 @@ class Config:
 # The configuration selected on the validation folds: a name in eval/configs.py REGISTRY,
 # whose entries are overrides of Config(), the original model. default_config() returns it,
 # and scripts/02_train.py, 03_backtest.py, 04_plan.py, 05_make_figures.py and the tests use it.
-SELECTED_CONFIG = "orig"
+SELECTED_CONFIG = "ms_full"
 
 
 def default_config() -> Config:

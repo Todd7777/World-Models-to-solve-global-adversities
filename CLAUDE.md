@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-09: 59 pass
+pytest             # 2026-11-10: 60 pass
 ```
 
 If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
@@ -30,23 +30,24 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## State on 2026-11-09
 
-- **All 59 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-09 with the default (`orig`)
+- **All 60 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-09 with the default (`orig`)
   configuration because model selection is still pending. `scripts/02_train.py` reproduces it bit for bit
   (seed 0). The green suite depends on that seed: `scripts/seed_sensitivity.py` shows that with seed 1
   `test_max_ambition_below_bau` and `test_effort_monotonic` fail, and that the seed-0 projections oscillate.
-- **Selection is pending.** `results/sweep_val/report.json` holds round 1 only (12 configs, 2 seeds), run with
-  `--steps 3000`; `02_train.py` trains for 4000. The report predates step recording: its entries have no `steps`
-  field and are read as 3000 (`LEGACY_REPORT_STEPS` in `eval/rolling.py`). Round 2 (`ms_ema`, `ms_damped`,
-  `ms_percap`, `ms_percap_damped`) has not run. Select at the training length you deploy.
+- **Selection is pending.** `results/sweep_val/report.json` (2026-11-10) scores all 16 configs at 4000 steps, the
+  length `02_train.py` trains for, with 2 seeds. Multiple shooting wins on every seed. The leaders
+  (`ms_percap_damped` 11.05, `ms_full_shootonly` 11.29, `ms_full` 11.70) are closer than the seed noise (one
+  config's score moves by about 1.5 between seeds), so they need more seeds, the same set for each, before one is
+  chosen. trend-Kaya (9.85) still beats every config. Round 1 (12 configs at 3000 steps; its entries have no
+  `steps` field and are read as 3000 via `LEGACY_REPORT_STEPS`) is in `tests/data/report_round1_3000steps.json`.
 - Sweep job outputs record their step count and full config; report entries record their step count. Scores
   never pool outputs trained differently (apart from the seed) or without that record. Older job caches lack
   it; delete and rerun them.
 - `06_sweep.py` merges into `<root>/report.json`, replacing only the configs passed; `--overwrite` replaces the
   whole report. Before fitting anything it refuses to put a second training length (or other folds) into a
-  report, and to reuse cached outputs trained differently from what the run asks for. Adding round 2 to the
-  committed report therefore needs `--steps 3000`. Selecting at 4000 needs a fresh `--root`, a run that
-  re-scores every config in the report (all 16 then replace round 1), or `--overwrite` (which drops the configs
-  not passed). Use `--root` for side runs.
+  report, and to reuse cached outputs trained differently from what the run asks for. It does not check seeds:
+  an ensemble of more seeds usually scores better, so compare configs only on the same seed set. Use `--root`
+  for side runs, such as more seeds for the leaders.
 - After selection, make the selected config the default in `config.py`, then retrain at once. `02_train.py`, the
   tests, `03_backtest.py`, `04_plan.py` and `05_make_figures.py` all use `default_config()`, which is why
   `02_train.py` has no `--config` flag. `results/tables/config.json`, written by `02_train.py` with the

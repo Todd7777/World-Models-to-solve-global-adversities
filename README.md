@@ -27,8 +27,10 @@ CWM couples three things that are usually kept apart:
 > the future and not policy advice. Its results are conditional on documented
 > assumptions, and its limitations (below) are reported as prominently as its strengths.
 
-> **Current state (2026-11-09).** Model selection is still pending: only the first of
-> two planned validation rounds has run. The committed checkpoint is the default
+> **Current state (2026-11-10).** Model selection is still pending: all 16 candidate
+> configurations have been scored on the validation folds at the training length the
+> model is deployed with, but the leaders cannot yet be told apart on two seeds. The
+> committed checkpoint is the default
 > configuration, retrained after commit `3fc2559` changed the dynamics. The
 > out-of-sample results this README used to report leaked post-cutoff data and are
 > withdrawn; leak-free replacements will follow selection. See
@@ -56,10 +58,10 @@ extrapolation.** The leak-free protocol keeps model selection (validation cutoff
 2007 and 2009, six-year horizons) apart from reporting (test cutoffs 2015–2017, scored
 once, after selection). On the validation folds, given realised GDP and population, a
 trend-Kaya extrapolation has the lowest per-country error of every method tried (MAPE
-8.0%). The best of 12 world-model configurations (`ms`, multiple shooting) reaches
-8.8%, and the default configuration 11.1–13.3% depending on training length (see
-Limitations). Test-fold accuracy, calibrated intervals and transfer to unseen countries
-will be reported after selection.
+8.0%). Of the 16 world-model configurations, trained for 4000 steps, the lowest is 8.7%
+(`ms_percap_damped`: multiple shooting, per-capita levels, damped trend), and the
+default configuration reaches 11.1% (see Limitations). Test-fold accuracy, calibrated
+intervals and transfer to unseen countries will be reported after selection.
 
 **It plans.** Optimising inside the simulator, under feasibility limits taken from the
 fastest *sustained* historical transitions (low-carbon share +1.8%/yr, à la Denmark;
@@ -189,7 +191,7 @@ python scripts/02_train.py           # train the world model (~20 s, CPU)
 python scripts/03_backtest.py        # physics-layer and in-sample tables
 python scripts/04_plan.py            # BAU / max-ambition / frontier / warming, SSP1-5
 python scripts/seed_sensitivity.py   # retrain with seeds 0-3: stability and spread
-pytest -q                            # 59 tests
+pytest -q                            # 60 tests
 ```
 
 Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` runs the
@@ -208,16 +210,17 @@ run without re-downloading or retraining.
 
 ## Limitations (read these)
 
-- **Model selection is pending, so out-of-sample performance is not established.** The
-  first validation round (12 configurations, 2 seeds; `results/sweep_val/report.json`)
-  is complete. The second (`ms_ema`, `ms_damped`, `ms_percap`, `ms_percap_damped` in
-  `eval/configs.py`) has not run. Round 1 trained each fit for 3000 steps (rerunning it
-  reproduces the report exactly only with `--steps 3000`), while `scripts/02_train.py`
-  trains for 4000, and the difference matters. At 4000 steps the default
-  configuration's validation score is 15.9 rather than 21.2, with country MAPE 11.1%
-  rather than 13.3% (`python scripts/06_sweep.py --phase val --configs orig --root
-  <dir>`). The two leading configurations (`ms`, `ms_full_shootonly`) are only 0.06
-  points apart.
+- **Model selection is pending, so out-of-sample performance is not established.** All
+  16 configurations in `eval/configs.py` have been scored on the validation folds at
+  4000 training steps, the length `scripts/02_train.py` trains for (2 seeds;
+  `results/sweep_val/report.json`). Multiple shooting is decisive: the ten
+  configurations that use it (scores 11.0–13.9) beat the six that do not (15.9–23.7)
+  on each seed separately. The leaders cannot be told apart yet: `ms_percap_damped`
+  (11.05) and `ms_full_shootonly` (11.29) differ by 0.24, while one configuration's
+  score typically moves by about 1.5 from one seed to another. Training length also
+  reorders them: round 1, run at 3000 steps, put `ms` first (11.4); at 4000 steps it
+  is eighth (12.8). The round-1 report is kept in
+  `tests/data/report_round1_3000steps.json`.
 - **Training of the default configuration is unstable and seed-sensitive.** The
   committed run's loss spikes between steps 800 and 1200 and ends higher than before the
   spike, and its projections oscillate from year to year. Across seeds 0–3
@@ -229,7 +232,8 @@ run without re-downloading or retraining.
   the default configuration.
 - **Short-horizon forecasting is not where this model wins.** On the leak-free
   validation folds, trend-Kaya extrapolation beats every world-model configuration tried
-  on both per-country and aggregate error. CWM's value is being a *structural,
+  on both per-country and aggregate error (validation score 9.85; the best configuration
+  scores 11.05). CWM's value is being a *structural,
   differentiable* simulator that supports counterfactual and planning queries no
   extrapolative baseline can perform — not point forecasting.
 - **Drivers are exogenous.** GDP and population paths are assumptions; results are

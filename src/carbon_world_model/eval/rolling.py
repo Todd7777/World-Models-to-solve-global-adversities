@@ -35,9 +35,10 @@ VAL_HORIZON = 6
 TEST_CUTOFFS = (2015, 2016, 2017)
 TEST_HORIZON = 7
 
-# The committed round-1 validation report (results/sweep_val/report.json) predates step
-# recording. It was run with --steps 3000: rerunning its jobs reproduces its per-cutoff
-# metrics exactly only at 3000 steps. Report entries without a 'steps' field are read so.
+# The round-1 validation report (results/sweep_val/report.json until 2026-11-10, kept as
+# tests/data/report_round1_3000steps.json) predates step recording. It was run with
+# --steps 3000: rerunning its jobs reproduces its per-cutoff metrics exactly only at 3000
+# steps. Report entries without a 'steps' field are read so.
 LEGACY_REPORT_STEPS = 3000
 
 NO_RECORD = ("no record of how it was trained (it was written before job outputs recorded "

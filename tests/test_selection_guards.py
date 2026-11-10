@@ -32,6 +32,9 @@ from carbon_world_model.eval.rolling import (
 )
 
 COMMITTED_REPORT = "results/sweep_val/report.json"
+# The round-1 validation report (12 configs, 3000 steps), committed as COMMITTED_REPORT until
+# 2026-11-10. It predates step recording, so it is the reference legacy report.
+LEGACY_REPORT = "tests/data/report_round1_3000steps.json"
 DEFAULT_STEPS = make_config("orig").train.steps
 
 
@@ -119,9 +122,9 @@ def test_evaluate_refuses_unrecorded_outputs(panel, tmp_path):
         evaluate(panel, "orig", VAL_CUTOFFS, [0], str(tmp_path))
 
 
-def test_committed_legacy_report_still_reads():
+def test_legacy_report_still_reads():
     """The round-1 report predates step recording: read as 3000 steps, summaries unchanged."""
-    report = json.load(open(COMMITTED_REPORT))
+    report = json.load(open(LEGACY_REPORT))
     legacy = [v for v in report.values() if "steps" not in v]
     assert legacy, "expected the round-1 entries, which do not record steps"
     assert all(entry_steps(v) == LEGACY_REPORT_STEPS == 3000 for v in legacy)
@@ -130,9 +133,18 @@ def test_committed_legacy_report_still_reads():
         assert summarise(v["detail"]) == v["summary"]
 
 
+def test_committed_report_holds_one_training_length():
+    """06_sweep.py records each entry's step count and keeps one training length per report."""
+    report = json.load(open(COMMITTED_REPORT))
+    assert all("steps" in v for v in report.values())
+    assert len({entry_steps(v) for v in report.values()}) == 1
+    for v in report.values():
+        assert summarise(v["detail"]) == v["summary"]
+
+
 # ------------------------------------------------- 2. 06_sweep.py merges, never clobbers
 def test_sweep_merges_into_existing_report(panel, tmp_path, monkeypatch):
-    shutil.copy(COMMITTED_REPORT, tmp_path / "report.json")
+    shutil.copy(LEGACY_REPORT, tmp_path / "report.json")
     legacy = json.load(open(tmp_path / "report.json"))
     for co in VAL_CUTOFFS:
         for s in (0, 1):
@@ -152,7 +164,7 @@ def test_sweep_merges_into_existing_report(panel, tmp_path, monkeypatch):
 
 
 def test_sweep_refuses_to_mix_reports_and_overwrites_on_request(panel, tmp_path, monkeypatch):
-    shutil.copy(COMMITTED_REPORT, tmp_path / "report.json")
+    shutil.copy(LEGACY_REPORT, tmp_path / "report.json")
     before = (tmp_path / "report.json").read_bytes()
     # Default steps differ from the legacy report's 3000; other folds are not this report's.
     with pytest.raises(ProvenanceError, match=f"trains for {DEFAULT_STEPS} steps "

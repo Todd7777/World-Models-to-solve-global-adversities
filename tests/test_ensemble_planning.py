@@ -88,3 +88,27 @@ def test_ensemble_on_disk_is_checked(tmp_path, members):
         load_ensemble(root)
     with pytest.raises(ProvenanceError, match="not found"):
         load_ensemble(str(tmp_path / "nothing"))
+
+
+def test_plan_script_refuses_an_ensemble_without_the_checkpoint(tmp_path, monkeypatch, members):
+    """04_plan.py plans with the ensemble only if its seed-0 member is the committed
+    checkpoint, and refuses before writing anything otherwise."""
+    import importlib.util
+    import sys
+
+    tables = tmp_path / "tables"
+    tables.mkdir()
+    default_config().to_json(str(tables / "config.json"))  # the checkpoint record passes
+    ckpt = str(tmp_path / "params_full.pkl")
+    save_params(members[0], ckpt)
+    ens = str(tmp_path / "ensemble")
+    save_ensemble(ens, default_config(), {0: members[1], 1: members[0]})  # stale seed 0
+    spec = importlib.util.spec_from_file_location("plan_script", "scripts/04_plan.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.OUT, mod.CHECKPOINT = str(tables), ckpt
+    mod.CHECKPOINT_CONFIG, mod.ENSEMBLE_DIR = str(tables / "config.json"), ens
+    monkeypatch.setattr(sys, "argv", ["04_plan.py"])
+    with pytest.raises(ProvenanceError, match="seed-0 member"):
+        mod.main()
+    assert os.listdir(tables) == ["config.json"]  # nothing written

@@ -21,7 +21,6 @@ from carbon_world_model.eval.configs import ProvenanceError, check_default_check
 from carbon_world_model.eval.rolling import load_jobs
 from carbon_world_model.eval.baselines import trend_kaya
 from carbon_world_model.plan.scenario import build_scenario
-from carbon_world_model.plan import optimize as O
 from carbon_world_model.viz import figures as F
 
 FIG, TAB = "results/figures", "results/tables"
@@ -66,17 +65,13 @@ def main() -> None:
     save(F.fig_ssp_drivers(panel, load_processed("v9"), load_processed("v3.2"), ssp_driver_paths, SSPS),
          "fig6_ssp_drivers.png")
     plan = load("plan.json")
-    save(F.fig_ssp_pathways(panel, plan), "fig7_ssp_pathways_robust.png")
+    traj = dict(np.load(os.path.join(TAB, "plan_trajectories.npz")))
+    save(F.fig_ssp_pathways(panel, plan, traj), "fig7_ssp_pathways_robust.png")
 
-    # Fuel mix BAU vs max-feasible under SSP2 (energy-weighted aggregate shares).
+    # Fuel mix BAU vs max-feasible under SSP2 (energy-weighted aggregate shares, averaged
+    # over the seed ensemble by 04_plan.py).
     scen = build_scenario(panel, cfg, end_year=2050, ssp="SSP2")
-    bau, mx = O.business_as_usual(wm, params, scen), O.max_ambition(wm, params, scen)
-
-    def agg(res):
-        E = res.shares * res.D[:, :, None]
-        return E.sum(axis=0) / np.clip(E.sum(axis=(0, 2))[:, None], 1e-9, None)
-
-    save(F.fig_mix(panel, scen.years, agg(bau), agg(mx)), "fig8_mix_ssp2.png")
+    save(F.fig_mix(panel, traj["years"], traj["bau_mix"], traj["max_mix"]), "fig8_mix_ssp2.png")
 
     # Cost-of-abatement frontier (SSP2), reusing the planning panel layout.
     legacy = {"scenario": {"years": plan["years"]},

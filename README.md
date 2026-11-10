@@ -27,14 +27,11 @@ CWM couples three things that are usually kept apart:
 > the future and not policy advice. Its results are conditional on documented
 > assumptions, and its limitations (below) are reported as prominently as its strengths.
 
-> **Current state (2026-11-10).** Model selection is still pending: all 16 candidate
-> configurations have been scored on the validation folds at the training length the
-> model is deployed with, but the leaders cannot yet be told apart on two seeds. The
-> committed checkpoint is the default
-> configuration, retrained after commit `3fc2559` changed the dynamics. The
-> out-of-sample results this README used to report leaked post-cutoff data and are
-> withdrawn; leak-free replacements will follow selection. See
-> [What changed on 2026-11-09](#what-changed-on-2026-11-09).
+> **Current state (2026-11-10).** A model configuration has been selected on the
+> validation folds (`ms_full`: multiple shooting, per-capita levels, EMA momentum, a
+> damped trend, no calendar-time inputs), the checkpoint retrained with it, and the
+> held-out test folds scored once. Every number below comes from that checkpoint. See
+> [What changed on 2026-11-10](#what-changed-on-2026-11-10).
 
 ---
 
@@ -45,23 +42,27 @@ only GDP and population paths), it reconstructs 33 years of history for all 60 c
 
 | quantity | R² | MAPE |
 |---|---|---|
-| CO₂ emissions | 0.9982 | 5.3% |
-| primary energy demand | 0.9964 | 6.5% |
-| fuel-mix shares | — | 1.8 pts (MAE) |
+| CO₂ emissions | 0.9997 | 3.3% |
+| primary energy demand | 0.9994 | 4.4% |
+| fuel-mix shares | — | 0.8 pts (MAE) |
 
 The physics layer alone reconstructs reported CO₂ with **R² = 0.9986** (median error
 4.7%), with emission factors recovered from data in the correct physical order:
 coal 0.316 > oil 0.231 > gas 0.198 MtCO₂/TWh.
 
-**Out-of-sample accuracy is not established yet, and so far it trails trend
-extrapolation.** The leak-free protocol keeps model selection (validation cutoffs 2005,
-2007 and 2009, six-year horizons) apart from reporting (test cutoffs 2015–2017, scored
-once, after selection). On the validation folds, given realised GDP and population, a
-trend-Kaya extrapolation has the lowest per-country error of every method tried (MAPE
-8.0%). Of the 16 world-model configurations, trained for 4000 steps, the lowest is 8.7%
-(`ms_percap_damped`: multiple shooting, per-capita levels, damped trend), and the
-default configuration reaches 11.1% (see Limitations). Test-fold accuracy, calibrated
-intervals and transfer to unseen countries will be reported after selection.
+**Out of sample, it matches trend extrapolation given the true drivers, and does no
+better.** The leak-free protocol keeps model selection (validation cutoffs 2005, 2007
+and 2009, six-year horizons) apart from reporting (test cutoffs 2015–2017, horizons to
+2022, scored once, after selection). On the test folds, given realised GDP and
+population, the selected configuration's per-country error (MAPE) is 7.6% against 7.8%
+for trend-Kaya extrapolation, and its error on the 60-country total 1.8% against 1.7%.
+The original configuration's per-country error is 14.0%. Given instead the SSP2 paths
+published before the cutoffs (2014 vintage), its per-country error rises to 10.8%,
+still below trend-Kaya's 11.0%, but baselines that ignore the drivers do better (8.8%).
+Those paths raise the world model's forecast of the 60-country total in the final year
+by 5–6% over the realised drivers (4–9% across SSP1–5). Its 80% prediction intervals,
+calibrated on the validation folds, cover 86% of test outcomes. It does not transfer
+well to countries it was not trained on (see Limitations).
 
 **It plans.** Optimising inside the simulator, under feasibility limits taken from the
 fastest *sustained* historical transitions (low-carbon share +1.8%/yr, à la Denmark;
@@ -69,27 +70,59 @@ energy intensity −3.0%/yr, à la China), with the same heuristic GDP and popul
 as earlier versions of this README:
 
 - **Business-as-usual** emissions for these 60 countries grow from 34.8 Gt (2022) to
-  **47.4 Gt by 2050** (46.9 Gt with SSP2 drivers; 42–56 Gt across SSP1–5).
-- **Maximum feasible effort** bends that down to **25.4 Gt** (SSP2: 24.4 Gt), a 46% cut
-  versus BAU and 27% below 2022.
-- Scaled to global, cumulative 2023–2050 emissions are **≈959 GtCO₂ even under maximum
-  ambition** (SSP2: ≈941), which **blows through the ≈578 Gt remaining 1.5 °C budget**.
+  **39.5 Gt by 2050** (38.1 Gt with SSP2 drivers; 35.8–42.7 Gt across SSP1–5).
+- **Maximum feasible effort** bends that down to **16.2 Gt** (SSP2: 16.2 Gt), a 59% cut
+  versus BAU and 53% below 2022.
+- Scaled to global, cumulative 2023–2050 emissions are **≈765 GtCO₂ even under maximum
+  ambition** (SSP2: ≈750), which **blows through the ≈578 Gt remaining 1.5 °C budget**.
   Within historically-achieved transition rates, **1.5 °C is out of reach** without
-  negative emissions; maximum effort avoids ≈0.17 °C (0.10–0.24 °C) of warming versus
+  negative emissions; maximum effort avoids ≈0.17 °C (0.10–0.23 °C) of warming versus
   BAU for this group.
 - The model produces the full **cost-of-abatement frontier** (minimum effort to meet any
   carbon budget) and the per-country allocation of who must cut most.
-- **These planning numbers are fragile.** The committed checkpoint's projections
-  oscillate from year to year: the global total follows a two-year sawtooth, with
-  consecutive years differing by up to 3 Gt early on and about 1 Gt near 2050, so any
-  single year (2050 included) sits about 0.5 Gt off the smoothed path. Across four
-  training seeds of the same configuration (this checkpoint is seed 0), BAU 2050 ranges
-  from 47 to 64 Gt and the maximum-effort cut from under 1% to 46%, and for one seed
-  more effort raises emissions. Treat these numbers as provisional until a
-  configuration is selected.
+- **The size of the achievable cut depends on the training seed.** Across four training
+  seeds of the selected configuration (the committed checkpoint is seed 0), BAU 2050
+  agrees closely (38.6–42.1 Gt), every seed passes the planning checks (more effort,
+  lower emissions), and none shows the original configuration's year-to-year sawtooth
+  (up to 25 changes of direction in 27 years). But maximum effort reaches 16.2 Gt on
+  the committed seed and 22.5–27.6 Gt on the other three: a cut of 33–59% versus BAU.
+  The committed checkpoint is the most optimistic of the four.
 
-The raw numbers are in [`results/tables/`](results/tables). The figures in
-[`results/figures/`](results/figures) predate the retrain (see Figures).
+The raw numbers are in [`results/tables/`](results/tables) and the figures in
+[`results/figures/`](results/figures).
+
+---
+
+## What changed on 2026-11-10
+
+Model selection is done. All 16 configurations in `eval/configs.py` were scored on the
+validation folds at 4000 training steps, the length the deployed model trains for (2
+seeds; `results/sweep_val/report.json`). Multiple shooting decided the first cut: the
+ten configurations that use it beat the six that do not on each seed. The three leaders
+(`ms_percap_damped` 11.05, `ms_full_shootonly` 11.29, `ms_full` 11.70) were closer than
+the seed noise (one configuration's score moves by about 1.5 between seeds), so they
+were compared on what made the original configuration fragile: whether the planning
+checks hold for each of four training seeds (`scripts/seed_sensitivity.py --config`,
+`results/tables/selection/`). `ms_full` was the only one that passed them on every seed
+with smooth projections; `ms_percap_damped` failed effort monotonicity on one seed and
+`ms_full_shootonly` oscillated. The test folds were scored once, after the choice.
+
+| number | `orig` (the default until 2026-11-10) | `ms_full` (now) |
+|---|---|---|
+| in-sample CO₂ R² / MAPE | 0.9982 / 5.3% | 0.9997 / 3.3% |
+| in-sample demand R² / MAPE | 0.9964 / 6.5% | 0.9994 / 4.4% |
+| in-sample fuel-mix MAE | 1.8 pts | 0.8 pts |
+| BAU 2050, heuristic drivers | 47.4 Gt | 39.5 Gt |
+| maximum-effort 2050 | 25.4 Gt (46% below BAU) | 16.2 Gt (59% below BAU) |
+| cumulative 2023–2050 at maximum effort, scaled to global | ≈959 Gt | ≈765 Gt |
+| warming avoided by maximum effort | 0.17 °C (0.10–0.24) | 0.17 °C (0.10–0.23) |
+| BAU 2050 across training seeds 0–3 | 47–64 Gt | 38.6–42.1 Gt |
+| planning checks passed, seeds 0–3 | 3 of 4 seeds | 4 of 4 seeds |
+| test folds, realised drivers: score / per-country MAPE | 19.96 / 14.0% | 9.40 / 7.6% |
+
+The physics layer, the feasibility bounds, 2022 emissions, the carbon budgets and the
+1.5 °C conclusion are unchanged. The test-fold, calibration and transfer tables and the
+figures are new.
 
 ---
 
@@ -129,18 +162,20 @@ unchanged. The withdrawn tables remain in git history (`61fcb12`, `ba3c01b`).
 
 ## Figures
 
-These figures predate commit `3fc2559` and show the previous checkpoint; `fig3` and
-`fig4` show the withdrawn evaluation. `scripts/05_make_figures.py` makes a new set once a
-configuration is selected, from the tables written by `scripts/03_evaluate.py`.
+Drawn by `scripts/05_make_figures.py` from the selected configuration's checkpoint and
+the tables written by `scripts/03_evaluate.py` and `scripts/04_plan.py`.
 
 | | |
 |---|---|
 | `fig1_reconstruction.png` | Physics layer: reconstructed vs reported CO₂; emission factors |
 | `fig2_insample.png` | Free-running 1990–2022 fit (global + five countries) |
-| `fig3_backtest.png` | 2016–2022 holdout: aggregate forecast and per-country MAPE (withdrawn) |
-| `fig4_transfer.png` | Forecasting 12 countries the shared dynamics never saw (withdrawn) |
-| `fig5_planning.png` | Emissions pathways to 2050 + cost-of-abatement frontier |
-| `fig6_mix.png` | Fuel-mix transition, business-as-usual vs maximum feasible |
+| `fig3_ablation_validation.png` | Validation score of all 16 configurations, against the baselines |
+| `fig4_test_and_china.png` | Test folds: per-country error by method, realised and ex-ante drivers; China's final-year error |
+| `fig5_china_forecasts.png` | China from the observed 2015 state: selected and original configurations, trend-Kaya |
+| `fig6_ssp_drivers.png` | SSP GDP and population drivers, 2014 and 2025 vintages |
+| `fig7_ssp_pathways_robust.png` | BAU and maximum-effort pathways under SSP1–5; robust versus SSP2-tailored plan |
+| `fig8_mix_ssp2.png` | Fuel-mix transition under SSP2, business-as-usual vs maximum feasible |
+| `fig9_frontier_ssp2.png` | Emissions pathways to 2050 and the cost-of-abatement frontier under SSP2 |
 
 ---
 
@@ -158,15 +193,20 @@ layer. GDP and population are **exogenous drivers** (observed in training, scena
 inputs in planning) — the same framing integrated-assessment models use with SSP
 pathways. A shared SiLU MLP with per-country embeddings predicts the **bounded** annual
 change in intensity and mix (bounds encode capital-stock inertia); a learned per-country
-emission-factor correction absorbs refining/petrostate residuals. Everything is written
-in JAX and trained end-to-end by differentiable simulation (`optax` AdamW, ~20 s for 4000
-steps on 4 CPU cores).
+emission-factor correction absorbs refining/petrostate residuals. The selected
+configuration (`ms_full`) gives the network per-capita levels (energy and GDP per person)
+rather than absolute ones, carries momentum as an exponential moving average inside a
+damped-trend structure, uses no calendar-time inputs, and is trained both on one free
+run from 1990 and on 8-year rollouts started from the observed state in every training
+year (multiple shooting). Everything is written in JAX and trained end-to-end by
+differentiable simulation (`optax` AdamW, about 2.5 minutes for 4000 steps on 4 CPU
+cores).
 
 Planning controls — clean-deployment effort and efficiency effort — enter the dynamics
 additively and are zero during fitting, so the fitted model reproduces observed behaviour
-and the planner perturbs it causally. For the committed checkpoint, emissions fall
-**monotonically** as effort rises (verified in the test suite); this does not hold for
-every training seed of the current default configuration (see Limitations). Warming is
+and the planner perturbs it causally. For the committed checkpoint, and for each of four
+training seeds of the selected configuration, emissions fall **monotonically** as effort
+rises (verified in the test suite and by `scripts/seed_sensitivity.py`). Warming is
 obtained from cumulative emissions via the TCRE relationship (IPCC AR6 central value
 0.45 °C per 1000 GtCO₂).
 
@@ -187,55 +227,59 @@ obtained from cumulative emissions via the TCRE relationship (IPCC AR6 central v
 pip install -e .                     # numpy, pandas, jax, optax, scipy, matplotlib
 bash scripts/download_data.sh        # fetch OWID CO2 + energy data (CC-BY)
 python scripts/01_build_dataset.py   # build the 60-country panel (committed too)
-python scripts/02_train.py           # train the world model (~20 s, CPU)
+python scripts/02_train.py           # train the selected configuration (~2.5 min, CPU)
 python scripts/03_backtest.py        # physics-layer and in-sample tables
 python scripts/04_plan.py            # BAU / max-ambition / frontier / warming, SSP1-5
 python scripts/seed_sensitivity.py   # retrain with seeds 0-3: stability and spread
-pytest -q                            # 60 tests
+pytest -q                            # 61 tests
 ```
 
-Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` runs the
-validation folds (`scripts/slurm/` runs the same jobs as a SLURM array). After
-selection, `scripts/03_evaluate.py --config <selected>` writes the test-fold,
-calibration and transfer tables, and `scripts/05_make_figures.py` draws the figures
-from them. Job outputs and report entries record how many steps each fit was trained
-for. The sweep merges into an existing report but refuses to mix training lengths in
-one, and every script that loads the checkpoint refuses it if
-`results/tables/config.json` shows it was trained with a configuration other than the
-one the script runs it under. The processed panel (`data/processed/panel.npz`,
-125 KB) and a trained checkpoint are committed, so `03_backtest.py` and `04_plan.py`
-run without re-downloading or retraining.
+Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` scores
+configurations on the validation folds (`scripts/slurm/` runs the same jobs as a SLURM
+array), and `SELECTED_CONFIG` in `config.py` names the one that `default_config()`
+returns. The test folds were then run with `scripts/06_sweep.py --phase test --configs
+ms_full,orig --seeds 0,1,2,3,4 --ssp`, and `scripts/03_evaluate.py --config ms_full`
+wrote the test-fold, calibration and transfer tables, from which
+`scripts/05_make_figures.py` draws the figures. Job outputs and report entries record
+how many steps each fit was trained for. The sweep merges into an existing report but
+refuses to mix training lengths in one, and every script that loads the checkpoint
+refuses it if `results/tables/config.json` shows it was trained with a configuration
+other than the one the script runs it under. The processed panel
+(`data/processed/panel.npz`, 125 KB) and a trained checkpoint are committed, so
+`03_backtest.py` and `04_plan.py` run without re-downloading or retraining.
 
 ---
 
 ## Limitations (read these)
 
-- **Model selection is pending, so out-of-sample performance is not established.** All
-  16 configurations in `eval/configs.py` have been scored on the validation folds at
-  4000 training steps, the length `scripts/02_train.py` trains for (2 seeds;
-  `results/sweep_val/report.json`). Multiple shooting is decisive: the ten
-  configurations that use it (scores 11.0–13.9) beat the six that do not (15.9–23.7)
-  on each seed separately. The leaders cannot be told apart yet: `ms_percap_damped`
-  (11.05) and `ms_full_shootonly` (11.29) differ by 0.24, while one configuration's
-  score typically moves by about 1.5 from one seed to another. Training length also
-  reorders them: round 1, run at 3000 steps, put `ms` first (11.4); at 4000 steps it
-  is eighth (12.8). The round-1 report is kept in
-  `tests/data/report_round1_3000steps.json`.
-- **Training of the default configuration is unstable and seed-sensitive.** The
-  committed run's loss spikes between steps 800 and 1200 and ends higher than before the
-  spike, and its projections oscillate from year to year. Across seeds 0–3
-  (`scripts/seed_sensitivity.py`, `results/tables/seed_sensitivity.json`), BAU 2050
-  ranges from 47 to 64 Gt. The two runs that trained cleanly (seeds 1 and 3) project
-  higher emissions and respond weakly to effort (seed 3: a 17% cut) or perversely (seed
-  1: more effort raises emissions, which fails two planning tests). The suite passes
-  for the committed checkpoint, but planning causality is not yet a robust property of
-  the default configuration.
-- **Short-horizon forecasting is not where this model wins.** On the leak-free
-  validation folds, trend-Kaya extrapolation beats every world-model configuration tried
-  on both per-country and aggregate error (validation score 9.85; the best configuration
-  scores 11.05). CWM's value is being a *structural,
-  differentiable* simulator that supports counterfactual and planning queries no
-  extrapolative baseline can perform — not point forecasting.
+- **The selection rests on few seeds and one tie-break.** On the validation folds (2
+  seeds, `results/sweep_val/report.json`) the three leading configurations are within
+  seed noise of each other, so `ms_full`, third on score (11.70 against 11.05 for
+  `ms_percap_damped`), was chosen because its planning checks held for each of four
+  training seeds. A different tie-break could have chosen differently. The test folds
+  were scored once, after the choice, and must not be used to revisit it. The round-1
+  report (3000 training steps) is kept in `tests/data/report_round1_3000steps.json`.
+- **Planning results still depend on the training seed.** The selected configuration
+  trains without the loss spikes of the original one
+  (`results/tables/seed_sensitivity.json`; the original's are in
+  `results/tables/selection/seed_sensitivity_orig.json`), and its BAU projections agree
+  across seeds 0–3 (38.6–42.1 Gt in 2050). But maximum effort
+  reaches 16.2 Gt on the committed seed and 22.5–27.6 Gt on the other three, so the
+  headline cut of 59% is the most optimistic of four (the others: 33–43%).
+- **Short-horizon forecasting is not where this model wins.** Given the true drivers,
+  the selected configuration only matches trend-Kaya extrapolation on the test folds
+  (score 9.40 against 9.49: lower per-country error, higher aggregate error), and on the
+  validation folds trend-Kaya is better (9.85 against 11.70). Given the drivers that were
+  available at the time, baselines that ignore drivers beat both (test score 11.15
+  against 14.09). CWM's value is being a *structural, differentiable* simulator that
+  supports counterfactual and planning queries no extrapolative baseline can perform —
+  not point forecasting.
+- **It does not transfer to unseen countries.** Fitted on 48 countries up to 2015 and
+  adapted to 12 held-out ones from their own data up to 2015, it forecasts their
+  2016–2022 emissions with 21% error, against 8% for trend-Kaya extrapolation
+  (`results/tables/transfer.json`). Nothing after 2015 is used, but the held-out
+  countries' data up to 2015 do inform the shared emission factors, normalisation and
+  static features.
 - **Drivers are exogenous.** GDP and population paths are assumptions; results are
   conditional on them. Planning uses SSP1–5 drivers (IIASA SSP database v3.2) with SSP2
   as the default; the earlier heuristic (recent CAGR tapering to a long-run rate) is

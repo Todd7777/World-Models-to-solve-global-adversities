@@ -1,0 +1,754 @@
+{
+  "orig": {
+    "world_model": {
+      "country_mape": 0.11079752320074682,
+      "rmse_mt": 131.13567924602557,
+      "agg_err_final": 0.06176266155356103,
+      "agg_abs_err_mean": 0.04786119033104267,
+      "china_err_final": 0.12397721018379042,
+      "abs_china_err_final": 0.12397721018379042,
+      "score": 15.865871353178948
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "notime": {
+    "world_model": {
+      "country_mape": 0.14092428968058568,
+      "rmse_mt": 209.03856520107874,
+      "agg_err_final": 0.14083505233925542,
+      "agg_abs_err_mean": 0.09621630328617038,
+      "china_err_final": 0.20319202174455353,
+      "abs_china_err_final": 0.20319202174455353,
+      "score": 23.714059296675604
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "percap": {
+    "world_model": {
+      "country_mape": 0.12374929376113736,
+      "rmse_mt": 187.2612408511017,
+      "agg_err_final": 0.08237275393343708,
+      "agg_abs_err_mean": 0.06769119912422034,
+      "china_err_final": 0.18076704241996955,
+      "abs_china_err_final": 0.18076704241996955,
+      "score": 19.14404928853577
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ema": {
+    "world_model": {
+      "country_mape": 0.12031759028196214,
+      "rmse_mt": 196.3228782525492,
+      "agg_err_final": 0.08118563238642919,
+      "agg_abs_err_mean": 0.05906668965107963,
+      "china_err_final": 0.07708169596856146,
+      "abs_china_err_final": 0.15436076522511333,
+      "score": 17.938427993304177
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "damped": {
+    "world_model": {
+      "country_mape": 0.12305500770554563,
+      "rmse_mt": 140.0970936449217,
+      "agg_err_final": 0.06745394823863014,
+      "agg_abs_err_mean": 0.04753130458838836,
+      "china_err_final": 0.03220984034341629,
+      "abs_china_err_final": 0.09259590263499222,
+      "score": 17.058631229393402
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms": {
+    "world_model": {
+      "country_mape": 0.0910245829709942,
+      "rmse_mt": 123.7469561086222,
+      "agg_err_final": -0.03223137174835372,
+      "agg_abs_err_mean": 0.03671546006201105,
+      "china_err_final": -0.08717522754837524,
+      "abs_china_err_final": 0.10697763417957841,
+      "score": 12.774004303300524
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_notime": {
+    "world_model": {
+      "country_mape": 0.09673535137690066,
+      "rmse_mt": 114.92719564757778,
+      "agg_err_final": 0.007870161973546138,
+      "agg_abs_err_mean": 0.023420153644759984,
+      "china_err_final": -0.0449977705845373,
+      "abs_china_err_final": 0.12467707771607656,
+      "score": 12.015550502166064
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_notime_percap": {
+    "world_model": {
+      "country_mape": 0.09458705081921126,
+      "rmse_mt": 101.72594385961592,
+      "agg_err_final": 0.02042791079885518,
+      "agg_abs_err_mean": 0.023934917883294857,
+      "china_err_final": -0.010665168150973242,
+      "abs_china_err_final": 0.0747287184780835,
+      "score": 11.852196870250612
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_notime_percap_ema": {
+    "world_model": {
+      "country_mape": 0.09538469501480866,
+      "rmse_mt": 112.35344575821004,
+      "agg_err_final": 0.03853545180549782,
+      "agg_abs_err_mean": 0.025723395941102244,
+      "china_err_final": 0.06359960691694089,
+      "abs_china_err_final": 0.1073833477305952,
+      "score": 12.11080909559109
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_full": {
+    "world_model": {
+      "country_mape": 0.09693173594163974,
+      "rmse_mt": 106.14577158559239,
+      "agg_err_final": 0.027225176407736626,
+      "agg_abs_err_mean": 0.020096177480076534,
+      "china_err_final": -0.012705994057645173,
+      "abs_china_err_final": 0.10642385024406757,
+      "score": 11.70279134217163
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_full_shootonly": {
+    "world_model": {
+      "country_mape": 0.09346094689235744,
+      "rmse_mt": 112.92743859849598,
+      "agg_err_final": 0.018359775917821033,
+      "agg_abs_err_mean": 0.019428981323590316,
+      "china_err_final": -0.05565325224032916,
+      "abs_china_err_final": 0.08769503404144441,
+      "score": 11.288992821594777
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "notime_percap_damped": {
+    "world_model": {
+      "country_mape": 0.15088438056886033,
+      "rmse_mt": 187.31820929345352,
+      "agg_err_final": 0.07279835630162947,
+      "agg_abs_err_mean": 0.05658828030268908,
+      "china_err_final": -0.0677420072213304,
+      "abs_china_err_final": 0.16862459476746863,
+      "score": 20.74726608715494
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_ema": {
+    "world_model": {
+      "country_mape": 0.09525858005540412,
+      "rmse_mt": 88.44521907367668,
+      "agg_err_final": 0.041061669913793945,
+      "agg_abs_err_mean": 0.0434046201545564,
+      "china_err_final": 0.06412706298989901,
+      "abs_china_err_final": 0.06412706298989901,
+      "score": 13.866320020996053
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_damped": {
+    "world_model": {
+      "country_mape": 0.09513278846167439,
+      "rmse_mt": 126.63886767382299,
+      "agg_err_final": -0.023242691461232395,
+      "agg_abs_err_mean": 0.0348185043566356,
+      "china_err_final": -0.07229274226842738,
+      "abs_china_err_final": 0.1617847225031731,
+      "score": 12.995129281831
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_percap": {
+    "world_model": {
+      "country_mape": 0.08827124660969221,
+      "rmse_mt": 105.42207930023949,
+      "agg_err_final": -0.016480209833864074,
+      "agg_abs_err_mean": 0.03375165032151595,
+      "china_err_final": -0.056178318177561325,
+      "abs_china_err_final": 0.10386914179716515,
+      "score": 12.202289693120816
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  },
+  "ms_percap_damped": {
+    "world_model": {
+      "country_mape": 0.0867300208331112,
+      "rmse_mt": 113.10925620019805,
+      "agg_err_final": -0.002431956173902081,
+      "agg_abs_err_mean": 0.023731406747811757,
+      "china_err_final": -0.06079139133851084,
+      "abs_china_err_final": 0.08784755353370034,
+      "score": 11.046142758092294
+    },
+    "persistence": {
+      "country_mape": 0.10759818818172277,
+      "rmse_mt": 275.09426488401147,
+      "agg_err_final": -0.11995215249090375,
+      "agg_abs_err_mean": 0.07881085682655768,
+      "china_err_final": -0.29371530702560883,
+      "abs_china_err_final": 0.29371530702560883,
+      "score": 18.640904500828047
+    },
+    "growth_persistence": {
+      "country_mape": 0.10228732873199366,
+      "rmse_mt": 189.22317364194427,
+      "agg_err_final": 0.10486845851027021,
+      "agg_abs_err_mean": 0.05641663837340937,
+      "china_err_final": 0.24633490934316105,
+      "abs_china_err_final": 0.24633490934316105,
+      "score": 15.870396710540302
+    },
+    "frozen_kaya": {
+      "country_mape": 0.12326668632898004,
+      "rmse_mt": 132.95107881715992,
+      "agg_err_final": 0.1347601281541409,
+      "agg_abs_err_mean": 0.0719560953322721,
+      "china_err_final": 0.10873505263836188,
+      "abs_china_err_final": 0.11986931810883626,
+      "score": 19.52227816612521
+    },
+    "trend_kaya": {
+      "country_mape": 0.08014126978804516,
+      "rmse_mt": 141.68014716103227,
+      "agg_err_final": 0.04303399127238209,
+      "agg_abs_err_mean": 0.018346567701207222,
+      "china_err_final": 0.1842123982189281,
+      "abs_china_err_final": 0.1924178787723064,
+      "score": 9.84878374892524
+    }
+  }
+}

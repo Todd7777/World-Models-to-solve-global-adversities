@@ -1,0 +1,36 @@
+{
+  "test_countries": [
+    "United States",
+    "Germany",
+    "United Kingdom",
+    "Ukraine",
+    "Turkey",
+    "United Arab Emirates",
+    "Belgium",
+    "Uzbekistan",
+    "Algeria",
+    "Finland",
+    "Kuwait",
+    "Israel"
+  ],
+  "holdout_years": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022
+  ],
+  "world_model": {
+    "mape": 0.21171760311288526,
+    "rmse_mt": 118.44530510292441,
+    "r2": 0.9924668570786941
+  },
+  "trend_kaya": {
+    "mape": 0.0756628659491408,
+    "rmse_mt": 48.46290586993572,
+    "r2": 0.9987388713049364
+  },
+  "adapt_insample_mape": 0.1485255724738402
+}

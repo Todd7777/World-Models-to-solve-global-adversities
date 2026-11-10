@@ -31,6 +31,20 @@ VAL_HORIZON = 6
 TEST_CUTOFFS = (2015, 2016, 2017)
 TEST_HORIZON = 7
 
+# Long-run LEVEL checks (diagnostics, never used for selection). Every forecast runs to a
+# fixed end year, so horizons are 15-19 years instead of 6-7:
+#   long validation: cutoffs 1998/2000, ending 2015 (outcomes the validation folds use too)
+#   long test:       cutoffs 2003/2005, ending 2022 (overlaps the test period; report only)
+LONG_VAL_CUTOFFS, LONG_VAL_END = (1998, 2000), 2015
+LONG_TEST_CUTOFFS, LONG_TEST_END = (2003, 2005), 2022
+
+PHASES = {  # phase -> (cutoffs, horizon for each cutoff)
+    "val": (VAL_CUTOFFS, lambda c: VAL_HORIZON),
+    "test": (TEST_CUTOFFS, lambda c: TEST_HORIZON),
+    "longval": (LONG_VAL_CUTOFFS, lambda c: LONG_VAL_END - c),
+    "longtest": (LONG_TEST_CUTOFFS, lambda c: LONG_TEST_END - c),
+}
+
 
 def horizon_for(panel, cutoff: int, horizon: int) -> int:
     return int(min(horizon, int(panel.years[-1]) - cutoff))
@@ -78,6 +92,8 @@ def _metrics(pred: np.ndarray, true: np.ndarray, mask: np.ndarray, china: int) -
         "country_mape": M.mape(pred, true, mask),
         "rmse_mt": M.rmse(pred, true, mask),
         "agg_err_final": float(agg_err[-1]),
+        # cumulative aggregate CO2 over the whole holdout: the quantity budgets depend on
+        "cum_err": float(agg_p.sum() / agg_t.sum() - 1),
         "agg_abs_err_mean": float(np.mean(np.abs(agg_err))),
         "china_err_final": float((pred[china, -1] - true[china, -1]) / true[china, -1]),
         "mape_by_horizon": [M.mape(pred[:, h], true[:, h], mask[:, h])
@@ -121,9 +137,12 @@ def summarise(res: dict, methods=None) -> dict:
     methods = methods or [m for m in cuts[0] if m != "n_seeds"]
     out = {}
     for m in methods:
-        keys = ("country_mape", "rmse_mt", "agg_err_final", "agg_abs_err_mean", "china_err_final")
+        keys = ("country_mape", "rmse_mt", "agg_err_final", "agg_abs_err_mean", "china_err_final",
+                "cum_err")
         agg = {k: float(np.mean([c[m][k] for c in cuts])) for k in keys}
         agg["abs_china_err_final"] = float(np.mean([abs(c[m]["china_err_final"]) for c in cuts]))
+        agg["abs_agg_err_final"] = float(np.mean([abs(c[m]["agg_err_final"]) for c in cuts]))
+        agg["abs_cum_err"] = float(np.mean([abs(c[m]["cum_err"]) for c in cuts]))
         agg["score"] = 100 * (agg["country_mape"] + agg["agg_abs_err_mean"])
         out[m] = agg
     return out

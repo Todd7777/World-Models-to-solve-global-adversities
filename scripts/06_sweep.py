@@ -2,6 +2,8 @@
 processes (resumable: finished jobs are cached on disk), then score and summarise.
 
 Model selection must use --phase val only. --phase test is for the final report.
+--phase longval / longtest are long-run level checks (15-19 year horizons to a fixed end
+year, see eval/rolling.PHASES): diagnostics, never used for selection.
 
 Usage:
   python scripts/06_sweep.py --phase val --configs orig,ms,ms_full --seeds 0,1 --jobs 4
@@ -15,10 +17,7 @@ import time
 
 from carbon_world_model.config import default_config
 from carbon_world_model.data.panel import Panel
-from carbon_world_model.eval.rolling import (
-    VAL_CUTOFFS, VAL_HORIZON, TEST_CUTOFFS, TEST_HORIZON, job_path, evaluate, summarise,
-    save_json,
-)
+from carbon_world_model.eval.rolling import PHASES, job_path, evaluate, summarise, save_json
 
 
 def run_pool(cmds, jobs: int) -> None:
@@ -46,7 +45,7 @@ def run_pool(cmds, jobs: int) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--phase", choices=["val", "test"], required=True)
+    ap.add_argument("--phase", choices=sorted(PHASES), required=True)
     ap.add_argument("--configs", required=True)
     ap.add_argument("--seeds", default="0,1")
     ap.add_argument("--jobs", type=int, default=4)
@@ -57,7 +56,7 @@ def main() -> None:
 
     configs = a.configs.split(",")
     seeds = [int(s) for s in a.seeds.split(",")]
-    cutoffs, horizon = (VAL_CUTOFFS, VAL_HORIZON) if a.phase == "val" else (TEST_CUTOFFS, TEST_HORIZON)
+    cutoffs, horizon_of = PHASES[a.phase]
     root = a.root or f"results/sweep_{a.phase}"
 
     cmds = []
@@ -67,7 +66,7 @@ def main() -> None:
                 if os.path.exists(job_path(root, c, co, s)):
                     continue
                 cmd = [sys.executable, "scripts/run_job.py", "--config", c, "--cutoff", str(co),
-                       "--seed", str(s), "--horizon", str(horizon), "--root", root]
+                       "--seed", str(s), "--horizon", str(horizon_of(co)), "--root", root]
                 if a.steps:
                     cmd += ["--steps", str(a.steps)]
                 if a.ssp and a.phase == "test":
@@ -89,7 +88,7 @@ def main() -> None:
     print(f"\n[{a.phase}] mean over cutoffs {list(cutoffs)} (lower is better; score = "
           f"country MAPE% + mean |aggregate error|%)")
     print(f"{'config|driver':34s} {'method':20s} {'MAPE%':>6s} {'|agg|%':>7s} {'agg_fin%':>8s} "
-          f"{'China%':>7s} {'score':>6s}")
+          f"{'China%':>7s} {'cum%':>6s} {'score':>6s}")
     for key, r in report.items():
         s = r["summary"]
         for m in ["world_model", "trend_kaya", "growth_persistence"]:
@@ -99,7 +98,8 @@ def main() -> None:
             if m != "world_model" and not key.startswith(configs[0]):
                 continue  # baselines are identical across configs; print once
             print(f"{key:34s} {m:20s} {100*v['country_mape']:6.2f} {100*v['agg_abs_err_mean']:7.2f} "
-                  f"{100*v['agg_err_final']:+8.2f} {100*v['china_err_final']:+7.2f} {v['score']:6.2f}")
+                  f"{100*v['agg_err_final']:+8.2f} {100*v['china_err_final']:+7.2f} {100*v['cum_err']:+6.1f} "
+                  f"{v['score']:6.2f}")
 
 
 if __name__ == "__main__":

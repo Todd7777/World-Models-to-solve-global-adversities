@@ -15,6 +15,7 @@ one end-to-end sweep with a tiny --steps. Everything is written under a temporar
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -22,9 +23,11 @@ import sys
 import numpy as np
 import pytest
 
-from carbon_world_model.config import default_config
+import carbon_world_model.config as config_module
+from carbon_world_model.config import Config, default_config
 from carbon_world_model.eval.configs import (
-    ProvenanceError, check_checkpoint_config, check_default_checkpoint, make_config,
+    FIT_SECTIONS, REGISTRY, ProvenanceError, check_checkpoint_config, check_default_checkpoint,
+    config_dict, config_diff, make_config,
 )
 from carbon_world_model.eval.rolling import (
     LEGACY_REPORT_STEPS, TEST_CUTOFFS, TEST_HORIZON, VAL_CUTOFFS, VAL_HORIZON, describe_steps,
@@ -239,7 +242,7 @@ def test_sweep_end_to_end_with_tiny_steps(panel, tmp_path, monkeypatch):
 # ------------------------------------------------- 3. 03_evaluate.py checks the checkpoint
 def test_checkpoint_config_guard(tmp_path):
     path = str(tmp_path / "config.json")
-    default_config().to_json(path)  # what scripts/02_train.py writes with the checkpoint
+    make_config("orig").to_json(path)  # what 02_train.py writes for a checkpoint trained as orig
     assert check_checkpoint_config("orig", path) == make_config("orig")
     # Same network shape, different training: the in-sample table would be silently wrong.
     with pytest.raises(ProvenanceError, match=r"train\.multi_shoot: checkpoint False, ms True"):
@@ -252,12 +255,13 @@ def test_checkpoint_config_guard(tmp_path):
         check_checkpoint_config("orig", str(tmp_path / "missing.json"))
 
 
-def evaluate_script(monkeypatch, tmp_path, config):
-    """scripts/03_evaluate.py with a default-config checkpoint record and every path under
-    tmp_path. The checkpoint itself does not exist: these runs must stop before reading it."""
+def evaluate_script(monkeypatch, tmp_path, config, trained_as="orig"):
+    """scripts/03_evaluate.py with the record of a checkpoint trained as `trained_as` and every
+    path under tmp_path. The checkpoint itself does not exist: these runs must stop before
+    reading it."""
     out = tmp_path / "tables"
     out.mkdir(exist_ok=True)
-    default_config().to_json(str(out / "config.json"))  # what 02_train.py writes
+    make_config(trained_as).to_json(str(out / "config.json"))  # what 02_train.py writes
     run_script(monkeypatch, "scripts/03_evaluate.py", "--config", config, "--skip-transfer",
                OUT=str(out), CHECKPOINT_CONFIG=str(out / "config.json"),
                CHECKPOINT=str(tmp_path / "missing.pkl"), VAL_ROOT=str(tmp_path / "val"),
@@ -281,14 +285,41 @@ def test_evaluate_script_refuses_outputs_of_another_length(panel, tmp_path, monk
 
 
 # ------------------------------------------------- 4. scripts that run it under the default
+def other_than_default(same_shape=False):
+    """A registry config whose fit differs from the default's, whichever is selected. With
+    same_shape, preferably one with the default's network, so that only training differs."""
+    d = default_config()
+    others = [n for n in REGISTRY
+              if config_diff(config_dict(make_config(n)), config_dict(d), FIT_SECTIONS)]
+    same = [n for n in others if make_config(n).model == d.model]
+    return same[0] if same_shape and same else others[0]
+
+
+def first_difference(name):
+    """The first field the default-checkpoint guard reports for a checkpoint trained as name."""
+    k, x, y = config_diff(config_dict(make_config(name)), config_dict(default_config()),
+                          FIT_SECTIONS)[0]
+    return f"{k}: checkpoint {x!r}, default {y!r}"
+
+
+def test_registry_names_do_not_depend_on_the_selection(monkeypatch):
+    """Selecting a config changes default_config(), not what any name means."""
+    before = {n: make_config(n) for n in REGISTRY}
+    assert make_config("orig") == Config()
+    monkeypatch.setattr(config_module, "SELECTED_CONFIG", "ms_full")
+    assert default_config() == make_config("ms_full")
+    assert {n: make_config(n) for n in REGISTRY} == before
+
+
 def test_default_checkpoint_guard(tmp_path):
     path = str(tmp_path / "config.json")
     default_config().to_json(path)
     assert check_default_checkpoint(path) == default_config()
-    make_config("ms_full").to_json(path)  # as if the default changed without a retrain
+    other = other_than_default()
+    make_config(other).to_json(path)  # as if the default changed without a retrain
     with pytest.raises(ProvenanceError, match="not trained with the default configuration") as e:
         check_default_checkpoint(path)
-    assert "model.time_features: checkpoint False, default True" in str(e.value)
+    assert first_difference(other) in str(e.value)
     assert "Retrain with scripts/02_train.py" in str(e.value)
     with pytest.raises(ProvenanceError, match="not found"):
         check_default_checkpoint(str(tmp_path / "missing.json"))
@@ -307,14 +338,15 @@ def test_committed_checkpoint_matches_default_config():
 ])
 def test_default_config_scripts_refuse_another_checkpoint(tmp_path, monkeypatch, script,
                                                           out_dirs):
-    """A checkpoint trained as ms has the default's network shape, so nothing would crash:
-    the script would silently report on a model it does not describe."""
+    """A checkpoint trained with the default's network but other training (ms when orig is
+    the default) would not crash: the script would silently report on a model it does not
+    describe."""
     tables = tmp_path / "tables"
     tables.mkdir()
-    make_config("ms").to_json(str(tables / "config.json"))
+    other = other_than_default(same_shape=True)
+    make_config(other).to_json(str(tables / "config.json"))
     (tmp_path / "params_full.pkl").write_bytes(b"")  # present, never read
-    with pytest.raises(ProvenanceError,
-                       match=r"train\.multi_shoot: checkpoint True, default False"):
+    with pytest.raises(ProvenanceError, match=re.escape(first_difference(other))):
         run_script(monkeypatch, script, CHECKPOINT=str(tmp_path / "params_full.pkl"),
                    CHECKPOINT_CONFIG=str(tables / "config.json"),
                    **{name: str(tmp_path / d) for name, d in out_dirs.items()})

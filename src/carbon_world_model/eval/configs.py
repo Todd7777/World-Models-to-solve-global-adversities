@@ -45,7 +45,10 @@ REGISTRY: dict[str, tuple[dict, dict]] = {
 
 
 def make_config(name: str, base: Config | None = None, steps: int | None = None) -> Config:
-    base = default_config() if base is None else base
+    """Configuration `name`: its REGISTRY overrides applied to `base`, by default Config(), the
+    original model. Names therefore keep their meaning whichever one is selected as the default
+    (config.SELECTED_CONFIG)."""
+    base = Config() if base is None else base
     m, t = REGISTRY[name]
     cfg = dataclasses.replace(base, model=dataclasses.replace(base.model, **m),
                               train=dataclasses.replace(base.train, **t))

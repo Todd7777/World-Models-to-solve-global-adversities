@@ -277,8 +277,12 @@ def fig_ssp_pathways(panel, plan: dict) -> plt.Figure:
             continue
         ax1.plot(yrs, np.array(d["bau_global_mt"]) / 1000, color=SSP_COLORS[s], lw=2, label=f"{s} BAU")
         ax1.plot(yrs, np.array(d["max_global_mt"]) / 1000, color=SSP_COLORS[s], lw=1.4, ls="--")
+        if "open_loop_max_global_mt" in d:
+            ax1.plot(yrs, np.array(d["open_loop_max_global_mt"]) / 1000, color=SSP_COLORS[s],
+                     lw=1.2, ls=":")
     ax1.set(xlabel="year", ylabel="CO2 (Gt/yr)",
-            title="Business-as-usual (solid) and max feasible effort (dashed)")
+            title="BAU (solid); max feasible effort with fitted\ndynamics (dashed) "
+                  "and with no learned reaction (dotted)")
     ax1.legend(fontsize=8, ncol=2)
 
     rb = plan["robust"]
@@ -296,4 +300,39 @@ def fig_ssp_pathways(panel, plan: dict) -> plt.Figure:
             title=f"Robust planning: +{rb['price_of_robustness_pct']:.0f}% effort buys "
                   "compliance in every SSP")
     ax2.legend(fontsize=8)
+    return _finish(fig)
+
+
+def fig_structural(panel, st: dict) -> plt.Figure:
+    """Planning results across the validation-tied models (scripts/07_structural.py)."""
+    yrs = np.array(st["years"])
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.8), gridspec_kw={"width_ratios": [1.25, 1]})
+    ax1.plot(panel.years, panel.co2.sum(0) / 1000, color=OI["black"], lw=2.2, label="observed")
+    groups = [("bau_global_mt", OI["grey"], "business-as-usual"),
+              ("max_global_mt", OI["red"], "max effort, fitted dynamics"),
+              ("open_loop_global_mt", OI["blue"], "max effort, no learned reaction")]
+    for key, col, lab in groups:
+        Y = np.array([m[key] for m in st["models"]]) / 1000
+        ax1.fill_between(yrs, Y.min(0), Y.max(0), color=col, alpha=0.18, lw=0)
+        for i, y in enumerate(Y):
+            ax1.plot(yrs, y, color=col, lw=0.9, alpha=0.8, label=lab if i == 0 else None)
+    ax1.set(xlabel="year", ylabel="CO2, 60 countries (Gt/yr)",
+            title=f"{st['ssp']}: {len(st['models'])} models tied on validation")
+    ax1.legend(fontsize=8, loc="upper left")
+
+    s = st["summary"]
+    names = [f"{m['config']}\nseed {m['seed']}" for m in st["models"]]
+    y = np.arange(len(names))
+    for key, col, mk, lab in [("global_cum_bau_gt", OI["grey"], "o", "business-as-usual"),
+                              ("global_cum_max_gt", OI["red"], "s", "max effort, fitted"),
+                              ("global_cum_open_loop_gt", OI["blue"], "D", "max effort, open loop")]:
+        ax2.scatter([m[key] for m in st["models"]], y, color=col, marker=mk, s=38, label=lab, zorder=3)
+    for b, lab in [(s["budget_1p5_gt"], "1.5 °C budget"), (s["budget_2p0_gt"], "2 °C budget")]:
+        ax2.axvline(b, color=OI["black"], lw=1.1, ls="--")
+        ax2.text(b, len(names) - 0.4, f" {lab}", fontsize=8, va="bottom")
+    ax2.set_yticks(y, names, fontsize=8)
+    ax2.set_ylim(-0.6, len(names) + 0.4)
+    ax2.set(xlabel="cumulative 2023-2050 CO2, scaled to global (Gt)",
+            title="Carbon budgets vs. every model")
+    ax2.legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3)
     return _finish(fig)

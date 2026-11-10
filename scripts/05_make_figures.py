@@ -79,6 +79,10 @@ def main() -> None:
               "max_ambition": {"global_mt": plan["scenarios"][scen.name]["max_global_mt"]},
               "frontier": plan["frontier_ssp2"]}
     save(F.fig_planning(panel, legacy), "fig9_frontier_ssp2.png")
+
+    # Structural uncertainty: every model tied on validation (scripts/07_structural.py).
+    if os.path.exists(os.path.join(TAB, "structural.json")):
+        save(F.fig_structural(panel, load("structural.json")), "fig10_structural_ssp2.png")
     print("[ok] figures:", sorted(os.listdir(FIG)))
 
 

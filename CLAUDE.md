@@ -22,20 +22,27 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-08: 40 pass, 3 fail (see below)
+python -m pytest -q   # 2026-11-10: 51 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
-## State on 2026-11-08
+## State on 2026-11-10
 
-- **Three tests fail on this branch:** `test_trained_insample_accuracy` (r² 0.54, needs > 0.98),
-  `test_max_ambition_below_bau` and `test_effort_monotonic`. Commit `3fc2559` changed the dynamics, and the
-  committed checkpoint `results/model/params_full.pkl` predates it, as that commit's message says. Its parent
-  `77b9669` passes all ten dynamics and planning tests. The fix is the retrain that follows the rolling-origin
-  selection sweep (`scripts/06_sweep.py`, with a SLURM kit in `scripts/slurm/`).
-- The README's headline numbers and `results/tables/` also predate `3fc2559`. Regenerate them after the retrain.
+- All tests pass. The checkpoint `results/model/params_full.pkl` is the selected config `ms_percap_damped`
+  (`eval/configs.SELECTED`, chosen on validation folds only), and `params_full.json` records that. Scripts
+  rebuild the model from that record (`train.fit.load_trained`). Retrain with `scripts/02_train.py`
+  whenever the dynamics change; `tests/test_checkpoint.py` fails otherwise.
+- README numbers and `results/tables/` were regenerated on 2026-11-10 from the leak-free protocol.
+  Trend-Kaya still beats the model on aggregate CO2 (validation, test and transfer).
+- Main open problem: planning results depend on structure the data do not identify. Configs tied on
+  validation disagree widely beyond 6 years (`scripts/07_structural.py`, `results/tables/structural.json`),
+  the fitted dynamics partly undo the planner's controls (`plan/diagnostics.py`; open-loop counterfactual
+  in `plan/optimize.max_ambition_open_loop`), and the selected model's free run shows a learned ~12-year
+  oscillation in China's intensity. Report ranges, not single-model planning numbers.
+- Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
 
 ## Where the next steps are
 
-README "Limitations (read these)" and `results/sweep_val/report.json`.
+README "Limitations (read these)", especially the first two: long-horizon stability/plausibility
+constraints in training, and a way to constrain how the dynamics respond to controls.

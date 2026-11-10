@@ -20,6 +20,7 @@ from carbon_world_model.data.ssp import SSPS
 from carbon_world_model.train.fit import load_trained
 from carbon_world_model.plan.scenario import build_scenario, ssp_ensemble
 from carbon_world_model.plan import optimize as O
+from carbon_world_model.plan.diagnostics import control_retention
 from carbon_world_model.climate import tcre
 
 OUT = "results/tables"
@@ -38,10 +39,14 @@ def main() -> None:
 
     per_ssp = {}
     print(f"\n{'scenario':16s} {'BAU 2050':>10s} {'BAU cum':>9s} {'MAX 2050':>10s} {'MAX cum':>9s} "
-          f"{'cut':>5s} {'avoided C':>10s}")
+          f"{'cut':>5s} {'avoided C':>10s} | {'open-loop MAX 2050':>18s} {'cut':>5s} {'avoided C':>10s} "
+          f"| retained: clean  eff")
     for s in scens + [heur]:
         bau, mx = O.business_as_usual(wm, params, s), O.max_ambition(wm, params, s)
+        ol = O.max_ambition_open_loop(wm, params, s)
         av = tcre.avoided_warming(bau.cum_gt, mx.cum_gt, clim)
+        av_ol = tcre.avoided_warming(bau.cum_gt, ol.cum_gt, clim)
+        ret = control_retention(bau, mx, ol, s)
         per_ssp[s.name] = {
             "bau_global_mt": bau.global_co2.tolist(), "max_global_mt": mx.global_co2.tolist(),
             "bau_cum_gt": bau.cum_gt, "max_cum_gt": mx.cum_gt,
@@ -49,10 +54,18 @@ def main() -> None:
             "avoided_warming_degC": av,
             "global_cum_bau_gt": tcre.scale_to_global(bau.cum_gt),
             "global_cum_max_gt": tcre.scale_to_global(mx.cum_gt),
+            # Open-loop bracket: same maximum effort, no learned reaction to it.
+            "open_loop_max_global_mt": ol.global_co2.tolist(), "open_loop_max_cum_gt": ol.cum_gt,
+            "open_loop_max_2050_mt": float(ol.global_co2[-1]),
+            "open_loop_avoided_warming_degC": av_ol,
+            "global_cum_open_loop_max_gt": tcre.scale_to_global(ol.cum_gt),
+            "control_retention": ret,
         }
         print(f"{s.name:16s} {bau.global_co2[-1]:10,.0f} {bau.cum_gt:9,.0f} {mx.global_co2[-1]:10,.0f} "
               f"{mx.cum_gt:9,.0f} {100*(1-mx.global_co2[-1]/bau.global_co2[-1]):4.0f}% "
-              f"{av['central']:9.3f}")
+              f"{av['central']:9.3f} | {ol.global_co2[-1]:18,.0f} "
+              f"{100*(1-ol.global_co2[-1]/bau.global_co2[-1]):4.0f}% {av_ol['central']:9.3f} "
+              f"| {ret['clean_retention']:13.2f} {ret['intensity_retention']:4.2f}")
 
     bud15 = tcre.remaining_budget_gtco2(1.5, clim)
     bud20 = tcre.remaining_budget_gtco2(2.0, clim)

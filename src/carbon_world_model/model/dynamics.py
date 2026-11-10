@@ -93,7 +93,7 @@ def _features(embed_b, static_b, norm, hp, s_t, I_t, logD, logGDP, growth, logPo
 
 
 def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None,
-            country_idx=None):
+            country_idx=None, natural=None):
     """Autoregressive differentiable rollout.
 
     Shapes: B trajectories (countries, or country x start-year pairs), T steps, F fuels.
@@ -102,7 +102,12 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None,
       controls: None or dict(u_int [B,T], u_deploy [B,T,F])
       tfrac:    calendar time feature, [T] or [B,T]; defaults to t/(T-1)
       country_idx: [B] int; gathers per-country embedding / static / EF correction.
-    Returns dict of trajectories, each [B,T] (or [B,T,F]).
+      natural:  None, or dict(dI_nat [B,T], ds_nat [B,T,F]) to use instead of the
+                learned natural changes (an open-loop counterfactual: pass the
+                'dI_nat'/'ds_nat' outputs of a business-as-usual run, and controls then
+                act on top of BAU's natural changes, with no learned reaction to them).
+    Returns dict of trajectories, each [B,T] (or [B,T,F]), including the natural
+    changes dI_nat / ds_nat proposed at each step.
     """
     gdp, pop, process = drivers["gdp"], drivers["pop"], drivers["process"]
     B, T = gdp.shape
@@ -160,6 +165,8 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None,
         else:
             dI_nat = max_int * jnp.tanh(int_raw)
             ds_nat = max_share * jnp.tanh(mix_logits)
+        if natural is not None:
+            dI_nat, ds_nat = natural["dI_nat"][:, t], natural["ds_nat"][:, t]
 
         # Actual next state includes controls.
         I_next = I_t + dI_nat - u_int_all[:, t]
@@ -178,7 +185,8 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None,
         else:
             mom_I_next, mom_s_next = mom_I, mom_s
 
-        out = {"D": D_t, "shares": s_t, "energy": energy_t, "co2": co2_t, "intensity": I_t}
+        out = {"D": D_t, "shares": s_t, "energy": energy_t, "co2": co2_t, "intensity": I_t,
+               "dI_nat": dI_nat, "ds_nat": ds_nat}
         return (I_next, s_next, mom_I_next, mom_s_next), out
 
     init_carry = (inits["I0"], inits["s0"], mom_I0, mom_s0)

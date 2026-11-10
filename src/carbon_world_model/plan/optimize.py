@@ -50,11 +50,12 @@ def _inits(scen: Scenario) -> dict:
     return {k: jnp.asarray(v) for k, v in scen.inits.items()}
 
 
-def _rollout(wm, params, scen: Scenario, controls):
+def _rollout(wm, params, scen: Scenario, controls, natural=None):
     drivers = {"gdp": jnp.asarray(scen.gdp), "pop": jnp.asarray(scen.pop),
                "process": jnp.asarray(scen.process)}
     return rollout(params, jnp.asarray(wm.static), wm.norm, jnp.asarray(wm.ef),
-                   _inits(scen), drivers, controls, wm.hp, tfrac=jnp.asarray(scen.tfrac))
+                   _inits(scen), drivers, controls, wm.hp, tfrac=jnp.asarray(scen.tfrac),
+                   natural=natural)
 
 
 def _cost(g, h, scen: Scenario):
@@ -88,6 +89,22 @@ def max_ambition(wm, params, scen: Scenario) -> PlanResult:
     big = jnp.full((scen.C, scen.Tf), 8.0)
     controls, g, h = _controls(big, big, scen)
     return _result(_rollout(wm, params, scen, controls), g, h, scen)
+
+
+def max_ambition_open_loop(wm, params, scen: Scenario) -> PlanResult:
+    """Maximum feasible effort with NO learned reaction to it: the natural changes are
+    pinned to their business-as-usual values, and the controls act on top of them.
+
+    The fitted dynamics (max_ambition) and this counterfactual bracket the planning
+    result. Historical data identify how energy systems evolve on their own, not how
+    they would respond to pushes far outside the observed range, so which end is closer
+    to reality is not something this model can tell.
+    """
+    tr = _rollout(wm, params, scen, None)
+    natural = {"dI_nat": tr["dI_nat"], "ds_nat": tr["ds_nat"]}
+    big = jnp.full((scen.C, scen.Tf), 8.0)
+    controls, g, h = _controls(big, big, scen)
+    return _result(_rollout(wm, params, scen, controls, natural), g, h, scen)
 
 
 def optimize_pathway(wm, params, scen: Scenario, lam: float = 0.0,

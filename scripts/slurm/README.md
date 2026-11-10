@@ -13,9 +13,16 @@ change over time, so check `sinfo` and `module spider python` if a default fails
 ```bash
 git clone https://github.com/Todd7777/World-Models-to-solve-global-adversities.git
 cd World-Models-to-solve-global-adversities
-git checkout claude/amazing-ritchie-026u0w
+git checkout claude/nifty-fermat-ngqq43
 bash scripts/slurm/setup_fasrc.sh          # venv in ~/cwm-venv (override with CWM_VENV)
 ```
+
+Check out the branch with the current code, not the repository's default branch
+(`claude/amazing-ritchie-026u0w`), which predates the retrained checkpoint and the
+training records. On 2026-11-10 that is `claude/nifty-fermat-ngqq43`. Older code writes
+job outputs without a training record, which the current code refuses to pool, and
+rewrites `report.json` with entries that the current code reads as the 3000-step round 1.
+Run the sweep, the aggregation and any later analysis on the same code.
 
 The processed panel and SSP series are committed, so no data download is needed.
 

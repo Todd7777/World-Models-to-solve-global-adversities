@@ -14,7 +14,7 @@ from carbon_world_model.config import default_config
 from carbon_world_model.eval.configs import ProvenanceError, make_config
 from carbon_world_model.plan import optimize as O
 from carbon_world_model.plan.ensemble import (
-    ensemble_pathway, evaluate_members, load_ensemble, max_controls, member_path,
+    ENSEMBLE_DIR, ensemble_pathway, evaluate_members, load_ensemble, max_controls, member_path,
     rollout_members, save_ensemble, stack_members,
 )
 from carbon_world_model.plan.scenario import build_scenario, ssp_ensemble
@@ -112,3 +112,12 @@ def test_plan_script_refuses_an_ensemble_without_the_checkpoint(tmp_path, monkey
     with pytest.raises(ProvenanceError, match="seed-0 member"):
         mod.main()
     assert os.listdir(tables) == ["config.json"]  # nothing written
+
+
+def test_committed_ensemble_contains_the_checkpoint():
+    """04_plan.py plans with the committed ensemble: it must have been trained with the
+    default configuration, and its seed-0 member must be the committed checkpoint, so
+    retraining one without the other fails here as well as in the script."""
+    seeds, members = load_ensemble(ENSEMBLE_DIR, default_config(),
+                                   "results/model/params_full.pkl")
+    assert seeds[0] == 0 and len(seeds) == len(members) >= 2

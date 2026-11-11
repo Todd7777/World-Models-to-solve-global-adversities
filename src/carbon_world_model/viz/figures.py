@@ -267,18 +267,29 @@ def fig_ssp_drivers(panel, v9, v3, ssp_driver_paths, ssps) -> plt.Figure:
     return _finish(fig)
 
 
-def fig_ssp_pathways(panel, plan: dict) -> plt.Figure:
+def fig_ssp_pathways(panel, plan: dict, traj: dict | None = None) -> plt.Figure:
+    """traj: plan_trajectories.npz contents; with per-seed totals there, each pathway is
+    shaded over the range of the ensemble's seeds."""
     yrs = np.array(plan["years"])
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.8))
     ax1.plot(panel.years, panel.co2.sum(0) / 1000, color=OI["black"], lw=2.2, label="observed")
+    bands = {}
+    if traj is not None and "bau_global_by_seed" in traj:
+        for i, name in enumerate(traj["scenario_names"]):
+            bands[str(name)] = (traj["bau_global_by_seed"][i], traj["max_global_by_seed"][i])
     for name, d in plan["scenarios"].items():
         s = name.split()[0]
         if s not in SSP_COLORS:
             continue
         ax1.plot(yrs, np.array(d["bau_global_mt"]) / 1000, color=SSP_COLORS[s], lw=2, label=f"{s} BAU")
         ax1.plot(yrs, np.array(d["max_global_mt"]) / 1000, color=SSP_COLORS[s], lw=1.4, ls="--")
-    ax1.set(xlabel="year", ylabel="CO2 (Gt/yr)",
-            title="Business-as-usual (solid) and max feasible effort (dashed)")
+        for by_seed in bands.get(name, ()):
+            ax1.fill_between(yrs, by_seed.min(0) / 1000, by_seed.max(0) / 1000,
+                             color=SSP_COLORS[s], alpha=0.12, lw=0)
+    title = "Business-as-usual (solid) and max feasible effort (dashed)"
+    if bands:
+        title += f"\nmeans of {len(traj['seeds'])} training seeds; shading: their range"
+    ax1.set(xlabel="year", ylabel="CO2 (Gt/yr)", title=title)
     ax1.legend(fontsize=8, ncol=2)
 
     rb = plan["robust"]
@@ -288,12 +299,20 @@ def fig_ssp_pathways(panel, plan: dict) -> plt.Figure:
             label=f"plan tuned to SSP2 (effort {rb['tailored_cost']:.2f})")
     ax2.bar(x + 0.2, [rb["robust_cum_by_ssp"][s] for s in ssps], 0.4, color=OI["blue"],
             label=f"robust plan (effort {rb['robust_cost']:.2f})")
+    ensemble = "robust_cum_by_ssp_worst_seed" in rb
+    if ensemble:  # bars are ensemble means; whiskers reach the worst seed
+        for dx, key in ((-0.2, "tailored_cum_by_ssp"), (0.2, "robust_cum_by_ssp")):
+            mean = np.array([rb[key][s] for s in ssps])
+            worst = np.array([rb[key + "_worst_seed"][s] for s in ssps])
+            ax2.errorbar(x + dx, mean, yerr=[np.zeros_like(mean), worst - mean], fmt="none",
+                         ecolor=OI["black"], elinewidth=1.2, capsize=3)
     ax2.axhline(rb["budget_gt"], color=OI["red"], lw=1.6, ls="--", label="carbon budget")
     lo = min(min(rb["tailored_cum_by_ssp"].values()), min(rb["robust_cum_by_ssp"].values()))
     ax2.set_ylim(lo * 0.9, None)
     ax2.set_xticks(x, ssps)
     ax2.set(ylabel="cumulative 2023-2050 CO2 (Gt)",
             title=f"Robust planning: +{rb['price_of_robustness_pct']:.0f}% effort buys "
-                  "compliance in every SSP")
+                  + ("compliance in every SSP and seed\n(bars: seed means; whiskers: worst seed)"
+                     if ensemble else "compliance in every SSP"))
     ax2.legend(fontsize=8)
     return _finish(fig)

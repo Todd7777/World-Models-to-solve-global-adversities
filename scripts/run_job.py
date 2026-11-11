@@ -36,7 +36,8 @@ def main() -> None:
     path = job_path(a.root, a.config, a.cutoff, a.seed)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     np.savez_compressed(path, **out)
-    print(f"[done] {a.config} c{a.cutoff} s{a.seed} loss={float(out['final_loss']):.4f}")
+    print(f"[done] {a.config} c{a.cutoff} s{a.seed} steps={int(out['steps'])} "
+          f"loss={float(out['final_loss']):.4f}")
 
 
 if __name__ == "__main__":

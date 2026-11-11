@@ -22,18 +22,23 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-10: 61 pass
+pytest             # 2026-11-11: 66 pass
 ```
 
 If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
 `python -m pytest`.
 
-## State on 2026-11-10
+## State on 2026-11-11
 
-- **All 61 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
+- **All 66 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
   `ms_full` (`SELECTED_CONFIG` in `config.py`). `scripts/02_train.py` reproduces it bit for bit (seed 0, about 2.5
-  minutes on 4 cores). Seeds 0-3 all pass the planning tests (`results/tables/seed_sensitivity.json`), but the
-  committed seed gives the largest maximum-effort cut of the four (59% against 33-43%).
+  minutes on 4 cores). Seeds 0-3 all pass the planning tests (`results/tables/seed_sensitivity.json`).
+- **Planning uses a ten-seed ensemble** (`results/model/ensemble/`, `scripts/02b_train_ensemble.py`; seed 0 is a
+  copy of the checkpoint). `04_plan.py` evaluates every pathway under each member and optimises plans against all
+  of them (`plan/ensemble.py`); `plan.json` holds ensemble means and every seed's values. The seeds disagree
+  widely: maximum-effort cut 26-59% (mean 41%), and the checkpoint is the most optimistic of the ten. A plan robust
+  to every SSP and seed costs +119% effort. After any retrain of the checkpoint, rerun `02b_train_ensemble.py`:
+  until then `04_plan.py` and `test_committed_ensemble_contains_the_checkpoint` refuse the stale ensemble.
 - **Selection is done.** `results/sweep_val/report.json` scores all 16 configs at 4000 steps with 2 seeds. Multiple
   shooting wins on every seed. The three leaders (`ms_percap_damped` 11.05, `ms_full_shootonly` 11.29, `ms_full`
   11.70) are within seed noise, and `ms_full` was chosen as the only one whose planning tests hold, with smooth
@@ -59,15 +64,15 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   has no `--config` flag. To select another config, change `SELECTED_CONFIG` and retrain at once:
   `results/tables/config.json`, written by `02_train.py` with the checkpoint, no longer matches until then, so
   `test_committed_checkpoint_matches_default_config` fails and `03_backtest.py`, `04_plan.py` and
-  `05_make_figures.py` refuse to run. Then regenerate the tables, the test folds for the new config,
-  `03_evaluate.py --config <name>` and the figures. `03_evaluate.py --config X` refuses unless `config.json`
-  matches `make_config(X)` and every sweep output it reads was trained for as many steps as the checkpoint. All
-  of these scripts refuse before writing anything.
+  `05_make_figures.py` refuse to run. Then retrain the ensemble (`02b_train_ensemble.py`) and regenerate the
+  tables, the test folds for the new config, `03_evaluate.py --config <name>` and the figures.
+  `03_evaluate.py --config X` refuses unless `config.json` matches `make_config(X)` and every sweep output it
+  reads was trained for as many steps as the checkpoint. All of these scripts refuse before writing anything.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
 
 ## Where the next steps are
 
-README "Limitations (read these)" and "What changed on 2026-11-10". The open questions there: forecasts only
-match trend-Kaya given the true drivers, the model does not transfer to unseen countries, and the size of the
-maximum-effort cut depends on the training seed.
+README "Limitations (read these)" and "What changed on 2026-11-11". The open questions there: forecasts only
+match trend-Kaya given the true drivers, the model does not transfer to unseen countries, and training seeds of
+the selected config disagree on the achievable cut (26-59%), so robust plans cost twice the effort.

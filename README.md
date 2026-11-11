@@ -27,11 +27,13 @@ CWM couples three things that are usually kept apart:
 > the future and not policy advice. Its results are conditional on documented
 > assumptions, and its limitations (below) are reported as prominently as its strengths.
 
-> **Current state (2026-11-10).** A model configuration has been selected on the
+> **Current state (2026-11-11).** A model configuration has been selected on the
 > validation folds (`ms_full`: multiple shooting, per-capita levels, EMA momentum, a
 > damped trend, no calendar-time inputs), the checkpoint retrained with it, and the
-> held-out test folds scored once. Every number below comes from that checkpoint. See
-> [What changed on 2026-11-10](#what-changed-on-2026-11-10).
+> held-out test folds scored once. The planning numbers are means over ten training
+> seeds of that configuration, with their range, because single seeds disagree widely.
+> See [What changed on 2026-11-11](#what-changed-on-2026-11-11) and
+> [on 2026-11-10](#what-changed-on-2026-11-10).
 
 ---
 
@@ -67,29 +69,56 @@ well to countries it was not trained on (see Limitations).
 **It plans.** Optimising inside the simulator, under feasibility limits taken from the
 fastest *sustained* historical transitions (low-carbon share +1.8%/yr, à la Denmark;
 energy intensity −3.0%/yr, à la China), with the same heuristic GDP and population paths
-as earlier versions of this README:
+as earlier versions of this README. Each number is the mean over ten training seeds of
+the selected configuration, with the lowest and highest seed in brackets:
 
-- **Business-as-usual** emissions for these 60 countries grow from 34.8 Gt (2022) to
-  **39.5 Gt by 2050** (38.1 Gt with SSP2 drivers; 35.8–42.7 Gt across SSP1–5).
-- **Maximum feasible effort** bends that down to **16.2 Gt** (SSP2: 16.2 Gt), a 59% cut
-  versus BAU and 53% below 2022.
-- Scaled to global, cumulative 2023–2050 emissions are **≈765 GtCO₂ even under maximum
-  ambition** (SSP2: ≈750), which **blows through the ≈578 Gt remaining 1.5 °C budget**.
-  Within historically-achieved transition rates, **1.5 °C is out of reach** without
-  negative emissions; maximum effort avoids ≈0.17 °C (0.10–0.23 °C) of warming versus
-  BAU for this group.
+- **Business-as-usual** emissions for these 60 countries go from 34.8 Gt (2022) to
+  **37.8 Gt in 2050** (31.9–42.1; with SSP2 drivers 36.9 Gt, and 35.0–40.3 Gt across the
+  means for SSP1–5).
+- **Maximum feasible effort** bends that down to **22.1 Gt** (15.0–27.6; SSP2: 21.7 Gt),
+  a **41% cut** versus BAU (26–59%) and 36% below 2022.
+- Scaled to global, cumulative 2023–2050 emissions are **≈840 GtCO₂ even under
+  maximum ambition** (742–919; SSP2: ≈826), which **blows through the ≈578 Gt
+  remaining 1.5 °C budget** under every seed. Within historically-achieved transition
+  rates, **1.5 °C is out of reach** without negative emissions; maximum effort avoids
+  ≈0.13 °C of warming versus BAU for this group (0.08–0.18 °C over the TCRE likely
+  range; 0.10–0.17 °C over the seeds).
 - The model produces the full **cost-of-abatement frontier** (minimum effort to meet any
-  carbon budget) and the per-country allocation of who must cut most.
-- **The size of the achievable cut depends on the training seed.** Across four training
-  seeds of the selected configuration (the committed checkpoint is seed 0), BAU 2050
-  agrees closely (38.6–42.1 Gt), every seed passes the planning checks (more effort,
-  lower emissions), and none shows the original configuration's year-to-year sawtooth
-  (up to 25 changes of direction in 27 years). But maximum effort reaches 16.2 Gt on
-  the committed seed and 22.5–27.6 Gt on the other three: a cut of 33–59% versus BAU.
-  The committed checkpoint is the most optimistic of the four.
+  carbon budget) and the per-country allocation of who must cut most. Plans are
+  optimised against all ten seeds at once.
+- **Hedging against the model's own uncertainty is expensive.** A plan that meets a
+  cumulative budget under every SSP *and* every seed takes 119% more effort than one
+  tuned to SSP2 and the ten-seed mean, which overshoots the budget by up to 88 Gt when
+  the least favourable seed is right. The committed checkpoint (seed 0) is the most
+  optimistic of the ten seeds: alone, it gives a 59% cut.
 
 The raw numbers are in [`results/tables/`](results/tables) and the figures in
 [`results/figures/`](results/figures).
+
+---
+
+## What changed on 2026-11-11
+
+The planning numbers now come from an ensemble of ten training seeds of the selected
+configuration, not from the committed checkpoint alone. On 2026-11-10 that checkpoint
+(seed 0) gave a 59% maximum-effort cut, while seeds 1–3 gave 33–43%. Ten seeds were
+trained (`scripts/02b_train_ensemble.py`, `results/model/ensemble/`; seed 0 is the
+checkpoint itself), and `scripts/04_plan.py` now evaluates every pathway under each of
+them. It optimises the frontier for the ten-seed mean, and the robust plan for every
+SSP and every seed. `results/tables/plan.json` keeps each seed's values.
+
+| number, heuristic drivers | seed 0 alone (2026-11-10) | ten-seed mean (lowest–highest seed) |
+|---|---|---|
+| BAU 2050 | 39.5 Gt | 37.8 Gt (31.9–42.1) |
+| maximum-effort 2050 | 16.2 Gt | 22.1 Gt (15.0–27.6) |
+| cut versus BAU | 59% | 41% (26–59%) |
+| cumulative 2023–2050 at maximum effort, scaled to global | ≈765 Gt | ≈840 Gt (742–919) |
+| warming avoided by maximum effort | 0.17 °C | 0.13 °C (0.10–0.17) |
+| price of robustness (robust plan versus SSP2-tailored plan) | +22% (SSPs only) | +119% (SSPs and seeds) |
+
+Seed 0 is the most optimistic of the ten. Every seed's maximum effort stays below its
+BAU, and under every seed cumulative emissions exceed the 1.5 °C budget, so those
+conclusions stand.
 
 ---
 
@@ -206,7 +235,10 @@ Planning controls — clean-deployment effort and efficiency effort — enter th
 additively and are zero during fitting, so the fitted model reproduces observed behaviour
 and the planner perturbs it causally. For the committed checkpoint, and for each of four
 training seeds of the selected configuration, emissions fall **monotonically** as effort
-rises (verified in the test suite and by `scripts/seed_sensitivity.py`). Warming is
+rises (verified in the test suite and by `scripts/seed_sensitivity.py`). Planning runs
+on an ensemble of ten training seeds (`plan/ensemble.py`): pathways are evaluated under
+every member, and plans are optimised against all of them at once, in one batched
+simulation. Warming is
 obtained from cumulative emissions via the TCRE relationship (IPCC AR6 central value
 0.45 °C per 1000 GtCO₂).
 
@@ -228,10 +260,11 @@ pip install -e .                     # numpy, pandas, jax, optax, scipy, matplot
 bash scripts/download_data.sh        # fetch OWID CO2 + energy data (CC-BY)
 python scripts/01_build_dataset.py   # build the 60-country panel (committed too)
 python scripts/02_train.py           # train the selected configuration (~2.5 min, CPU)
+python scripts/02b_train_ensemble.py # train seeds 1-9 for the planning ensemble (~25 min)
 python scripts/03_backtest.py        # physics-layer and in-sample tables
 python scripts/04_plan.py            # BAU / max-ambition / frontier / warming, SSP1-5
 python scripts/seed_sensitivity.py   # retrain with seeds 0-3: stability and spread
-pytest -q                            # 61 tests
+pytest -q                            # 66 tests
 ```
 
 Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` scores
@@ -259,13 +292,15 @@ other than the one the script runs it under. The processed panel
   training seeds. A different tie-break could have chosen differently. The test folds
   were scored once, after the choice, and must not be used to revisit it. The round-1
   report (3000 training steps) is kept in `tests/data/report_round1_3000steps.json`.
-- **Planning results still depend on the training seed.** The selected configuration
-  trains without the loss spikes of the original one
+- **Training seeds disagree, and the ensemble covers only that.** The selected
+  configuration trains without the loss spikes of the original one
   (`results/tables/seed_sensitivity.json`; the original's are in
-  `results/tables/selection/seed_sensitivity_orig.json`), and its BAU projections agree
-  across seeds 0–3 (38.6–42.1 Gt in 2050). But maximum effort
-  reaches 16.2 Gt on the committed seed and 22.5–27.6 Gt on the other three, so the
-  headline cut of 59% is the most optimistic of four (the others: 33–43%).
+  `results/tables/selection/seed_sensitivity_orig.json`), but across ten training seeds
+  BAU 2050 spans 31.9–42.1 Gt and the maximum-effort cut 26–59%. The planning numbers
+  are therefore ten-seed means, and a plan robust to the seeds costs more than twice the
+  effort of one tuned to their mean. The ensemble captures the variation between
+  training runs of one configuration only. It does not capture the uncertainty between
+  configurations, in the model's structure, or in its feasibility bounds.
 - **Short-horizon forecasting is not where this model wins.** Given the true drivers,
   the selected configuration only matches trend-Kaya extrapolation on the test folds
   (score 9.40 against 9.49: lower per-country error, higher aggregate error), and on the

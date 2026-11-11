@@ -39,12 +39,16 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   widely: maximum-effort cut 26-59% (mean 41%), and the checkpoint is the most optimistic of the ten. A plan robust
   to every SSP and seed costs +119% effort. After any retrain of the checkpoint, rerun `02b_train_ensemble.py`:
   until then `04_plan.py` and `test_committed_ensemble_contains_the_checkpoint` refuse the stale ensemble.
-- **Selection is done.** `results/sweep_val/report.json` scores all 16 configs at 4000 steps with 2 seeds. Multiple
-  shooting wins on every seed. The three leaders (`ms_percap_damped` 11.05, `ms_full_shootonly` 11.29, `ms_full`
-  11.70) are within seed noise, and `ms_full` was chosen as the only one whose planning tests hold, with smooth
-  projections, on all four seeds (`results/tables/selection/`, via `seed_sensitivity.py --config`). Round 1
-  (3000 steps; no `steps` fields, read as 3000 via `LEGACY_REPORT_STEPS`) is in
-  `tests/data/report_round1_3000steps.json`.
+- **Selection is under review (2026-11-11).** `ms_full` was chosen on 2026-11-10 from a validation sweep whose fits
+  leaked post-cutoff drivers through the training loss's curvature term (fixed in `46cc5ce`). The leak-free rerun
+  now in `results/sweep_val/report.json` (all 16 configs, 4000 steps, seeds 0-1) changes the leader group:
+  `ms_percap_damped` 10.79, `ms_percap` 10.96 (was 7th), `ms_full_shootonly` 11.29 (unaffected, identical),
+  `ms_full` 11.38, `ms_notime_percap` 12.06; trend-Kaya 9.85. Multiple shooting still wins on every seed. The
+  tie-break that chose `ms_full` (planning checks on four seeds of full-data fits, `results/tables/selection/`,
+  via `seed_sensitivity.py --config`) was unaffected by the leak but covered only the old three leaders. Until the
+  owner decides, `SELECTED_CONFIG` stays `ms_full` and the test folds stay untouched. The leaky report is in
+  git history at `2648dda`. Round 1 (3000 steps; no `steps` fields, read as 3000 via `LEGACY_REPORT_STEPS`) is
+  in `tests/data/report_round1_3000steps.json`.
 - **The test folds are spent.** `results/sweep_test/report.json` (`ms_full` and `orig`, 5 seeds, realised and
   SSP-v9 drivers) was scored once, after selection: `ms_full` 9.40 against trend-Kaya 9.49 with realised drivers,
   14.09 against growth persistence 11.15 ex ante; `orig` 19.96. Never use them to revisit the selection.

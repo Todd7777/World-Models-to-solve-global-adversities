@@ -33,6 +33,11 @@ def _fit(wm, panel, cfg, params, country_w, cut_idx, adapt_idx, steps, lr):
     targets = _targets(panel)
     cw = jnp.asarray(country_w)
     mask = year_window_mask(panel, cut_year) * cw[:, None]
+    # Fit window: the countries being fitted, years up to the cutoff. Without it the full
+    # run's curvature penalty would see every country's trajectory, held-out ones
+    # included, driven by realised post-cutoff GDP and population (see loss_terms).
+    window = jnp.asarray(((panel.years[None, :] <= cut_year)
+                          * (np.asarray(country_w) > 0)[:, None]).astype(np.float32))
     batch = None
     if cfg.train.multi_shoot:
         batch = shooting_batch(wm, panel, cut_idx, cfg.train.shoot_horizon, cfg.train.shoot_stride)
@@ -51,7 +56,7 @@ def _fit(wm, panel, cfg, params, country_w, cut_idx, adapt_idx, steps, lr):
     def loss_fn(p):
         total = 0.0
         if cfg.train.w_full > 0 or batch is None:
-            lf, _ = loss_terms(wm.rollout(p, panel), targets, mask, cfg)
+            lf, _ = loss_terms(wm.rollout(p, panel), targets, mask, cfg, window=window)
             total = total + (cfg.train.w_full if batch is not None else 1.0) * lf
         if batch is not None:
             trs = rollout(p, static, wm.norm, ef, batch["inits"], batch["drivers"], None,

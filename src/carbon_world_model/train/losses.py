@@ -13,12 +13,18 @@ def _masked_mse(pred, true, mask):
     return jnp.sum(mask * (pred - true) ** 2) / (jnp.sum(mask) + 1e-8)
 
 
-def loss_terms(traj, targets, mask, cfg):
+def loss_terms(traj, targets, mask, cfg, window=None):
     """Return (scalar_loss, dict_of_terms).
 
     traj:    model output dict (co2 [C,T], D [C,T], shares [C,T,F], intensity[C,T])
     targets: dict with co2, D, shares (same shapes)
     mask:    [C,T] 1.0 where a year counts toward the loss (observed AND in-window)
+    window:  None for a fit on all the data. Otherwise a [C,T] 0/1 array marking the fit
+             window: the countries being fitted, in years up to the cutoff. The free
+             rollout behind `traj` runs past the cutoff on realised drivers, so the two
+             terms that `mask` does not confine (the curvature penalty and the level
+             term's normaliser) are confined to the window. No value outside it can then
+             reach the loss. With None both are computed over everything, as before.
     """
     tr = cfg.train
     l_co2 = _masked_logmse(traj["co2"], targets["co2"], mask)
@@ -28,7 +34,13 @@ def loss_terms(traj, targets, mask, cfg):
     # Smoothness: penalise large curvature in predicted log-intensity (discourages
     # oscillating trajectories not seen in data).
     d2 = traj["intensity"][:, 2:] - 2 * traj["intensity"][:, 1:-1] + traj["intensity"][:, :-2]
-    l_smooth = jnp.mean(d2 ** 2)
+    if window is None:
+        l_smooth = jnp.mean(d2 ** 2)
+        co2_scale = jnp.mean(targets["co2"])
+    else:
+        w3 = window[:, 2:] * window[:, 1:-1] * window[:, :-2]   # whole stencil in the window
+        l_smooth = jnp.sum(w3 * d2 ** 2) / (jnp.sum(w3) + 1e-8)
+        co2_scale = jnp.sum(window * targets["co2"]) / (jnp.sum(window) + 1e-8)
 
     # Aggregate: fit the global-sum emissions path (the policy-relevant quantity, and
     # the one scale-free per-country losses neglect). Year counts if any country is in
@@ -40,7 +52,7 @@ def loss_terms(traj, targets, mask, cfg):
 
     # Emissions-weighted level term: large emitters must be right in absolute terms, so
     # they do not drift over long rollouts. Weight ~ sqrt(share of panel emissions).
-    w = mask * jnp.sqrt(targets["co2"] / (jnp.mean(targets["co2"]) + 1e-6))
+    w = mask * jnp.sqrt(targets["co2"] / (co2_scale + 1e-6))
     rel = ((traj["co2"] - targets["co2"]) / (targets["co2"] + 1.0)) ** 2
     l_level = jnp.sum(w * rel) / (jnp.sum(w) + 1e-8)
 

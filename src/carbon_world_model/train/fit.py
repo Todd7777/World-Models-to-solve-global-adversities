@@ -112,6 +112,12 @@ def fit(panel, cfg: Config, wm: WorldModel | None = None, train_year_max: int | 
     targets = _targets(panel)
     mask = year_window_mask(panel, train_year_max, cfg.train.recency_halflife)
     cut_idx = panel.n_years - 1 if train_year_max is None else _year_index(panel, train_year_max)
+    # The full run rolls out over every panel year, so with a cutoff the loss is told where
+    # the fit window ends (see loss_terms); without one it covers all data, as before.
+    window = None
+    if train_year_max is not None:
+        window = jnp.asarray(np.broadcast_to(panel.years[None, :] <= train_year_max,
+                                             panel.co2.shape).astype(np.float32))
     batch = (shooting_batch(wm, panel, cut_idx, cfg.train.shoot_horizon, cfg.train.shoot_stride)
              if cfg.train.multi_shoot else None)
     static, ef = jnp.asarray(wm.static), jnp.asarray(wm.ef)
@@ -126,7 +132,7 @@ def fit(panel, cfg: Config, wm: WorldModel | None = None, train_year_max: int | 
         total = 0.0
         if cfg.train.w_full > 0 or batch is None:
             traj = wm.rollout(p, panel)
-            lf, tf_ = loss_terms(traj, targets, mask, cfg)
+            lf, tf_ = loss_terms(traj, targets, mask, cfg, window=window)
             total = total + (cfg.train.w_full if batch is not None else 1.0) * lf
             terms.update(tf_)
         if batch is not None:

@@ -79,7 +79,8 @@ def ladder_reports(panel) -> dict:
 
 def main() -> None:
     panel = Panel.load(default_config())
-    res = {"backtests": backtests(), "ladder": ladder_reports(panel)}
+    from carbon_world_model.eval.configs import SELECTED
+    res = {"selected": SELECTED, "backtests": backtests(), "ladder": ladder_reports(panel)}
     with open("results/tables/longrun.json", "w") as fh:
         json.dump(res, fh, indent=2)
 

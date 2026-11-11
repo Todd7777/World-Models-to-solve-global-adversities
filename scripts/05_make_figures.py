@@ -83,6 +83,10 @@ def main() -> None:
     # Structural uncertainty: every model tied on validation (scripts/07_structural.py).
     if os.path.exists(os.path.join(TAB, "structural.json")):
         save(F.fig_structural(panel, load("structural.json")), "fig10_structural_ssp2.png")
+
+    # Long-run level checks (scripts/08_longrun.py).
+    if os.path.exists(os.path.join(TAB, "longrun.json")):
+        save(F.fig_longrun(load("longrun.json")), "fig11_longrun_checks.png")
     print("[ok] figures:", sorted(os.listdir(FIG)))
 
 

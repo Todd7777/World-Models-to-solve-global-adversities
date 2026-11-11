@@ -336,3 +336,55 @@ def fig_structural(panel, st: dict) -> plt.Figure:
             title="Carbon budgets vs. every model")
     ax2.legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3)
     return _finish(fig)
+
+
+def fig_longrun(lr: dict) -> plt.Figure:
+    """Long-run level checks (scripts/08_longrun.py): long-horizon cumulative-CO2 errors,
+    and energy-ladder decoupling relative to each country's own past."""
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5), gridspec_kw={"width_ratios": [1.1, 1]})
+    bt = lr["backtests"]
+    any_cfg = next(iter(bt["longval"]))
+    rows = [(c, "world_model", c + (" (selected)" if c == lr.get("selected") else ""))
+            for c in bt["longval"]] + \
+           [(any_cfg, m, f"baseline: {m.replace('_', ' ')}")
+            for m in ("trend_kaya", "growth_persistence", "persistence")]
+    y = np.arange(len(rows))
+    for off, phase, col, lab in [(-0.2, "longval", OI["blue"], "cutoffs 1998/2000 → 2015"),
+                                 (0.2, "longtest", OI["orange"], "cutoffs 2003/2005 → 2022")]:
+        v = [100 * bt[phase][c][m]["cum_err"] for c, m, _ in rows]
+        ax1.barh(y + off, v, 0.38, color=col, label=lab)
+    ax1.axvline(0, color=OI["black"], lw=0.8)
+    ax1.set_yticks(y, [r[2] for r in rows], fontsize=8)
+    ax1.invert_yaxis()
+    ax1.set(xlabel="error in cumulative aggregate CO2 over the horizon (%)",
+            title="Long-horizon backtests (15-19 years)")
+    ax1.legend(fontsize=8, loc="lower right")
+
+    lad = lr["ladder"]
+    models = [k for k, v in lad.items() if v["family"] in ("stab", "unconstrained")]
+    cols = {"stab": OI["red"], "unconstrained": OI["grey"]}
+    seen = set()
+    for i, k in enumerate(models):
+        fam = lad[k]["family"]
+        ax2.scatter(100 * lad[k]["energy_weighted_excess_per_year"], i, color=cols[fam], s=40,
+                    zorder=3, label=None if fam in seen else
+                    ("stabilised" if fam == "stab" else "unconstrained"))
+        seen.add(fam)
+    ax2.axvline(0, color=OI["green"], lw=1.4, label="each country repeats its 1994-2022 drift")
+    for k, ls, txt in [("ref_own_trend_intensity", ":", "own 10-yr intensity trend continued"),
+                       ("ref_constant_intensity", "--", "constant energy intensity")]:
+        ax2.axvline(100 * lad[k]["energy_weighted_excess_per_year"], color=OI["black"], lw=1.1,
+                    ls=ls, label=txt)
+
+    def label(k):
+        if k == "selected":
+            return f"{lad[k]['config']} (selected)"
+        cfg, seed = k.rsplit("_s", 1)
+        return f"{cfg}, seed {seed}"
+
+    ax2.set_yticks(np.arange(len(models)), [label(m) for m in models], fontsize=8)
+    ax2.invert_yaxis()
+    ax2.set(xlabel="decoupling slower (+) / faster (−) than own past, %/yr (energy-weighted)",
+            title="Energy ladder: SSP2 BAU 2022-2050")
+    ax2.legend(fontsize=7.5, loc="upper center", bbox_to_anchor=(0.45, -0.14), ncol=2)
+    return _finish(fig)

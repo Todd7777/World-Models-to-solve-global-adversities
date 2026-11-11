@@ -26,8 +26,10 @@ CWM couples three things that are usually kept apart:
 > the future and not policy advice. Its results are conditional on documented
 > assumptions, and its limitations (below) are reported as prominently as its results.
 > The most important: **planning results still depend on model structure the data do not
-> pin down.** A stability term in training (new) removes learned oscillations and narrows
-> that spread, but does not remove it (see "Planning").
+> pin down.** A stability term in training removes learned oscillations and narrows that
+> spread, but does not remove it (see "Planning"). Long-run level checks (new) show that
+> 15-19-year cumulative-CO₂ errors of ±10% are realistic for this model class, which is as
+> large as the margin behind the headline 1.5 °C conclusion.
 
 ---
 
@@ -143,7 +145,13 @@ their family, two seeds each, under SSP2
 The range of 2050 BAU emissions shrinks from 25 to 9 Gt and that of China's 2035 change from
 36 to 10 points, though part of that comes from comparing 4 models with 6. The two
 stabilised configurations still disagree on how strongly the system pushes back against
-an efficiency drive, which drives the remaining spread in the fitted-dynamics cut.
+an efficiency drive, which drives the remaining spread in the fitted-dynamics cut. They
+also disagree on long-run energy levels: the energy-ladder check below shows that
+`ms_percap_damped_stab10` slows decoupling by about 1.4%/yr relative to each country's own
+past (energy-weighted, and positive for every major economy), against about 0.3-0.7%/yr
+for the selected configuration. The BAU gap is entirely a difference in energy demand:
+the second configuration uses 30% more energy in 2050 with a 5% cleaner mix, hence 24%
+more CO₂.
 
 **The conclusion that survives all of this:** scaled to global, cumulative 2023–2050 CO₂
 under maximum feasible effort is **647 – 1,026 Gt** across the 8 stabilised cases (4 models
@@ -151,14 +159,83 @@ under maximum feasible effort is **647 – 1,026 Gt** across the 8 stabilised ca
 **Every case exceeds the ≈578 Gt remaining 1.5 °C budget** (by 12% at the closest
 stabilised case) and every case stays within the ≈1,689 Gt 2 °C budget. Within
 historically achieved transition rates, holding 1.5 °C without negative emissions is out
-of reach in this model. The margin is comparable to the uncertainty in the budget itself,
-so read this as "at best marginal", not as a precise verdict.
+of reach in this model. **This conclusion is weaker than it looks.** The 12% margin is
+comparable both to the uncertainty in the budget itself and to the model's own
+cumulative-CO₂ errors over 15-19-year backtests (−4% and +10%; see "Long-run level
+checks"). Read it as "at best marginal", not as a precise verdict.
 
 The model also produces a cost-of-abatement frontier, per-country allocations and a
 **robust plan** optimised against all five SSPs at once. Under the selected model's
 fitted dynamics, meeting a budget in every SSP costs 25% more effort than a plan tuned
 to SSP2 alone, and that SSP2-only plan overshoots by 27 Gt under SSP5. These demonstrate
 the method; their magnitudes inherit the structural uncertainty above.
+
+### Long-run level checks
+
+The validation and test folds use 6-7-year horizons, and the stability term only checks
+smoothness. These two checks ask whether long-run *levels* hold up
+([`longrun.json`](results/tables/longrun.json), `scripts/08_longrun.py`,
+`fig11_longrun_checks.png`). Both are diagnostics, fixed in advance as not used for
+model selection.
+
+**1. Long-horizon backtests.** Fit at an early cutoff and forecast to a fixed end year with
+realised drivers: long validation, cutoffs 1998/2000 → 2015 (15-17 years); long test,
+cutoffs 2003/2005 → 2022 (17-19 years, overlapping the test period, report only). Means
+over the two cutoffs, two seeds:
+
+| method | cumulative CO₂ error, long val / long test | \|final-year agg. error\| | China final-year error | country MAPE |
+|---|---|---|---|---|
+| **world model, selected** (`ms_full_shootonly_stab100`) | −4.2% / +9.8% | 6.4% / 25.2% | −36% / +49% | **14.6% / 16.9%** |
+| `ms_percap_damped_stab10` (tied on validation) | −14.8% / +21.7% | 27.5% / 41.9% | −52% / +46% | 16.3% / 24.9% |
+| `ms_percap_damped` (previous selection, unconstrained) | −25.9% / +11.2% | 51.6% / 24.7% | −63% / −20% | 24.1% / 23.7% |
+| `orig` | −9.5% / **+4.7%** | 20.3% / **7.5%** | −47% / **−2%** | 17.2% / 19.0% |
+| trend-Kaya | **+2.6%** / +6.6% | 8.1% / 15.6% | −16% / +38% | 23.8% / 18.9% |
+| growth persistence | −5.7% / +22.1% | **2.3%** / 60.0% | −49% / +111% | 22.2% / 27.2% |
+
+- **No method gets 15-19-year levels right.** The windows straddle China's 2000s boom
+  (missed from 1998/2000) and its post-2013 slowdown (overshot from 2003/2005), and every
+  method's China error is tens of percent.
+- **The selected model has the best per-country accuracy at both lengths**, and its
+  cumulative error (−4%, +10%) is comparable to trend-Kaya's (+3%, +7%). It is not the best
+  on aggregate levels: `orig`, the worst model on 6-year validation, is the best on the
+  long test.
+- **The check would have caught the oscillating model**: the previous selection misses the
+  2015 aggregate by 52% from 1998/2000. Its stabilised variant halves that, but still does
+  much worse than the selected configuration.
+- **Implication for planning:** cumulative errors of ±10% over two decades are the realistic
+  precision here. That is enough to blur the 12% margin by which maximum effort exceeds the
+  1.5 °C budget.
+
+**2. Energy-ladder plausibility.** Across countries, energy per person rises with income
+along a stable, concave "ladder" (log energy/cap quadratic in log GDP/cap; R² 0.75 on all
+observed 1990-2022 country-years). The check measures how a 2022→2050 projection moves
+each country relative to that ladder ([`eval/plausibility.py`](src/carbon_world_model/eval/plausibility.py)).
+Because the ladder accounts for income, a country that grows more slowly in the
+projection is expected to decouple more slowly.
+
+- **Nothing is unprecedented.** No model moves any country (by energy) outside the central
+  95% of all observed 28-year drifts. That band is wide, since it includes post-Soviet
+  transitions and petrostates, so this only rules out the absurd.
+- **Against each country's own past, every model decouples more slowly than history.**
+  Compared with each country's own 1994→2022 drift off the ladder, energy-weighted:
+
+  | SSP2 BAU 2050 | slower decoupling than own past |
+  |---|---|
+  | selected (`ms_full_shootonly_stab100`), seeds 0/1 | +0.33 / +0.65 %/yr |
+  | `ms_percap_damped_stab10`, seeds 0/1 | +1.42 / +1.30 %/yr |
+  | unconstrained tied models | +0.37 to +1.65 %/yr |
+  | reference: own 2012-2022 intensity trend continued | +0.95 %/yr |
+  | reference: constant energy intensity | +1.96 %/yr |
+
+  The selected model stays closest to history; the other stabilised configuration is
+  closer to freezing intensity. History does not say which is right, since decoupling can
+  slow (saturating efficiency gains) or speed up (structural change). The reference
+  window matters too. The selected model's China intensity falls 1.4%/yr on average to
+  2050: slower than 2012-2022 (−2.9%/yr), but faster than 1994-2022 (−1.15%/yr), a period
+  that includes the energy-intensive 2002-2011 boom. Measured on the ladder, which allows
+  for China moving up in income, it decouples 0.5%/yr more slowly than its own 1994-2022
+  past. Russia shows the largest excess in every model (+2 to +3%/yr), partly because its
+  own 1994→2022 reference includes post-Soviet restructuring.
 
 ---
 
@@ -178,6 +255,7 @@ All in [`results/figures/`](results/figures), regenerated by `scripts/05_make_fi
 | `fig8_mix_ssp2.png` | Fuel-mix transition, BAU vs maximum feasible effort (SSP2) |
 | `fig9_frontier_ssp2.png` | Cost-of-abatement frontier (SSP2) |
 | `fig10_structural_ssp2.png` | Planning results across the stabilised validation-tied models vs carbon budgets |
+| `fig11_longrun_checks.png` | Long-horizon backtests (cumulative CO₂ error); energy-ladder decoupling vs own past |
 
 ---
 
@@ -235,11 +313,11 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 55 tests
+python -m pytest -q                  # 59 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
-later steps run without downloading data. Full pipeline (about 3 h on 4 CPU cores;
+later steps run without downloading data. Full pipeline (about 3.5 h on 4 CPU cores;
 `scripts/slurm/` runs the sweeps as a SLURM array):
 
 ```bash
@@ -252,6 +330,9 @@ python scripts/03_evaluate.py --config ms_full_shootonly_stab100
 python scripts/04_plan.py            # BAU / max effort (fitted + open loop) / frontier / robust
 python scripts/07_structural.py                         # stabilised tied set -> structural.json
 python scripts/07_structural.py --family unconstrained  # -> structural_unconstrained.json
+python scripts/06_sweep.py --phase longval  --seeds 0,1 --configs ms_full_shootonly_stab100,ms_percap_damped_stab10,ms_full_shootonly,ms_percap_damped,orig
+python scripts/06_sweep.py --phase longtest --seeds 0,1 --configs ms_full_shootonly_stab100,ms_percap_damped_stab10,ms_full_shootonly,ms_percap_damped,orig
+python scripts/08_longrun.py         # long-run level checks -> longrun.json
 python scripts/05_make_figures.py
 ```
 
@@ -264,11 +345,14 @@ python scripts/05_make_figures.py
   from 24% to 49% (fitted dynamics). How strongly the learned dynamics push back against a
   plan, especially an efficiency drive, is not identified by historical data. Use the
   ranges, not single-model planning numbers.
-- **Short-horizon validation still does not validate long-horizon behaviour.** The
-  stability term removes learned oscillations, but smooth is not the same as right. A
-  smooth model can still extrapolate a wrong trend for 28 years, and nothing here checks
-  long-run *levels* against data. China's slowing intensity decline is an example of
-  such an untested extrapolation.
+- **Long-run levels are checked, but only weakly.** Over 15-19-year backtests no method,
+  including this model, gets aggregate levels right; cumulative-CO₂ errors of ±10% are
+  realistic. That is the same size as the margin behind the 1.5 °C conclusion. The
+  backtests cover only four cutoffs, all straddling China's boom and slowdown, and use
+  realised drivers (so they understate error for 2050 projections, whose drivers are also
+  uncertain). The energy-ladder check confirms projections are not unprecedented, but its
+  own-past reference is a comparison, not a truth: whether decoupling will slow, as every
+  model projects, is not something historical data can settle.
 - **The forecasting advantage is narrow.** The stabilised model beats trend-Kaya on the
   test folds with realised drivers (8.70 vs 9.49), but loses ex-ante to growth persistence,
   transfers to unseen countries worse than trend-Kaya, and the test period is a single

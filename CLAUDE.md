@@ -22,10 +22,10 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-10: 55 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-11: 59 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
-## State on 2026-11-10
+## State on 2026-11-11
 
 - All tests pass. The checkpoint `results/model/params_full.pkl` is the selected config
   `ms_full_shootonly_stab100` (`eval/configs.SELECTED`, chosen on validation folds only, by a rule written
@@ -41,6 +41,12 @@ python -m pytest -q   # 2026-11-10: 55 pass (python -m: a standalone `pytest` ma
   configs give a fitted max-effort 2050 cut of 24-49% (open loop 66-68%), mostly from how strongly they
   resist an efficiency push (`plan/diagnostics.py`, `results/tables/structural.json`; the unconstrained set
   is in `structural_unconstrained.json`). Report ranges, not single-model planning numbers.
+- Long-run level checks (diagnostics, never used for selection; `scripts/08_longrun.py`,
+  `results/tables/longrun.json`): 15-19-year backtests (`06_sweep.py --phase longval|longtest`) show
+  cumulative-CO2 errors of about +/-10% for the selected model and trend-Kaya alike, as large as the 12%
+  margin behind the 1.5C conclusion (README says so). The energy-ladder check (`eval/plausibility.py`) finds
+  no unprecedented projections; every model decouples more slowly than each country's own 1994-2022 past,
+  the shoot-only configs least (selected: +0.3/+0.7%/yr by seed, vs +1.3/+1.4 for ms_percap_damped_stab10).
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
@@ -48,5 +54,6 @@ python -m pytest -q   # 2026-11-10: 55 pass (python -m: a standalone `pytest` ma
 ## Where the next steps are
 
 README "Limitations (read these)", especially the first two: a way to constrain or test how the dynamics
-respond to controls, and checks of long-run levels (not just smoothness). Untried: tuning w_stab beyond
-{10, 100}, more seeds for the top configs, and why shoot-only training transfers worse.
+respond to controls, and propagating the long-horizon backtest error (+/-10% cumulative) into the planning
+ranges. Untried: more long-horizon cutoffs and seeds, tuning w_stab beyond {10, 100}, and why shoot-only
+training transfers worse.

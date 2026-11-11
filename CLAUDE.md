@@ -22,10 +22,10 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-11: 62 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-12: 63 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
-## State on 2026-11-11
+## State on 2026-11-12
 
 - All tests pass. The checkpoint `results/model/params_full.pkl` is the selected config
   `ms_full_shootonly_stab100` (`eval/configs.SELECTED`, chosen on validation folds only, by a rule written
@@ -42,16 +42,21 @@ python -m pytest -q   # 2026-11-11: 62 pass (python -m: a standalone `pytest` ma
   resist an efficiency push (`plan/diagnostics.py`, `results/tables/structural.json`; the unconstrained set
   is in `structural_unconstrained.json`). Report ranges, not single-model planning numbers.
 - Long-run level checks (diagnostics, never used for selection; `scripts/08_longrun.py`,
-  `results/tables/longrun.json`): 15-19-year backtests (`06_sweep.py --phase longval|longtest`) show
-  cumulative-CO2 errors of about +/-10% for the selected model and trend-Kaya alike (carried into the
-  planning ranges, next item). The energy-ladder check (`eval/plausibility.py`) finds
+  `results/tables/longrun.json`): 14-20-year backtests (`06_sweep.py --phase longval|longtest`, 11 cutoffs
+  1997-2007; seeds 0-3 for the two stabilised tied configs, 0-1 for the others) show mean absolute
+  cumulative-CO2 errors of 5-8% for the selected model and 5-7% for trend-Kaya. Every world model
+  undershoots from 1997-2002 cutoffs and overshoots from 2003-2007 (China's boom, then slowdown), so the 11
+  overlapping cutoffs are close to one regime shift seen twice. Use `--aggregate-only` to rebuild a report
+  that mixes seed counts. The energy-ladder check (`eval/plausibility.py`) finds
   no unprecedented projections; every model decouples more slowly than each country's own 1994-2022 past,
   the shoot-only configs least (selected: +0.3/+0.7%/yr by seed, vs +1.3/+1.4 for ms_percap_damped_stab10).
 - Backtest error is carried into the planning ranges (`eval/propagate.py`, `scripts/09_backtest_error.py`,
-  `results/tables/planning_with_backtest_error.json`): each long backtest gives a trend-rate error delta,
-  and every planning path is corrected by exp(-delta*h). Result: maximum effort is below the 1.5C budget in
-  8 of 64 cases (all open loop), so the README no longer says 1.5C is out of reach; it stays within the 2C
-  budget in all 64. The headline is now "2C robust, 1.5C undecided".
+  `results/tables/planning_with_backtest_error.json`): each long backtest gives a trend-rate error delta (44
+  per config), and every planning path is corrected by exp(-delta*h). Headline ranges are the 10th-90th
+  percentile over cases (decided before the expansion; envelopes widen with more draws), envelopes alongside.
+  Maximum effort is below the 1.5C budget in 16.5% of open-loop cases and 0% with fitted dynamics; it stays
+  within the 2C budget in 349/352 cases (exceptions: ms_percap_damped_stab10's two most negative drifts) and
+  in all 176 of the selected config's. Headline: "2C robust (99%), 1.5C undecided".
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
@@ -59,6 +64,7 @@ python -m pytest -q   # 2026-11-11: 62 pass (python -m: a standalone `pytest` ma
 ## Where the next steps are
 
 README "Limitations (read these)", especially the first: a way to constrain or test how the dynamics
-respond to controls. More long-horizon cutoffs and seeds would tighten the backtest-error ranges, which now
-dominate the planning spread; driver (GDP/population) error beyond SSP1-5 and budget/TCRE uncertainty are
-not yet propagated. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.
+respond to controls. Backtest error dominates the planning spread, but more cutoffs in 1997-2007 add little
+independent information (one China regime shift); genuinely new information would need other regions'
+shocks or a different validation design. Driver (GDP/population) error beyond SSP1-5 and budget/TCRE
+uncertainty are not yet propagated. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.

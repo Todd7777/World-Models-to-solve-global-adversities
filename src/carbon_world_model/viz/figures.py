@@ -349,15 +349,23 @@ def fig_longrun(lr: dict) -> plt.Figure:
            [(any_cfg, m, f"baseline: {m.replace('_', ' ')}")
             for m in ("trend_kaya", "growth_persistence", "persistence")]
     y = np.arange(len(rows))
-    for off, phase, col, lab in [(-0.2, "longval", OI["blue"], "cutoffs 1998/2000 → 2015"),
-                                 (0.2, "longtest", OI["orange"], "cutoffs 2003/2005 → 2022")]:
-        v = [100 * bt[phase][c][m]["cum_err"] for c, m, _ in rows]
-        ax1.barh(y + off, v, 0.38, color=col, label=lab)
+    from ..eval.rolling import PHASES
+    hmin, hmax = 99, 0
+    for off, phase, col in [(-0.2, "longval", OI["blue"]), (0.2, "longtest", OI["orange"])]:
+        cuts, hor = PHASES[phase]
+        hmin, hmax = min(hmin, *(hor(c) for c in cuts)), max(hmax, *(hor(c) for c in cuts))
+        lab = f"cutoffs {cuts[0]}-{cuts[-1]} → {cuts[0] + hor(cuts[0])}"
+        v = np.array([100 * bt[phase][c][m]["cum_err"] for c, m, _ in rows])
+        per = [[100 * x[m] for x in bt[phase][c]["cum_err_by_cutoff"].values()] for c, m, _ in rows]
+        lo, hi = v - np.array([min(q) for q in per]), np.array([max(q) for q in per]) - v
+        ax1.barh(y + off, v, 0.38, color=col, label=lab, xerr=[lo, hi],
+                 error_kw={"ecolor": OI["black"], "elinewidth": 0.8, "capsize": 2})
     ax1.axvline(0, color=OI["black"], lw=0.8)
     ax1.set_yticks(y, [r[2] for r in rows], fontsize=8)
     ax1.invert_yaxis()
-    ax1.set(xlabel="error in cumulative aggregate CO2 over the horizon (%)",
-            title="Long-horizon backtests (15-19 years)")
+    ax1.set(xlabel="error in cumulative aggregate CO2 over the horizon (%)\n"
+                   "bar: mean over cutoffs; whisker: min-max over cutoffs",
+            title=f"Long-horizon backtests ({hmin}-{hmax} years)")
     ax1.legend(fontsize=8, loc="lower right")
 
     lad = lr["ladder"]
@@ -393,29 +401,29 @@ def fig_longrun(lr: dict) -> plt.Figure:
 def fig_backtest_error(pe: dict) -> plt.Figure:
     """Planning ranges with and without long-horizon backtest error
     (scripts/09_backtest_error.py), against the 1.5 C and 2 C budgets."""
-    fig, ax = plt.subplots(figsize=(11, 4.6))
+    fig, ax = plt.subplots(figsize=(11, 4.8))
     labels = {"bau": "business-as-usual", "max_fitted": "max effort, fitted dynamics",
               "max_open_loop": "max effort, no learned reaction"}
+    S = pe["summary"]["expanded"]
     rows = []
     for kind in ("bau", "max_fitted", "max_open_loop"):
-        rows += [(f"{labels[kind]}\nstabilised tied models, SSP2", pe["summary"]["none"][kind]["global_cum_gt"],
-                  pe["summary"]["linear"][kind]["global_cum_gt"], pe["summary"]["capped"][kind]["global_cum_gt"]),
+        rows += [(f"{labels[kind]}\nstabilised tied models, SSP2", S["none"][kind]["global_cum_gt"],
+                  S["linear"][kind]["global_cum_gt"]),
                  (f"{labels[kind]}\nselected model, SSP1-5", pe["selected_ssp1to5"][kind]["without_error"],
-                  pe["selected_ssp1to5"][kind]["with_error"], None)]
-    y = np.arange(len(rows))
-    for i, (_, base, lin, cap) in enumerate(rows):
-        ax.plot(lin, [i, i], color=OI["sky"], lw=9, solid_capstyle="butt",
-                label="+ backtest error (linear to 2050)" if i == 0 else None)
-        if cap is not None:
-            ax.plot(cap, [i, i], color=OI["blue"], lw=4, solid_capstyle="butt",
-                    label="+ backtest error (capped at longest backtest)" if i == 0 else None)
-        ax.plot(base, [i, i], color=OI["black"], lw=2, marker="|", ms=12,
+                  pe["selected_ssp1to5"][kind]["with_error"])]
+    for i, (_, base, err) in enumerate(rows):
+        ax.plot(err["envelope"], [i, i], color=OI["sky"], lw=9, solid_capstyle="butt", alpha=0.6,
+                label="+ backtest error: all cases" if i == 0 else None)
+        ax.plot(err["q10_q90"], [i, i], color=OI["blue"], lw=9, solid_capstyle="butt",
+                label="+ backtest error: 10th-90th percentile" if i == 0 else None)
+        ax.plot(base["envelope"], [i, i], color=OI["black"], lw=2, marker="|", ms=14,
                 label="model as fitted" if i == 0 else None)
     for b, txt, ls in [(pe["budget_1p5_gt"], "1.5 °C budget", "--"), (pe["budget_2p0_gt"], "2 °C budget", ":")]:
         ax.axvline(b, color=OI["red"], lw=1.4, ls=ls, label=txt)
-    ax.set_yticks(y, [r[0] for r in rows], fontsize=8)
+    ax.set_yticks(np.arange(len(rows)), [r[0] for r in rows], fontsize=8)
     ax.invert_yaxis()
+    n = pe["delta_stats"][pe["selected"]]["n"]
     ax.set(xlabel="cumulative 2023-2050 CO2, scaled to global (Gt)",
-           title="Planning ranges with long-horizon backtest error carried in")
+           title=f"Planning ranges with long-horizon backtest error ({n} backtests per configuration)")
     ax.legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3)
     return _finish(fig)

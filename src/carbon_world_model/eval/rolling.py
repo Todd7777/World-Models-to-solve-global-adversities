@@ -32,11 +32,14 @@ TEST_CUTOFFS = (2015, 2016, 2017)
 TEST_HORIZON = 7
 
 # Long-run LEVEL checks (diagnostics, never used for selection). Every forecast runs to a
-# fixed end year, so horizons are 15-19 years instead of 6-7:
-#   long validation: cutoffs 1998/2000, ending 2015 (outcomes the validation folds use too)
-#   long test:       cutoffs 2003/2005, ending 2022 (overlaps the test period; report only)
-LONG_VAL_CUTOFFS, LONG_VAL_END = (1998, 2000), 2015
-LONG_TEST_CUTOFFS, LONG_TEST_END = (2003, 2005), 2022
+# fixed end year, so horizons are 14-20 years instead of 6-7:
+#   long validation: cutoffs 1997-2001, ending 2015 (outcomes the validation folds use too)
+#   long test:       cutoffs 2002-2007, ending 2022 (overlaps the test period; report only)
+# Neighbouring cutoffs share most of their forecast years, so 11 cutoffs carry much less
+# independent information than 11 separate tests would. (Before 2026-11-12 the sets were
+# 1998/2000 and 2003/2005.)
+LONG_VAL_CUTOFFS, LONG_VAL_END = (1997, 1998, 1999, 2000, 2001), 2015
+LONG_TEST_CUTOFFS, LONG_TEST_END = (2002, 2003, 2004, 2005, 2006, 2007), 2022
 
 PHASES = {  # phase -> (cutoffs, horizon for each cutoff)
     "val": (VAL_CUTOFFS, lambda c: VAL_HORIZON),

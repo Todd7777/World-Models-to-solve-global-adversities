@@ -45,9 +45,12 @@ def backtests() -> dict:
             rows[cfg] = {m: {k: s[m][k] for k in ("country_mape", "agg_err_final", "abs_agg_err_final",
                                                   "cum_err", "abs_cum_err", "china_err_final", "score")}
                          for m in METHODS if m in s}
+            cuts = r["detail"]["cutoffs"]
             rows[cfg]["agg_err_by_cutoff"] = {
-                co: {m: v[m]["agg_err_final"] for m in METHODS if m in v}
-                for co, v in r["detail"]["cutoffs"].items()}
+                co: {m: v[m]["agg_err_final"] for m in METHODS if m in v} for co, v in cuts.items()}
+            rows[cfg]["cum_err_by_cutoff"] = {
+                co: {m: v[m]["cum_err"] for m in METHODS if m in v} for co, v in cuts.items()}
+            rows[cfg]["n_seeds_by_cutoff"] = {co: v["n_seeds"] for co, v in cuts.items()}
         out[phase] = rows
     return out
 
@@ -85,16 +88,21 @@ def main() -> None:
         json.dump(res, fh, indent=2)
 
     for phase, rows in res["backtests"].items():
-        print(f"\n[{phase}] mean over cutoffs: |final agg err|%, cumulative err%, China final%, MAPE%")
         base = next(iter(rows.values()))
+        print(f"\n[{phase}] {len(base['cum_err_by_cutoff'])} cutoffs. Mean over cutoffs: |final agg err|%, "
+              f"cumulative err% [min..max over cutoffs], China final%, MAPE%, seeds")
+
+        def line(name, r, m):
+            v = r[m]
+            cc = [x[m] for x in r["cum_err_by_cutoff"].values()]
+            seeds = sorted(set(r["n_seeds_by_cutoff"].values())) if m == "world_model" else "-"
+            print(f"  {name:34s} {100*v['abs_agg_err_final']:6.1f} {100*v['cum_err']:+7.1f} "
+                  f"[{100*min(cc):+6.1f}..{100*max(cc):+6.1f}] {100*v['china_err_final']:+7.1f} "
+                  f"{100*v['country_mape']:6.1f}  {seeds}")
         for m in METHODS[1:]:
-            v = base[m]
-            print(f"  {'baseline ' + m:34s} {100*v['abs_agg_err_final']:6.1f} {100*v['cum_err']:+7.1f} "
-                  f"{100*v['china_err_final']:+7.1f} {100*v['country_mape']:6.1f}")
+            line("baseline " + m, base, m)
         for cfg, r in rows.items():
-            v = r["world_model"]
-            print(f"  {cfg:34s} {100*v['abs_agg_err_final']:6.1f} {100*v['cum_err']:+7.1f} "
-                  f"{100*v['china_err_final']:+7.1f} {100*v['country_mape']:6.1f}")
+            line(cfg, r, "world_model")
 
     idx = {c: panel.countries.index(c) for c in BIG}
     print("\n[ladder] SSP2 BAU 2050 vs history: flagged = outside the pooled 95% band of 28-year "

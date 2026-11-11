@@ -23,3 +23,17 @@ def test_capped_correction_stops_growing():
     c = correct_path(path, 0.01, h_cap=19)
     np.testing.assert_allclose(c[19:], np.exp(-0.19))
     assert np.all(np.diff(c[:20]) < 0)
+
+
+def test_long_phases_end_on_fixed_years_with_long_horizons(panel):
+    from carbon_world_model.eval.rolling import (
+        LONG_TEST_END, LONG_VAL_END, PHASES, TEST_CUTOFFS, horizon_for,
+    )
+    for phase, end in (("longval", LONG_VAL_END), ("longtest", LONG_TEST_END)):
+        cutoffs, horizon_of = PHASES[phase]
+        for c in cutoffs:
+            assert c + horizon_of(c) == end
+            assert horizon_of(c) >= 14
+            assert horizon_for(panel, c, horizon_of(c)) == horizon_of(c)  # data reach the end year
+    # long validation outcomes stop before the test folds' outcomes begin
+    assert LONG_VAL_END <= min(TEST_CUTOFFS)

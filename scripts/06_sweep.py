@@ -52,6 +52,8 @@ def main() -> None:
     ap.add_argument("--steps", type=int, default=None)
     ap.add_argument("--root", default=None)
     ap.add_argument("--ssp", action="store_true", help="also make SSP-v9 ex-ante forecasts")
+    ap.add_argument("--aggregate-only", action="store_true",
+                    help="run no new jobs; score whichever of the requested seeds are cached")
     a = ap.parse_args()
 
     configs = a.configs.split(",")
@@ -74,7 +76,10 @@ def main() -> None:
                 cmds.append(cmd)
     print(f"[sweep] phase={a.phase} configs={configs} cutoffs={list(cutoffs)} seeds={seeds} "
           f"-> {len(cmds)} jobs to run ({a.jobs} parallel)", flush=True)
-    run_pool(cmds, a.jobs)
+    if a.aggregate_only:
+        print(f"[sweep] --aggregate-only: skipping {len(cmds)} uncached jobs", flush=True)
+    else:
+        run_pool(cmds, a.jobs)
 
     panel = Panel.load(default_config())
     drivers = ["realized"] + (["ssp"] if (a.ssp and a.phase == "test") else [])

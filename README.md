@@ -28,9 +28,11 @@ CWM couples three things that are usually kept apart:
 > The most important: **planning results still depend on model structure the data do not
 > pin down.** A stability term in training removes learned oscillations and narrows that
 > spread, but does not remove it (see "Planning"). Once the model's own long-horizon
-> backtest errors are carried into the planning ranges (new), **this model can no longer
-> rule 1.5 °C in or out**: under maximum feasible effort, it is missed in 56 of 64 cases and
-> met in 8. What survives every case is that maximum effort stays within the 2 °C budget.
+> backtest errors (44 per configuration) are carried into the planning ranges, **this model
+> can no longer rule 1.5 °C in or out**: under maximum feasible effort it is met in 16% of
+> cases without a learned reaction to the plan, and in none with the fitted dynamics.
+> Maximum effort stays within the 2 °C budget in 99% of cases, and in every case for the
+> selected configuration.
 
 ---
 
@@ -160,7 +162,8 @@ or open-loop dynamics), and 631 – 1,226 Gt across the 12 unconstrained cases. 
 value, every case exceeds the ≈578 Gt remaining 1.5 °C budget, by 12% at the closest.
 **That verdict does not survive the model's own forecast errors** (see "Planning ranges
 with backtest error carried in" below). The conclusion that does survive is that maximum
-feasible effort keeps cumulative emissions within the ≈1,689 Gt 2 °C budget.
+feasible effort keeps cumulative emissions within the ≈1,689 Gt 2 °C budget: in 99% of
+error-adjusted cases, and in all of the selected configuration's.
 
 The model also produces a cost-of-abatement frontier, per-country allocations and a
 **robust plan** optimised against all five SSPs at once. Under the selected model's
@@ -177,31 +180,37 @@ smoothness. These two checks ask whether long-run *levels* hold up
 model selection.
 
 **1. Long-horizon backtests.** Fit at an early cutoff and forecast to a fixed end year with
-realised drivers: long validation, cutoffs 1998/2000 → 2015 (15-17 years); long test,
-cutoffs 2003/2005 → 2022 (17-19 years, overlapping the test period, report only). Means
-over the two cutoffs, two seeds:
+realised drivers: long validation, cutoffs 1997-2001 → 2015 (14-18 years); long test,
+cutoffs 2002-2007 → 2022 (15-20 years, overlapping the test period, report only). Seeds
+0-3 for the two stabilised tied configurations, 0-1 for the others. Neighbouring cutoffs
+share most of their forecast years, so 11 cutoffs are far from 11 independent tests.
+Means over cutoffs, long validation / long test:
 
-| method | cumulative CO₂ error, long val / long test | \|final-year agg. error\| | China final-year error | country MAPE |
-|---|---|---|---|---|
-| **world model, selected** (`ms_full_shootonly_stab100`) | −4.2% / +9.8% | 6.4% / 25.2% | −36% / +49% | **14.6% / 16.9%** |
-| `ms_percap_damped_stab10` (tied on validation) | −14.8% / +21.7% | 27.5% / 41.9% | −52% / +46% | 16.3% / 24.9% |
-| `ms_percap_damped` (previous selection, unconstrained) | −25.9% / +11.2% | 51.6% / 24.7% | −63% / −20% | 24.1% / 23.7% |
-| `orig` | −9.5% / **+4.7%** | 20.3% / **7.5%** | −47% / **−2%** | 17.2% / 19.0% |
-| trend-Kaya | **+2.6%** / +6.6% | 8.1% / 15.6% | −16% / +38% | 23.8% / 18.9% |
-| growth persistence | −5.7% / +22.1% | **2.3%** / 60.0% | −49% / +111% | 22.2% / 27.2% |
+| method | mean \|cumulative CO₂ error\| | signed cumulative error [min … max over cutoffs] | \|final-year agg. error\| | China final-year error | country MAPE |
+|---|---|---|---|---|---|
+| **world model, selected** (`ms_full_shootonly_stab100`) | 5.1% / 8.2% | −5.1% [−7.4 … −2.2] / +5.3% [−8.5 … +13.7] | **6.4%** / 16.5% | −36% / +19% | **13.3% / 15.2%** |
+| `ms_percap_damped_stab10` (tied on validation) | 13.7% / 12.8% | −13.7% [−18.4 … −9.2] / +11.2% [−5.0 … +31.1] | 24.7% / 25.0% | −50% / +24% | 15.5% / 19.6% |
+| `ms_percap_damped` (previous selection, unconstrained) | 27.0% / 9.0% | −27.0% [−38.9 … −15.8] / +4.9% [−12.1 … +21.3] | 50.7% / 18.0% | −64% / **−13%** | 22.6% / 20.3% |
+| `orig` | 8.6% / 9.1% | −6.8% [−10.8 … +4.4] / +6.4% [−8.0 … +18.7] | 17.7% / **14.5%** | −43% / +19% | 19.1% / 19.6% |
+| trend-Kaya | **4.7% / 7.2%** | +3.5% [−2.6 … +10.9] / +6.8% [−1.2 … +11.5] | 10.3% / 16.9% | **−14%** / +45% | 25.7% / 18.1% |
+| growth persistence | 6.5% / 24.4% | −4.2% [−10.4 … +5.7] / +23.0% [−4.2 … +39.6] | 7.3% / 61.8% | −42% / +114% | 24.8% / 28.6% |
 
-- **No method gets 15-19-year levels right.** The windows straddle China's 2000s boom
-  (missed from 1998/2000) and its post-2013 slowdown (overshot from 2003/2005), and every
-  method's China error is tens of percent.
-- **The selected model has the best per-country accuracy at both lengths**, and its
-  cumulative error (−4%, +10%) is comparable to trend-Kaya's (+3%, +7%). It is not the best
-  on aggregate levels: `orig`, the worst model on 6-year validation, is the best on the
-  long test.
-- **The check would have caught the oscillating model**: the previous selection misses the
-  2015 aggregate by 52% from 1998/2000. Its stabilised variant halves that, but still does
-  much worse than the selected configuration.
-- **Implication for planning:** cumulative errors of ±10% over two decades are the realistic
-  precision here. The next section carries them into the planning ranges.
+- **No method gets 14-20-year levels right.** The windows straddle China's 2000s boom and
+  its post-2013 slowdown, and every method's China error is tens of percent. The world
+  models undershoot cumulative CO₂ from every 1997-2002 cutoff (one exception: `orig` from
+  1997) and overshoot from every 2003-2007 cutoff: the errors are dominated by one regime
+  shift, not independent noise.
+- **The selected model has the best per-country accuracy at both lengths**, and its mean
+  absolute cumulative error (5.1%, 8.2%) is close to trend-Kaya's (4.7%, 7.2%), the best on
+  that measure.
+- **Two cutoffs per phase were too few.** With the earlier 1998/2000 and 2003/2005 cutoffs,
+  the selected model's long-test final-year error looked much worse than trend-Kaya's (25%
+  vs 16%) and `orig` looked best; with six long-test cutoffs they are level (16.5% vs 16.9%).
+- **The check would have caught the oscillating model**: the previous selection misses
+  cumulative CO₂ by 27% on average from 1997-2001. Its stabilised variant halves that, but
+  still does much worse than the selected configuration.
+- **Implication for planning:** cumulative errors of about ±10% over two decades are the
+  realistic precision here. The next section carries them into the planning ranges.
 
 **2. Energy-ladder plausibility.** Across countries, energy per person rises with income
 along a stable, concave "ladder" (log energy/cap quadratic in log GDP/cap; R² 0.75 on all
@@ -237,48 +246,61 @@ projection is expected to decouple more slowly.
 ### Planning ranges with backtest error carried in
 
 The long-horizon backtests show the model's aggregate CO₂ error growing roughly linearly in
-log level with horizon, i.e. a wrong trend rate. A line through the origin fits 3 of the
-selected configuration's 4 seed-averaged backtests (R² 0.71–0.92; from 1998 the error
-barely drifts) and all 4 of `ms_percap_damped_stab10`'s (R² 0.82–0.97). Each backtest therefore gives one drift δ
-(log error per year), and every planning path is corrected as path × e^(−δh), h years after
-2022 ([`eval/propagate.py`](src/carbon_world_model/eval/propagate.py),
+log level with horizon, i.e. a wrong trend rate. A line through the origin fits 10 of the
+selected configuration's 11 seed-averaged backtests (R² 0.60–0.94) and 9 of 11 for
+`ms_percap_damped_stab10` (R² 0.71–0.97). Each backtest therefore gives one drift δ (log
+error per year), and every planning path is corrected as path × e^(−δh), h years after 2022
+([`eval/propagate.py`](src/carbon_world_model/eval/propagate.py),
 `scripts/09_backtest_error.py`,
 [`planning_with_backtest_error.json`](results/tables/planning_with_backtest_error.json),
 `fig12_planning_with_backtest_error.png`).
 
-- **Drifts used:** each configuration's own 8 backtests (4 cutoffs × 2 seeds). For the
-  selected configuration δ ranges from −1.1 to +1.6 %/yr; for `ms_percap_damped_stab10`, from
-  −2.6 to +3.9 %/yr.
+- **Drifts used:** each configuration's own 44 backtests (11 cutoffs × 4 seeds). Selected
+  configuration: mean +0.04 %/yr (essentially unbiased), 10th–90th percentile −0.87 to
+  +1.08 %/yr, extremes −1.33 to +1.69. `ms_percap_damped_stab10`: mean −0.27, 10th–90th
+  percentile −2.38 to +2.00, extremes −3.62 to +3.90. Cutoffs from 1997-2002 give negative
+  drifts and 2003-2007 positive ones, so the near-zero mean comes from two eras
+  cancelling.
+- **Summary statistic:** the headline ranges are the 10th–90th percentile over all cases
+  (model × dynamics × drift), with the full envelope alongside. This was decided before the
+  expanded backtests ran, because a min–max envelope widens automatically as draws are added.
 - **Assumptions:** the same trend-rate error applies to BAU and controlled paths (it is an
-  error in the natural dynamics). In the main case the error keeps growing to 2050, 9-13 years
-  beyond the longest backtest; a sensitivity case caps it at 19 years.
-- **Not a confidence interval:** 8 backtests per configuration are a record of errors the
-  model has actually made, all from cutoffs straddling China's boom and slowdown.
+  error in the natural dynamics). In the main case the error keeps growing to 2050, 8-14
+  years beyond the backtests; a sensitivity case caps it at 20 years. The earliest backtest
+  models are fitted on only 8-10 years of data, so their errors probably overstate the
+  full-data model's.
+- **Not a confidence interval:** these are errors the model has actually made, from
+  overlapping windows that all straddle China's boom and slowdown.
 
 Global cumulative CO₂ 2023–2050 (Gt), stabilised tied models, SSP2:
 
 | | business-as-usual | max effort, fitted dynamics | max effort, open loop |
 |---|---|---|---|
-| model as fitted | 1,139 – 1,259 | 797 – 1,026 | 647 – 706 |
-| + backtest error, growing to 2050 | 725 – 1,912 | 581 – 1,535 | 443 – 1,006 |
-| + backtest error, capped at 19 years | 762 – 1,806 | 605 – 1,457 | 455 – 967 |
-| selected model, SSP1–5 × its own errors | 887 – 1,410 | 636 – 967 | 528 – 769 |
+| model as fitted (all 4 models) | 1,139 – 1,259 | 797 – 1,026 | 647 – 706 |
+| + backtest error to 2050, 10th–90th percentile | 942 – 1,668 | 711 – 1,311 | 553 – 886 |
+| + backtest error to 2050, all cases | 725 – 2,283 | 581 – 1,823 | 443 – 1,172 |
+| + backtest error capped at 20 years, 10th–90th percentile | 964 – 1,618 | 717 – 1,276 | 561 – 869 |
+| previous sample (8 backtests), to 2050, 10th–90th percentile | 930 – 1,798 | 669 – 1,373 | 547 – 936 |
+| selected model, SSP1–5 × its 44 errors, 10th–90th percentile [all] | 973 – 1,329 [879 – 1,459] | 692 – 916 [632 – 998] | 566 – 735 [524 – 791] |
 
-What changes:
+What this shows:
 
-- **1.5 °C is no longer ruled out.** Of the 64 max-effort cases (4 models × 2 dynamics × 8
-  drifts), 8 fall below the ≈578 Gt budget (7 with the cap). All 8 combine no learned
-  resistance to the plan (open loop) with a drift under which the model ran high in its
-  backtests. With the fitted dynamics none falls below, but the lowest case (581 Gt) sits
-  on the budget line.
-- **2 °C survives every case.** Maximum feasible effort stays within the ≈1,689 Gt 2 °C
-  budget in all 64 cases (highest 1,535 Gt). Business-as-usual does not: its highest
-  cases exceed the 2 °C budget.
-- **Backtest error now dominates the planning spread.** The fitted-dynamics max-effort range
-  grows from 797–1,026 to 581–1,535 Gt (about four times as wide), far more than the
-  structural disagreement between tied models.
-- **Still missing:** error in the GDP and population drivers beyond the five SSPs, and
-  the uncertainty in the budgets and the TCRE themselves.
+- **1.5 °C stays undecided.** Without a learned reaction to the plan, maximum effort falls
+  below the ≈578 Gt budget in 16.5% of cases (25% with the previous 8 backtests); with the
+  fitted dynamics in none, though the lowest case (581 Gt) sits on the budget line. For the
+  selected model alone across SSP1–5 the shares are 16% and 0%.
+- **2 °C holds in 99% of cases.** Maximum effort stays within the ≈1,689 Gt budget in 349 of
+  352 cases (351 with the cap). All exceptions are `ms_percap_damped_stab10` with fitted
+  dynamics and its two most negative drifts (−3.3 and −3.6 %/yr, from 1997 and 1999 backtest
+  models fitted on 8-10 years of data). None of the selected configuration's 176 cases
+  exceeds it. Business-as-usual exceeds the 2 °C budget in 10% of cases.
+- **More backtests narrowed the central range and widened the extremes.** The 10th–90th
+  percentile range for maximum effort with fitted dynamics went from 669–1,373 to 711–1,311 Gt;
+  the envelope grew, as envelopes do with more draws.
+- **Backtest error still dominates the planning spread**, well beyond the structural
+  disagreement between tied models (797–1,026 Gt as fitted).
+- **Still missing:** error in the GDP and population drivers beyond the five SSPs, and the
+  uncertainty in the budgets and the TCRE themselves.
 
 ---
 
@@ -357,7 +379,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 62 tests
+python -m pytest -q                  # 63 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
@@ -374,8 +396,11 @@ python scripts/03_evaluate.py --config ms_full_shootonly_stab100
 python scripts/04_plan.py            # BAU / max effort (fitted + open loop) / frontier / robust
 python scripts/07_structural.py                         # stabilised tied set -> structural.json
 python scripts/07_structural.py --family unconstrained  # -> structural_unconstrained.json
-python scripts/06_sweep.py --phase longval  --seeds 0,1 --configs ms_full_shootonly_stab100,ms_percap_damped_stab10,ms_full_shootonly,ms_percap_damped,orig
-python scripts/06_sweep.py --phase longtest --seeds 0,1 --configs ms_full_shootonly_stab100,ms_percap_damped_stab10,ms_full_shootonly,ms_percap_damped,orig
+for ph in longval longtest; do
+  python scripts/06_sweep.py --phase $ph --seeds 0,1,2,3 --configs ms_full_shootonly_stab100,ms_percap_damped_stab10
+  python scripts/06_sweep.py --phase $ph --seeds 0,1 --configs ms_full_shootonly,ms_percap_damped,orig
+  python scripts/06_sweep.py --phase $ph --seeds 0,1,2,3 --aggregate-only --configs ms_full_shootonly_stab100,ms_percap_damped_stab10,ms_full_shootonly,ms_percap_damped,orig
+done
 python scripts/08_longrun.py         # long-run level checks -> longrun.json
 python scripts/09_backtest_error.py  # planning ranges with backtest error carried in
 python scripts/05_make_figures.py
@@ -389,14 +414,16 @@ python scripts/05_make_figures.py
   stabilised configurations tied on validation give 2050 BAU emissions from 39 to 48 Gt and
   max-effort cuts from 24% to 49% (fitted dynamics), and how strongly the dynamics push back
   against a plan is not identified. Second, forecast error: carrying the model's own
-  long-horizon backtest errors into the ranges makes the fitted max-effort range about four
-  times as wide, so 1.5 °C can be neither ruled in nor out. Use the ranges, not single-model planning numbers.
-- **Long-run levels are checked, but only weakly.** Over 15-19-year backtests no method,
-  including this model, gets aggregate levels right; cumulative-CO₂ errors of ±10% are
-  realistic. The backtests cover only four cutoffs, all straddling China's boom and
-  slowdown, and use realised drivers (so they understate error for 2050 projections, whose
-  drivers are also uncertain). Carrying them to 2050 assumes the error keeps growing at the
-  same trend rate for 9-13 more years than any backtest covers. The energy-ladder check confirms projections are not unprecedented, but its
+  long-horizon backtest errors into the ranges widens the fitted max-effort range from
+  797–1,026 to 711–1,311 Gt (10th–90th percentile), so 1.5 °C can be neither ruled in nor
+  out. Use the ranges, not single-model planning numbers.
+- **Long-run levels are checked, but only weakly.** Over 14-20-year backtests no method,
+  including this model, gets aggregate levels right; cumulative-CO₂ errors of about ±10% are
+  realistic. The 11 cutoffs overlap heavily and all straddle China's boom and slowdown, so
+  they amount to little more than one regime shift seen from two sides. They use realised
+  drivers, so they understate error for 2050 projections, whose drivers are also uncertain.
+  Carrying them to 2050 assumes the error keeps growing at the same trend rate for 8-14 more
+  years than any backtest covers. The energy-ladder check confirms projections are not unprecedented, but its
   own-past reference is a comparison, not a truth: whether decoupling will slow, as every
   model projects, is not something historical data can settle.
 - **The forecasting advantage is narrow.** The stabilised model beats trend-Kaya on the

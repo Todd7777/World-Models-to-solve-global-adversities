@@ -87,6 +87,11 @@ def main() -> None:
     # Long-run level checks (scripts/08_longrun.py).
     if os.path.exists(os.path.join(TAB, "longrun.json")):
         save(F.fig_longrun(load("longrun.json")), "fig11_longrun_checks.png")
+
+    # Planning ranges with backtest error (scripts/09_backtest_error.py).
+    if os.path.exists(os.path.join(TAB, "planning_with_backtest_error.json")):
+        save(F.fig_backtest_error(load("planning_with_backtest_error.json")),
+             "fig12_planning_with_backtest_error.png")
     print("[ok] figures:", sorted(os.listdir(FIG)))
 
 

@@ -388,3 +388,34 @@ def fig_longrun(lr: dict) -> plt.Figure:
             title="Energy ladder: SSP2 BAU 2022-2050")
     ax2.legend(fontsize=7.5, loc="upper center", bbox_to_anchor=(0.45, -0.14), ncol=2)
     return _finish(fig)
+
+
+def fig_backtest_error(pe: dict) -> plt.Figure:
+    """Planning ranges with and without long-horizon backtest error
+    (scripts/09_backtest_error.py), against the 1.5 C and 2 C budgets."""
+    fig, ax = plt.subplots(figsize=(11, 4.6))
+    labels = {"bau": "business-as-usual", "max_fitted": "max effort, fitted dynamics",
+              "max_open_loop": "max effort, no learned reaction"}
+    rows = []
+    for kind in ("bau", "max_fitted", "max_open_loop"):
+        rows += [(f"{labels[kind]}\nstabilised tied models, SSP2", pe["summary"]["none"][kind]["global_cum_gt"],
+                  pe["summary"]["linear"][kind]["global_cum_gt"], pe["summary"]["capped"][kind]["global_cum_gt"]),
+                 (f"{labels[kind]}\nselected model, SSP1-5", pe["selected_ssp1to5"][kind]["without_error"],
+                  pe["selected_ssp1to5"][kind]["with_error"], None)]
+    y = np.arange(len(rows))
+    for i, (_, base, lin, cap) in enumerate(rows):
+        ax.plot(lin, [i, i], color=OI["sky"], lw=9, solid_capstyle="butt",
+                label="+ backtest error (linear to 2050)" if i == 0 else None)
+        if cap is not None:
+            ax.plot(cap, [i, i], color=OI["blue"], lw=4, solid_capstyle="butt",
+                    label="+ backtest error (capped at longest backtest)" if i == 0 else None)
+        ax.plot(base, [i, i], color=OI["black"], lw=2, marker="|", ms=12,
+                label="model as fitted" if i == 0 else None)
+    for b, txt, ls in [(pe["budget_1p5_gt"], "1.5 °C budget", "--"), (pe["budget_2p0_gt"], "2 °C budget", ":")]:
+        ax.axvline(b, color=OI["red"], lw=1.4, ls=ls, label=txt)
+    ax.set_yticks(y, [r[0] for r in rows], fontsize=8)
+    ax.invert_yaxis()
+    ax.set(xlabel="cumulative 2023-2050 CO2, scaled to global (Gt)",
+           title="Planning ranges with long-horizon backtest error carried in")
+    ax.legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3)
+    return _finish(fig)

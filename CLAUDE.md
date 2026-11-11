@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-11: 59 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-11: 62 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
 ## State on 2026-11-11
@@ -43,17 +43,22 @@ python -m pytest -q   # 2026-11-11: 59 pass (python -m: a standalone `pytest` ma
   is in `structural_unconstrained.json`). Report ranges, not single-model planning numbers.
 - Long-run level checks (diagnostics, never used for selection; `scripts/08_longrun.py`,
   `results/tables/longrun.json`): 15-19-year backtests (`06_sweep.py --phase longval|longtest`) show
-  cumulative-CO2 errors of about +/-10% for the selected model and trend-Kaya alike, as large as the 12%
-  margin behind the 1.5C conclusion (README says so). The energy-ladder check (`eval/plausibility.py`) finds
+  cumulative-CO2 errors of about +/-10% for the selected model and trend-Kaya alike (carried into the
+  planning ranges, next item). The energy-ladder check (`eval/plausibility.py`) finds
   no unprecedented projections; every model decouples more slowly than each country's own 1994-2022 past,
   the shoot-only configs least (selected: +0.3/+0.7%/yr by seed, vs +1.3/+1.4 for ms_percap_damped_stab10).
+- Backtest error is carried into the planning ranges (`eval/propagate.py`, `scripts/09_backtest_error.py`,
+  `results/tables/planning_with_backtest_error.json`): each long backtest gives a trend-rate error delta,
+  and every planning path is corrected by exp(-delta*h). Result: maximum effort is below the 1.5C budget in
+  8 of 64 cases (all open loop), so the README no longer says 1.5C is out of reach; it stays within the 2C
+  budget in all 64. The headline is now "2C robust, 1.5C undecided".
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
 
 ## Where the next steps are
 
-README "Limitations (read these)", especially the first two: a way to constrain or test how the dynamics
-respond to controls, and propagating the long-horizon backtest error (+/-10% cumulative) into the planning
-ranges. Untried: more long-horizon cutoffs and seeds, tuning w_stab beyond {10, 100}, and why shoot-only
-training transfers worse.
+README "Limitations (read these)", especially the first: a way to constrain or test how the dynamics
+respond to controls. More long-horizon cutoffs and seeds would tighten the backtest-error ranges, which now
+dominate the planning spread; driver (GDP/population) error beyond SSP1-5 and budget/TCRE uncertainty are
+not yet propagated. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.

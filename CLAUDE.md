@@ -54,13 +54,13 @@ python -m pytest -q   # 2026-11-12: 70 pass (python -m: a standalone `pytest` ma
   `results/tables/planning_with_backtest_error.json`): each long backtest gives a trend-rate error delta (44
   per config), and every planning path is corrected by exp(-delta*h). Headline ranges are the 10th-90th
   percentile over cases (decided before the expansion; envelopes widen with more draws), envelopes alongside.
-  Fitted max effort: 711-1311 Gt (q10-q90) global fossil CO2 2023-2050.
+  Fitted max effort: 712-1311 Gt (q10-q90) global fossil CO2 2023-2050.
 - GDP/population driver error is carried in too (`eval/propagate.driver_error_vectors`, `perturb_drivers`,
   `scripts/10_driver_error.py`, `results/tables/planning_with_driver_error.json`). Joint per-country
   trend-rate errors come from naive trailing-10-year projections at the 11 long cutoffs (14-20 years) and
   from the 2014 SSPs over 2015-2022; the models are rerun under SSP2 with perturbed drivers. Combined with the
-  emission drifts paired by cutoff (headline; independent as sensitivity): fitted max effort 713-1482 Gt
-  (q10-q90), open loop 550-955 Gt; selected config fitted 692-978 Gt. The errors compounded
+  emission drifts paired by cutoff (headline; independent as sensitivity): fitted max effort 714-1480 Gt
+  (q10-q90), open loop 552-954 Gt; selected config fitted 692-976 Gt. The errors compounded
   historically (both ran low from 1997-2002), so pairing widens the upper tail more than independence.
   (The 1.5C/2C shares in 09/10 compare fossil CO2 2023-2050 with 50% budgets only; use 11 for verdicts.)
 - Carbon budgets are now the published ones (`climate/budgets.py`: Forster et al. 2025 ESSD Table 8, from

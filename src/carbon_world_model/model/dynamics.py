@@ -99,7 +99,11 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None,
     Shapes: B trajectories (countries, or country x start-year pairs), T steps, F fuels.
       inits:    I0 [B], s0 [B,F], optional mom_I0 [B], mom_s0 [B,F] (observed warm start)
       drivers:  gdp [B,T], pop [B,T], process [B,T]
-      controls: None or dict(u_int [B,T], u_deploy [B,T,F])
+      controls: None, or dict(u_int [B,T], u_deploy [B,T,F]) with a precomputed share push,
+                or dict(u_int [B,T], u_clean [B,T], clean_w [F], fossil_mask [F]): a push of
+                u_clean into clean fuels (split by clean_w) taken from the fossil fuels in
+                proportion to their CURRENT shares, so it keeps working after one fuel runs
+                out (the planner's form since 2026-11-13).
       tfrac:    calendar time feature, [T] or [B,T]; defaults to t/(T-1)
       country_idx: [B] int; gathers per-country embedding / static / EF correction.
       natural:  None, or dict(dI_nat [B,T], ds_nat [B,T,F]) to use instead of the
@@ -124,9 +128,13 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None,
         efc_b = params["log_ef_corr"][country_idx]
     ef_eff = ef[None, :] * jnp.exp(efc_b)[:, None]          # [B,F]
 
+    state_push = controls is not None and "u_clean" in controls
     if controls is None:
         u_int_all = jnp.zeros((B, T))
         u_dep_all = jnp.zeros((B, T, F))
+    elif state_push:
+        u_int_all, u_clean_all = controls["u_int"], controls["u_clean"]
+        clean_w, fmask = jnp.asarray(controls["clean_w"]), jnp.asarray(controls["fossil_mask"])
     else:
         u_int_all, u_dep_all = controls["u_int"], controls["u_deploy"]
 
@@ -170,7 +178,13 @@ def rollout(params, static, norm, ef, inits, drivers, controls, hp, tfrac=None,
 
         # Actual next state includes controls.
         I_next = I_t + dI_nat - u_int_all[:, t]
-        s_raw = jax.nn.relu(s_t + ds_nat + u_dep_all[:, t])
+        if state_push:
+            fos = s_t * fmask[None, :]
+            w_fos = fos / (jnp.sum(fos, axis=1, keepdims=True) + 1e-9)
+            u_dep_t = u_clean_all[:, t][:, None] * (clean_w[None, :] - w_fos)
+        else:
+            u_dep_t = u_dep_all[:, t]
+        s_raw = jax.nn.relu(s_t + ds_nat + u_dep_t)
         s_next = s_raw / (jnp.sum(s_raw, axis=1, keepdims=True) + 1e-9)
 
         # Momentum from the natural step only.

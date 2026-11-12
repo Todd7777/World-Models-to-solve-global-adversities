@@ -24,6 +24,7 @@ import numpy as np
 import optax
 
 from ..model.dynamics import rollout
+from ..model.emissions import FOSSIL_IDX
 from .scenario import Scenario
 
 
@@ -39,11 +40,22 @@ class PlanResult:
     cost: float              # total transition effort (model units)
 
 
+def _push(g, h, scen: Scenario) -> dict:
+    """Control dict for the rollout: clean push g taken from the fossil fuels in proportion
+    to their CURRENT shares (dynamics.rollout), efficiency push h. Until 2026-11-13 the
+    push was taken in proportion to each country's 2022 fossil mix (scen.fossil_weights),
+    so the part aimed at an exhausted fuel was wasted and the plan delivered less than its
+    feasibility bound once, e.g., coal ran out."""
+    fmask = np.zeros(len(scen.clean_weights))
+    fmask[list(FOSSIL_IDX)] = 1.0
+    return {"u_int": h, "u_clean": g, "clean_w": jnp.asarray(scen.clean_weights),
+            "fossil_mask": jnp.asarray(fmask)}
+
+
 def _controls(raw_g, raw_h, scen: Scenario):
     g = scen.g_max * jax.nn.sigmoid(raw_g)             # [C,Tf]
     h = scen.h_max * jax.nn.sigmoid(raw_h)             # [C,Tf]
-    shift = scen.clean_weights[None, None, :] - scen.fossil_weights[:, None, :]
-    return {"u_int": h, "u_deploy": g[:, :, None] * shift}, g, h
+    return _push(g, h, scen), g, h
 
 
 def _inits(scen: Scenario) -> dict:
@@ -173,8 +185,9 @@ def _rollout_stack(wm, params, stk, controls):
     """Run one shared control trajectory [C,...] through all stacked scenarios."""
     S = stk["S"]
     tiled = None if controls is None else {
+        **controls,
         "u_int": jnp.tile(controls["u_int"], (S, 1)),
-        "u_deploy": jnp.tile(controls["u_deploy"], (S, 1, 1)),
+        "u_clean": jnp.tile(controls["u_clean"], (S, 1)),
     }
     tr = rollout(params, jnp.asarray(wm.static), wm.norm, jnp.asarray(wm.ef), stk["inits"],
                  stk["drivers"], tiled, wm.hp, tfrac=stk["tfrac"], country_idx=stk["country_idx"])
@@ -186,8 +199,7 @@ def evaluate_controls(wm, params, scens: list[Scenario], g=None, h=None) -> dict
     stk = _stack(scens)
     controls = None
     if g is not None:
-        shift = scens[0].clean_weights[None, None, :] - scens[0].fossil_weights[:, None, :]
-        controls = {"u_int": jnp.asarray(h), "u_deploy": jnp.asarray(g)[:, :, None] * shift}
+        controls = _push(jnp.asarray(g), jnp.asarray(h), scens[0])
     co2 = np.asarray(_rollout_stack(wm, params, stk, controls))
     g_s = co2.sum(axis=1)                              # [S, Tf]
     return {"cum_gt": (g_s[:, 1:].sum(axis=1) / 1000.0).tolist(),

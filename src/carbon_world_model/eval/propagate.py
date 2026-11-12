@@ -128,11 +128,14 @@ def _deltas(proj_gdp, proj_pop, real_gdp, real_pop) -> dict:
             "delta_gdp_aggregate": float(slope(np.log(proj_gdp.sum(0) / real_gdp.sum(0))))}
 
 
-def perturb_drivers(scen, delta_gdp, delta_pop):
-    """Scenario whose GDP / population paths are corrected by exp(-delta * h) per country
-    (index 0, the observed anchor year, is unchanged)."""
+def perturb_drivers(scen, delta_gdp, delta_pop, h_cap: int | None = None):
+    """Scenario whose GDP / population paths are corrected by exp(-delta * min(h, h_cap))
+    per country (index 0, the observed anchor year, is unchanged). h_cap freezes the
+    correction, e.g. at 2050 for runs to 2100."""
     import dataclasses
     h = np.arange(scen.gdp.shape[1], dtype=float)[None, :]
+    if h_cap is not None:
+        h = np.minimum(h, h_cap)
     return dataclasses.replace(
         scen, gdp=scen.gdp * np.exp(-np.asarray(delta_gdp)[:, None] * h),
         pop=scen.pop * np.exp(-np.asarray(delta_pop)[:, None] * h))

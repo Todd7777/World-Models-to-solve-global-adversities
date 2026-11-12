@@ -113,8 +113,8 @@ own proposed change depends on the state, so a plan that moves a country off its
 historical path changes what the network proposes next. The **open-loop counterfactual**
 (same controls, natural changes pinned to business-as-usual) removes that reaction.
 With the selected model under SSP2, maximum feasible effort cuts 2050 emissions **49%**
-below BAU (39.2 → 19.9 Gt) with the fitted dynamics and **67%** in the open loop. The
-fitted dynamics keep 95% of the clean-mix push and 47% of the efficiency push
+below BAU (39.2 → 19.8 Gt) with the fitted dynamics and **66%** in the open loop. The
+fitted dynamics keep 95% of the clean-mix push and 49% of the efficiency push
 ([`plan/diagnostics.py`](src/carbon_world_model/plan/diagnostics.py)). Historical data
 show how energy systems evolve on their own, not how they would respond to pushes far
 outside that range.
@@ -142,10 +142,10 @@ their family, two seeds each, under SSP2
 |---|---|---|
 | business-as-usual 2050 emissions (2022: 34.8 Gt) | 39.2 – 48.4 Gt | 31.9 – 56.7 Gt |
 | China BAU change 2022→2035 | +19% – +29% | +12% – +48% |
-| max-effort 2050 cut vs BAU, fitted dynamics | 24% – 49% | 12% – 46% |
+| max-effort 2050 cut vs BAU, fitted dynamics | 24% – 49% | 14% – 49% |
 | max-effort 2050 cut vs BAU, open loop | 66% – 68% | 64% – 66% |
-| efficiency push retained by the fitted dynamics | 12% – 47% | 3% – 45% |
-| warming avoided by max effort (TCRE central) | 0.09 – 0.14 °C fitted, 0.20 – 0.23 °C open loop | 0.06 – 0.14 °C, 0.18 – 0.27 °C |
+| efficiency push retained by the fitted dynamics | 13% – 49% | 3% – 44% |
+| warming avoided by max effort (TCRE central) | 0.09 – 0.15 °C fitted, 0.20 – 0.23 °C open loop | 0.06 – 0.14 °C, 0.18 – 0.27 °C |
 
 The range of 2050 BAU emissions shrinks from 25 to 9 Gt and that of China's 2035 change from
 36 to 10 points, though part of that comes from comparing 4 models with 6. The two
@@ -159,8 +159,8 @@ the second configuration uses 30% more energy in 2050 with a 5% cleaner mix, hen
 more CO₂.
 
 **Carbon budgets.** Scaled to global, cumulative 2023–2050 fossil and industry CO₂ under
-maximum feasible effort is 647 – 1,026 Gt across the 8 stabilised cases (4 models × fitted
-or open-loop dynamics), and 631 – 1,226 Gt across the 12 unconstrained cases. Budget
+maximum feasible effort is 648 – 1,026 Gt across the 8 stabilised cases (4 models × fitted
+or open-loop dynamics), and 630 – 1,226 Gt across the 12 unconstrained cases. Budget
 verdicts are in "Carbon-budget likelihoods" below. Earlier versions of this README
 compared these numbers with budgets about 1.5–2.7 times too large and without land-use or
 post-2050 CO₂. They concluded first that 1.5 °C was out of reach, then that it was
@@ -168,7 +168,7 @@ undecided, and that 2 °C was robust; the last two do not hold.
 
 The model also produces a cost-of-abatement frontier, per-country allocations and a
 **robust plan** optimised against all five SSPs at once. Under the selected model's
-fitted dynamics, meeting a budget in every SSP costs 25% more effort than a plan tuned
+fitted dynamics, meeting a budget in every SSP costs 24% more effort than a plan tuned
 to SSP2 alone, and that SSP2-only plan overshoots by 27 Gt under SSP5. These demonstrate
 the method; their magnitudes inherit the structural uncertainty above.
 
@@ -277,19 +277,19 @@ Global cumulative CO₂ 2023–2050 (Gt), stabilised tied models, SSP2:
 
 | | business-as-usual | max effort, fitted dynamics | max effort, open loop |
 |---|---|---|---|
-| model as fitted (all 4 models) | 1,139 – 1,259 | 797 – 1,026 | 647 – 706 |
-| + backtest error to 2050, 10th–90th percentile | 942 – 1,668 | 711 – 1,311 | 553 – 886 |
-| + backtest error to 2050, all cases | 725 – 2,283 | 581 – 1,823 | 443 – 1,172 |
-| + backtest error capped at 20 years, 10th–90th percentile | 964 – 1,618 | 717 – 1,276 | 561 – 869 |
-| previous sample (8 backtests), to 2050, 10th–90th percentile | 930 – 1,798 | 669 – 1,373 | 547 – 936 |
-| selected model, SSP1–5 × its 44 errors, 10th–90th percentile [all] | 973 – 1,329 [879 – 1,459] | 692 – 916 [632 – 998] | 566 – 735 [524 – 791] |
+| model as fitted (all 4 models) | 1,139 – 1,259 | 797 – 1,026 | 648 – 708 |
+| + backtest error to 2050, 10th–90th percentile | 942 – 1,668 | 712 – 1,311 | 554 – 889 |
+| + backtest error to 2050, all cases | 725 – 2,283 | 581 – 1,824 | 444 – 1,174 |
+| + backtest error capped at 20 years, 10th–90th percentile | 964 – 1,618 | 717 – 1,277 | 562 – 872 |
+| previous sample (8 backtests), to 2050, 10th–90th percentile | 930 – 1,798 | 668 – 1,375 | 547 – 941 |
+| selected model, SSP1–5 × its 44 errors, 10th–90th percentile [all] | 973 – 1,329 [879 – 1,459] | 692 – 917 [632 – 998] | 567 – 737 [525 – 793] |
 
 What this shows:
 
 - **Budget verdicts:** see "Carbon-budget likelihoods" below. (This section originally
   compared these ranges with budgets that were too large.)
 - **More backtests narrowed the central range and widened the extremes.** The 10th–90th
-  percentile range for maximum effort with fitted dynamics went from 669–1,373 to 711–1,311 Gt;
+  percentile range for maximum effort with fitted dynamics went from 668–1,375 to 712–1,311 Gt;
   the envelope grew, as envelopes do with more draws.
 - **Backtest error still dominates the planning spread**, well beyond the structural
   disagreement between tied models (797–1,026 Gt as fitted).
@@ -340,13 +340,13 @@ Global cumulative CO₂ 2023–2050 (Gt), stabilised tied models, SSP2, 10th–9
 
 | | business-as-usual | max effort, fitted dynamics | max effort, open loop |
 |---|---|---|---|
-| model as fitted | 1,148 – 1,255 | 806 – 1,008 | 651 – 701 |
-| + emission backtest error (previous section) | 942 – 1,668 | 711 – 1,311 | 553 – 886 |
-| + driver error only, naive projections | 1,147 – 1,387 | 813 – 1,128 | 648 – 746 |
-| + driver error only, 2014 SSPs | 1,040 – 1,133 | 731 – 899 | 599 – 650 |
-| **+ both, paired by cutoff** | **943 – 1,880** [738 – 2,628] | **713 – 1,482** [611 – 2,103] | **550 – 955** [446 – 1,280] |
-| + both, independent | 965 – 1,767 [663 – 2,649] | 721 – 1,409 [535 – 2,104] | 561 – 916 [411 – 1,291] |
-| selected configuration only, both, paired | — | 692 – 978 [≤ 1,032] | 564 – 773 |
+| model as fitted | 1,148 – 1,255 | 805 – 1,008 | 652 – 703 |
+| + emission backtest error (previous section) | 942 – 1,668 | 712 – 1,311 | 554 – 889 |
+| + driver error only, naive projections | 1,147 – 1,387 | 813 – 1,127 | 651 – 747 |
+| + driver error only, 2014 SSPs | 1,040 – 1,133 | 732 – 899 | 600 – 650 |
+| **+ both, paired by cutoff** | **943 – 1,880** [738 – 2,628] | **714 – 1,480** [614 – 2,096] | **552 – 954** [448 – 1,280] |
+| + both, independent | 965 – 1,767 [663 – 2,649] | 721 – 1,413 [537 – 2,096] | 562 – 918 [413 – 1,289] |
+| selected configuration only, both, paired | — | 692 – 976 [≤ 1,029] | 564 – 774 |
 
 What this shows:
 
@@ -356,7 +356,7 @@ What this shows:
 - **Historically the two errors compounded.** From the 1997–2002 cutoffs, both the GDP
   projections and the model ran low (China's boom). Pairing them therefore widens the upper
   end more than treating them as independent: the paired 90th percentile for fitted max
-  effort is 1,482 Gt, against 1,409 Gt independent.
+  effort is 1,480 Gt, against 1,413 Gt independent.
 - **Budget verdicts:** see "Carbon-budget likelihoods" below. (This section originally
   compared these ranges with budgets that were too large.)
 - **Still missing:** driver errors from any period other than 1997–2022.
@@ -401,8 +401,8 @@ or less: the table does not go lower.
 |---|---|---|---|---|
 | business-as-usual | ≤17% in every case | ≤17% [≤17–≤17] | 18% [≤17–40] | 1% |
 | max effort, fitted dynamics | ≤17% in every case | ≤17% [≤17–20] | **43% [≤17–68]** | 39% |
-| max effort, no learned reaction | ≤17% in every case | 21% [≤17–36] | **70% [37–83]** | 81% |
-| selected configuration, max effort, fitted | ≤17% in every case | ≤17% [≤17–22] | 50% [37–71] | 50% |
+| max effort, no learned reaction | ≤17% in every case | 21% [≤17–35] | **70% [38–83]** | 81% |
+| selected configuration, max effort, fitted | ≤17% in every case | ≤17% [≤17–22] | 50% [37–72] | 50% |
 
 How much the accounting choices matter (max effort, fitted dynamics, 2 °C, median
 likelihood): 43% headline; 71% counting fossil 2023–2050 only; 53% with net zero by 2060;
@@ -552,7 +552,7 @@ python scripts/05_make_figures.py
   max-effort cuts from 24% to 49% (fitted dynamics), and how strongly the dynamics push back
   against a plan is not identified. Second, forecast error: carrying the model's own
   long-horizon backtest errors and the historical errors of GDP and population projections
-  into the ranges widens the fitted max-effort range from 806–1,008 to 713–1,482 Gt (10th–90th
+  into the ranges widens the fitted max-effort range from 805–1,008 to 714–1,480 Gt (10th–90th
   percentile), enough to make 2 °C at maximum effort a near coin flip. Use the ranges, not
   single-model planning numbers.
 - **Long-run levels are checked, but only weakly.** Over 14-20-year backtests no method,

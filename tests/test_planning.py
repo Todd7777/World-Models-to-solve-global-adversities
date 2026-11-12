@@ -47,3 +47,37 @@ def test_tcre_translation(cfg):
     assert abs(w["central"] - clim.tcre_degC_per_ttco2) < 1e-9
     assert w["low"] < w["central"] < w["high"]
     assert tcre.remaining_budget_gtco2(1.5, clim) > 0
+
+
+def test_clean_push_removes_fossil_at_its_bound_even_after_a_fuel_runs_out(panel, cfg, wm, params):
+    """With natural changes switched off, the max-effort push must cut the fossil share by
+    g_max every year until fossil is gone. The pre-2026-11-13 push was split by FIXED fossil
+    weights; aimed entirely at coal here, it stalls once coal runs out while oil and gas
+    remain. The current push follows the current fossil mix and does not."""
+    import dataclasses
+    import numpy as np
+    import jax.numpy as jnp
+    from carbon_world_model.config import FUELS
+    scen = build_scenario(panel, cfg, end_year=2100)
+    coal_only = np.zeros_like(scen.fossil_weights)
+    coal_only[:, FUELS.index("coal")] = 1.0
+    scen = dataclasses.replace(scen, fossil_weights=coal_only)   # only the old form reads it
+    zero = {"dI_nat": jnp.zeros((scen.C, scen.Tf)), "ds_nat": jnp.zeros((scen.C, scen.Tf, len(FUELS)))}
+    big = jnp.full((scen.C, scen.Tf), 8.0)
+    ctrl, g, _ = O._controls(big, big, scen)
+    gm = float(np.asarray(g)[0, 0])
+
+    def fossil(controls):
+        sh = np.asarray(O._rollout(wm, params, scen, controls, zero)["shares"])
+        return sh[:, :, :3].sum(-1)
+
+    new = fossil(ctrl)
+    step = new[:, :-1] - new[:, 1:]
+    active = new[:, 1:] > gm
+    np.testing.assert_allclose(step[active], gm, rtol=1e-3)
+    assert np.all(new[:, -1] < 1e-6)
+    shift = scen.clean_weights[None, None, :] - scen.fossil_weights[:, None, :]
+    old = fossil({"u_int": jnp.zeros((scen.C, scen.Tf)),
+                  "u_deploy": jnp.full((scen.C, scen.Tf, 1), gm) * shift})
+    oil_gas = panel.shares()[:, -1, 1:3].sum(-1) > 0.05
+    assert np.all(old[oil_gas, -1] > 0.05)   # the old form leaves oil and gas in place

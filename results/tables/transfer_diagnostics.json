@@ -1,0 +1,348 @@
+{
+  "config": "ms_full",
+  "held_out": [
+    "United States",
+    "Germany",
+    "United Kingdom",
+    "Ukraine",
+    "Turkey",
+    "United Arab Emirates",
+    "Belgium",
+    "Uzbekistan",
+    "Algeria",
+    "Finland",
+    "Kuwait",
+    "Israel"
+  ],
+  "mature": [
+    "United Kingdom",
+    "Hungary",
+    "Belgium",
+    "Denmark",
+    "Finland",
+    "Greece",
+    "United States",
+    "Italy",
+    "Sweden",
+    "France",
+    "Germany",
+    "Japan"
+  ],
+  "seeds": [
+    0,
+    1
+  ],
+  "cutoffs": [
+    2005,
+    2007,
+    2009
+  ],
+  "horizon": 6,
+  "transfer": {
+    "2005": {
+      "by_seed": {
+        "0": {
+          "transfer": 0.10926410460774727,
+          "in_training": 0.09309483460814953,
+          "transfer_adapt_insample": 0.041608830538455335
+        },
+        "1": {
+          "transfer": 0.10598452156348102,
+          "in_training": 0.10711476039354376,
+          "transfer_adapt_insample": 0.04297978903658972
+        }
+      },
+      "trend_kaya": 0.08795552874925298,
+      "per_country": {
+        "United States": {
+          "transfer": 0.07706926253787358,
+          "in_training": 0.08815249895851812,
+          "trend_kaya": 0.01727582922449652
+        },
+        "Germany": {
+          "transfer": 0.0728582210022001,
+          "in_training": 0.05624696724683058,
+          "trend_kaya": 0.02764306959381571
+        },
+        "United Kingdom": {
+          "transfer": 0.13798295898980192,
+          "in_training": 0.16567449774396326,
+          "trend_kaya": 0.01732641702046485
+        },
+        "Ukraine": {
+          "transfer": 0.08506959864300051,
+          "in_training": 0.06345802010299693,
+          "trend_kaya": 0.11716165820481804
+        },
+        "Turkey": {
+          "transfer": 0.055441457581642574,
+          "in_training": 0.07243843498618954,
+          "trend_kaya": 0.0490879532833614
+        },
+        "United Arab Emirates": {
+          "transfer": 0.14951432999865066,
+          "in_training": 0.09583236279909393,
+          "trend_kaya": 0.10086837559954732
+        },
+        "Belgium": {
+          "transfer": 0.14924978152479543,
+          "in_training": 0.12686894509271693,
+          "trend_kaya": 0.06821242955906677
+        },
+        "Uzbekistan": {
+          "transfer": 0.21911395982750387,
+          "in_training": 0.15447492588244613,
+          "trend_kaya": 0.25256629814066706
+        },
+        "Algeria": {
+          "transfer": 0.040455297750663435,
+          "in_training": 0.047652081554000095,
+          "trend_kaya": 0.08948668212042936
+        },
+        "Finland": {
+          "transfer": 0.09055105462084323,
+          "in_training": 0.11808141582829973,
+          "trend_kaya": 0.11305556327668898
+        },
+        "Kuwait": {
+          "transfer": 0.1599542074164681,
+          "in_training": 0.15245185243301795,
+          "trend_kaya": 0.14883811537563518
+        },
+        "Israel": {
+          "transfer": 0.05423162713392621,
+          "in_training": 0.05992556738208651,
+          "trend_kaya": 0.05394395359204454
+        }
+      }
+    },
+    "2007": {
+      "by_seed": {
+        "0": {
+          "transfer": 0.12856505951630656,
+          "in_training": 0.1053427416215669,
+          "transfer_adapt_insample": 0.03880167459883026
+        },
+        "1": {
+          "transfer": 0.1267685022485616,
+          "in_training": 0.13135458888865925,
+          "transfer_adapt_insample": 0.039545485877393496
+        }
+      },
+      "trend_kaya": 0.10928552470646838,
+      "per_country": {
+        "United States": {
+          "transfer": 0.07866983025551132,
+          "in_training": 0.10002013065470503,
+          "trend_kaya": 0.03075609796698463
+        },
+        "Germany": {
+          "transfer": 0.036555363481165865,
+          "in_training": 0.03021895793182107,
+          "trend_kaya": 0.03284515463977102
+        },
+        "United Kingdom": {
+          "transfer": 0.1547789924389948,
+          "in_training": 0.16682797594316606,
+          "trend_kaya": 0.018028929866538396
+        },
+        "Ukraine": {
+          "transfer": 0.15617141734812817,
+          "in_training": 0.08899129613828027,
+          "trend_kaya": 0.1681143123721693
+        },
+        "Turkey": {
+          "transfer": 0.060888972534400274,
+          "in_training": 0.06108628709187549,
+          "trend_kaya": 0.04820916812624051
+        },
+        "United Arab Emirates": {
+          "transfer": 0.24469228721901387,
+          "in_training": 0.1420510299585952,
+          "trend_kaya": 0.1974767199555759
+        },
+        "Belgium": {
+          "transfer": 0.20231002463518186,
+          "in_training": 0.1786073734929169,
+          "trend_kaya": 0.04295652758605862
+        },
+        "Uzbekistan": {
+          "transfer": 0.13709140849709534,
+          "in_training": 0.23302741884872322,
+          "trend_kaya": 0.1964184191128188
+        },
+        "Algeria": {
+          "transfer": 0.05342239646916584,
+          "in_training": 0.04680640418261678,
+          "trend_kaya": 0.1493763877039729
+        },
+        "Finland": {
+          "transfer": 0.16807635494833728,
+          "in_training": 0.230859729841059,
+          "trend_kaya": 0.09881464913986109
+        },
+        "Kuwait": {
+          "transfer": 0.17873388911704313,
+          "in_training": 0.07264979982304327,
+          "trend_kaya": 0.2664304536589377
+        },
+        "Israel": {
+          "transfer": 0.060610433645171144,
+          "in_training": 0.06903757915455445,
+          "trend_kaya": 0.06199947634869172
+        }
+      }
+    },
+    "2009": {
+      "by_seed": {
+        "0": {
+          "transfer": 0.13070548378406255,
+          "in_training": 0.13900912648506805,
+          "transfer_adapt_insample": 0.041658322331041726
+        },
+        "1": {
+          "transfer": 0.155396847263975,
+          "in_training": 0.11827095020345833,
+          "transfer_adapt_insample": 0.044892805613229864
+        }
+      },
+      "trend_kaya": 0.09037865499756917,
+      "per_country": {
+        "United States": {
+          "transfer": 0.15888240694750427,
+          "in_training": 0.08050185972291629,
+          "trend_kaya": 0.01897956759588859
+        },
+        "Germany": {
+          "transfer": 0.04932502381015989,
+          "in_training": 0.04113802322156826,
+          "trend_kaya": 0.03814647777420881
+        },
+        "United Kingdom": {
+          "transfer": 0.2235364498036754,
+          "in_training": 0.21309859893746966,
+          "trend_kaya": 0.04871304832837864
+        },
+        "Ukraine": {
+          "transfer": 0.13410592874885183,
+          "in_training": 0.1053327669016294,
+          "trend_kaya": 0.17781590532187694
+        },
+        "Turkey": {
+          "transfer": 0.05567878847441976,
+          "in_training": 0.07033320542796702,
+          "trend_kaya": 0.1512625642255445
+        },
+        "United Arab Emirates": {
+          "transfer": 0.3512342022101266,
+          "in_training": 0.16930082365556126,
+          "trend_kaya": 0.21796417127822929
+        },
+        "Belgium": {
+          "transfer": 0.10001504121808666,
+          "in_training": 0.12161460326721266,
+          "trend_kaya": 0.026788226947490296
+        },
+        "Uzbekistan": {
+          "transfer": 0.23471432664099995,
+          "in_training": 0.16187831884742107,
+          "trend_kaya": 0.04947535654815821
+        },
+        "Algeria": {
+          "transfer": 0.1519416158678215,
+          "in_training": 0.10033435757157144,
+          "trend_kaya": 0.1296786275860785
+        },
+        "Finland": {
+          "transfer": 0.06519722482975951,
+          "in_training": 0.17549418165925448,
+          "trend_kaya": 0.0557455888138657
+        },
+        "Kuwait": {
+          "transfer": 0.1390736522955455,
+          "in_training": 0.19953030224727653,
+          "trend_kaya": 0.08218525392927421
+        },
+        "Israel": {
+          "transfer": 0.0529093254412744,
+          "in_training": 0.10512341867131025,
+          "trend_kaya": 0.08778907162183631
+        }
+      }
+    }
+  },
+  "mature_intensity_trend_pct_per_year": {
+    "2005": {
+      "model_by_seed": {
+        "0": -0.7567992739494095,
+        "1": -0.4636182176022599
+      },
+      "pre_cutoff_10y": -2.4100191004745235,
+      "realised": -2.464945473070721
+    },
+    "2007": {
+      "model_by_seed": {
+        "0": -0.5260020351137041,
+        "1": 0.590368966394545
+      },
+      "pre_cutoff_10y": -2.8324396847758018,
+      "realised": -1.830490494221134
+    },
+    "2009": {
+      "model_by_seed": {
+        "0": -0.7513070524018258,
+        "1": -0.6253082820855127
+      },
+      "pre_cutoff_10y": -2.6598058158493743,
+      "realised": -2.1154672818223528
+    },
+    "planning_bau_2022_2032": {
+      "by_seed": {
+        "0": -2.1360297329624314,
+        "1": -2.0601808356642546,
+        "2": -2.164630425711455,
+        "3": -1.7118735439975874,
+        "4": -1.819972130397938,
+        "5": -1.4600300120711147,
+        "6": -1.774689289669178,
+        "7": -2.043910357097767,
+        "8": -1.6436731147169887,
+        "9": -1.9896391359368781
+      },
+      "observed_2012_2022": -2.1777680701817888
+    }
+  },
+  "intensity_change_split": {
+    "cutoff": 2009,
+    "by_seed": {
+      "0": {
+        "reproduces_sweep_output": true,
+        "split_matches_production_forecast": true,
+        "mature_pct_per_year": {
+          "damped_momentum": -1.1302980184555054,
+          "network_correction": 0.18206873536109924,
+          "total": -0.7513018250465393
+        },
+        "others_pct_per_year": {
+          "damped_momentum": -1.9888473749160767,
+          "network_correction": -0.6649879813194275,
+          "total": -1.9468002319335938
+        }
+      },
+      "1": {
+        "reproduces_sweep_output": true,
+        "split_matches_production_forecast": true,
+        "mature_pct_per_year": {
+          "damped_momentum": -1.1169962882995605,
+          "network_correction": 0.35438111424446106,
+          "total": -0.6253001093864441
+        },
+        "others_pct_per_year": {
+          "damped_momentum": -2.065345525741577,
+          "network_correction": -1.1000750064849854,
+          "total": -2.2570841312408447
+        }
+      }
+    }
+  }
+}

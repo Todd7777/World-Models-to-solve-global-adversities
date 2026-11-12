@@ -84,5 +84,16 @@
       "trend_kaya": 0.06337700594084296
     }
   },
-  "shared_training": "train.fit.fit on the training countries (the deployed recipe)"
+  "shared_training": "train.fit.fit on the training countries (the deployed recipe)",
+  "in_training": {
+    "seeds": 5,
+    "per_seed_mape": [
+      0.07910014406325631,
+      0.09527426200451278,
+      0.07049964969832254,
+      0.08341350511358378,
+      0.06548669596929216
+    ],
+    "seed_ensemble_mape": 0.06144297285264297
+  }
 }

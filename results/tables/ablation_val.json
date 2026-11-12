@@ -1,13 +1,13 @@
 {
   "orig": {
     "world_model": {
-      "country_mape": 0.11079752320074682,
-      "rmse_mt": 131.13567924602557,
-      "agg_err_final": 0.06176266155356103,
-      "agg_abs_err_mean": 0.04786119033104267,
-      "china_err_final": 0.12397721018379042,
-      "abs_china_err_final": 0.12397721018379042,
-      "score": 15.865871353178948
+      "country_mape": 0.12216413268581115,
+      "rmse_mt": 219.4391272613747,
+      "agg_err_final": 0.11694582077902016,
+      "agg_abs_err_mean": 0.07773904366293106,
+      "china_err_final": 0.2537095903473708,
+      "abs_china_err_final": 0.2537095903473708,
+      "score": 19.990317634874224
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -48,13 +48,13 @@
   },
   "notime": {
     "world_model": {
-      "country_mape": 0.14092428968058568,
-      "rmse_mt": 209.03856520107874,
-      "agg_err_final": 0.14083505233925542,
-      "agg_abs_err_mean": 0.09621630328617038,
-      "china_err_final": 0.20319202174455353,
-      "abs_china_err_final": 0.20319202174455353,
-      "score": 23.714059296675604
+      "country_mape": 0.14339250111428345,
+      "rmse_mt": 164.8821988053426,
+      "agg_err_final": 0.09802484513318764,
+      "agg_abs_err_mean": 0.07502604461940367,
+      "china_err_final": 0.10550046218020519,
+      "abs_china_err_final": 0.15238925255293698,
+      "score": 21.841854573368714
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -95,13 +95,13 @@
   },
   "percap": {
     "world_model": {
-      "country_mape": 0.12374929376113736,
-      "rmse_mt": 187.2612408511017,
-      "agg_err_final": 0.08237275393343708,
-      "agg_abs_err_mean": 0.06769119912422034,
-      "china_err_final": 0.18076704241996955,
-      "abs_china_err_final": 0.18076704241996955,
-      "score": 19.14404928853577
+      "country_mape": 0.12123425143236873,
+      "rmse_mt": 185.5744735641791,
+      "agg_err_final": 0.07003054383464237,
+      "agg_abs_err_mean": 0.0672799688900067,
+      "china_err_final": 0.1885406806501906,
+      "abs_china_err_final": 0.1885406806501906,
+      "score": 18.85142203223754
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -142,13 +142,13 @@
   },
   "ema": {
     "world_model": {
-      "country_mape": 0.12031759028196214,
-      "rmse_mt": 196.3228782525492,
-      "agg_err_final": 0.08118563238642919,
-      "agg_abs_err_mean": 0.05906668965107963,
-      "china_err_final": 0.07708169596856146,
-      "abs_china_err_final": 0.15436076522511333,
-      "score": 17.938427993304177
+      "country_mape": 0.12888299336647954,
+      "rmse_mt": 142.25518836525757,
+      "agg_err_final": 0.03460637061483792,
+      "agg_abs_err_mean": 0.0430998089600663,
+      "china_err_final": -0.049810982245889,
+      "abs_china_err_final": 0.08870155193993225,
+      "score": 17.198280232654582
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -189,13 +189,13 @@
   },
   "damped": {
     "world_model": {
-      "country_mape": 0.12305500770554563,
-      "rmse_mt": 140.0970936449217,
-      "agg_err_final": 0.06745394823863014,
-      "agg_abs_err_mean": 0.04753130458838836,
-      "china_err_final": 0.03220984034341629,
-      "abs_china_err_final": 0.09259590263499222,
-      "score": 17.058631229393402
+      "country_mape": 0.13158112919628545,
+      "rmse_mt": 160.78946657868866,
+      "agg_err_final": 0.10038099006366352,
+      "agg_abs_err_mean": 0.055412909791556685,
+      "china_err_final": 0.0592698417724862,
+      "abs_china_err_final": 0.0592698417724862,
+      "score": 18.699403898784215
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -236,13 +236,13 @@
   },
   "ms": {
     "world_model": {
-      "country_mape": 0.0910245829709942,
-      "rmse_mt": 123.7469561086222,
-      "agg_err_final": -0.03223137174835372,
-      "agg_abs_err_mean": 0.03671546006201105,
-      "china_err_final": -0.08717522754837524,
-      "abs_china_err_final": 0.10697763417957841,
-      "score": 12.774004303300524
+      "country_mape": 0.09222754657715809,
+      "rmse_mt": 132.68539712833538,
+      "agg_err_final": -0.021084525071999205,
+      "agg_abs_err_mean": 0.03099837845935563,
+      "china_err_final": -0.08926528487867662,
+      "abs_china_err_final": 0.12341723090445855,
+      "score": 12.322592503651371
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -283,13 +283,13 @@
   },
   "ms_notime": {
     "world_model": {
-      "country_mape": 0.09673535137690066,
-      "rmse_mt": 114.92719564757778,
-      "agg_err_final": 0.007870161973546138,
-      "agg_abs_err_mean": 0.023420153644759984,
-      "china_err_final": -0.0449977705845373,
-      "abs_china_err_final": 0.12467707771607656,
-      "score": 12.015550502166064
+      "country_mape": 0.09533877214607199,
+      "rmse_mt": 97.15799698430743,
+      "agg_err_final": 0.05016695183713813,
+      "agg_abs_err_mean": 0.03321352820370182,
+      "china_err_final": 0.056356295409897054,
+      "abs_china_err_final": 0.08284701987619504,
+      "score": 12.85523003497738
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -330,13 +330,13 @@
   },
   "ms_notime_percap": {
     "world_model": {
-      "country_mape": 0.09458705081921126,
-      "rmse_mt": 101.72594385961592,
-      "agg_err_final": 0.02042791079885518,
-      "agg_abs_err_mean": 0.023934917883294857,
-      "china_err_final": -0.010665168150973242,
-      "abs_china_err_final": 0.0747287184780835,
-      "score": 11.852196870250612
+      "country_mape": 0.09341864251669714,
+      "rmse_mt": 110.29571970031161,
+      "agg_err_final": 0.02609221616457578,
+      "agg_abs_err_mean": 0.027214699662540944,
+      "china_err_final": 0.0017202232543127767,
+      "abs_china_err_final": 0.09511783883341791,
+      "score": 12.063334217923808
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -377,13 +377,13 @@
   },
   "ms_notime_percap_ema": {
     "world_model": {
-      "country_mape": 0.09538469501480866,
-      "rmse_mt": 112.35344575821004,
-      "agg_err_final": 0.03853545180549782,
-      "agg_abs_err_mean": 0.025723395941102244,
-      "china_err_final": 0.06359960691694089,
-      "abs_china_err_final": 0.1073833477305952,
-      "score": 12.11080909559109
+      "country_mape": 0.09902496006675994,
+      "rmse_mt": 98.98495200627447,
+      "agg_err_final": 0.04567135454220361,
+      "agg_abs_err_mean": 0.03249889134599843,
+      "china_err_final": 0.05094453359018968,
+      "abs_china_err_final": 0.05094453359018968,
+      "score": 13.152385141275838
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -424,13 +424,13 @@
   },
   "ms_full": {
     "world_model": {
-      "country_mape": 0.09693173594163974,
-      "rmse_mt": 106.14577158559239,
-      "agg_err_final": 0.027225176407736626,
-      "agg_abs_err_mean": 0.020096177480076534,
-      "china_err_final": -0.012705994057645173,
-      "abs_china_err_final": 0.10642385024406757,
-      "score": 11.70279134217163
+      "country_mape": 0.09410354358584888,
+      "rmse_mt": 109.42833508125658,
+      "agg_err_final": 0.019483199982782713,
+      "agg_abs_err_mean": 0.019728530280338143,
+      "china_err_final": -0.046496275398829945,
+      "abs_china_err_final": 0.06830251912645391,
+      "score": 11.383207386618702
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -518,13 +518,13 @@
   },
   "notime_percap_damped": {
     "world_model": {
-      "country_mape": 0.15088438056886033,
-      "rmse_mt": 187.31820929345352,
-      "agg_err_final": 0.07279835630162947,
-      "agg_abs_err_mean": 0.05658828030268908,
-      "china_err_final": -0.0677420072213304,
-      "abs_china_err_final": 0.16862459476746863,
-      "score": 20.74726608715494
+      "country_mape": 0.14193066268968602,
+      "rmse_mt": 183.05152229390742,
+      "agg_err_final": 0.06312058729317804,
+      "agg_abs_err_mean": 0.04740055888477856,
+      "china_err_final": -0.08491078330752161,
+      "abs_china_err_final": 0.0975863665116879,
+      "score": 18.93312215744646
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -565,13 +565,13 @@
   },
   "ms_ema": {
     "world_model": {
-      "country_mape": 0.09525858005540412,
-      "rmse_mt": 88.44521907367668,
-      "agg_err_final": 0.041061669913793945,
-      "agg_abs_err_mean": 0.0434046201545564,
-      "china_err_final": 0.06412706298989901,
-      "abs_china_err_final": 0.06412706298989901,
-      "score": 13.866320020996053
+      "country_mape": 0.09317545830596335,
+      "rmse_mt": 108.51809760295468,
+      "agg_err_final": -0.007816175217446144,
+      "agg_abs_err_mean": 0.030064823373496582,
+      "china_err_final": -0.05422108411854448,
+      "abs_china_err_final": 0.09826554765625915,
+      "score": 12.324028167945993
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -612,13 +612,13 @@
   },
   "ms_damped": {
     "world_model": {
-      "country_mape": 0.09513278846167439,
-      "rmse_mt": 126.63886767382299,
-      "agg_err_final": -0.023242691461232395,
-      "agg_abs_err_mean": 0.0348185043566356,
-      "china_err_final": -0.07229274226842738,
-      "abs_china_err_final": 0.1617847225031731,
-      "score": 12.995129281831
+      "country_mape": 0.09800623378781122,
+      "rmse_mt": 94.28907091232941,
+      "agg_err_final": 0.001930603725735151,
+      "agg_abs_err_mean": 0.043104084163539086,
+      "china_err_final": -0.009575902195631892,
+      "abs_china_err_final": 0.060426886941754444,
+      "score": 14.111031795135032
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -659,13 +659,13 @@
   },
   "ms_percap": {
     "world_model": {
-      "country_mape": 0.08827124660969221,
-      "rmse_mt": 105.42207930023949,
-      "agg_err_final": -0.016480209833864074,
-      "agg_abs_err_mean": 0.03375165032151595,
-      "china_err_final": -0.056178318177561325,
-      "abs_china_err_final": 0.10386914179716515,
-      "score": 12.202289693120816
+      "country_mape": 0.08368382812698222,
+      "rmse_mt": 87.9882977700953,
+      "agg_err_final": -0.006737324775537997,
+      "agg_abs_err_mean": 0.02594291856872008,
+      "china_err_final": -0.04475249068332956,
+      "abs_china_err_final": 0.06774008824329071,
+      "score": 10.96267466957023
     },
     "persistence": {
       "country_mape": 0.10759818818172277,
@@ -706,13 +706,13 @@
   },
   "ms_percap_damped": {
     "world_model": {
-      "country_mape": 0.0867300208331112,
-      "rmse_mt": 113.10925620019805,
-      "agg_err_final": -0.002431956173902081,
-      "agg_abs_err_mean": 0.023731406747811757,
-      "china_err_final": -0.06079139133851084,
-      "abs_china_err_final": 0.08784755353370034,
-      "score": 11.046142758092294
+      "country_mape": 0.09219318154677751,
+      "rmse_mt": 134.40673275822695,
+      "agg_err_final": -0.006332781482721901,
+      "agg_abs_err_mean": 0.015723878973441196,
+      "china_err_final": -0.08344992231731864,
+      "abs_china_err_final": 0.12725452242038165,
+      "score": 10.79170605202187
     },
     "persistence": {
       "country_mape": 0.10759818818172277,

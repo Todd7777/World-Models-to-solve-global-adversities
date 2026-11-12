@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-12: 70 pass
+pytest             # 2026-11-12: 74 pass
 ```
 
 If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
@@ -30,7 +30,7 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## State on 2026-11-12
 
-- **All 70 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
+- **All 74 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
   `ms_full` (`SELECTED_CONFIG` in `config.py`). `scripts/02_train.py` reproduces it bit for bit (seed 0, about 2.5
   minutes on 4 cores). Seeds 0-3 all pass the planning tests (`results/tables/seed_sensitivity.json`).
 - **Planning uses a ten-seed ensemble** (`results/model/ensemble/`, `scripts/02b_train_ensemble.py`; seed 0 is a
@@ -39,6 +39,14 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   widely: maximum-effort cut 26-59% (mean 41%), and the checkpoint is the most optimistic of the ten. A plan robust
   to every SSP and seed costs +119% effort. After any retrain of the checkpoint, rerun `02b_train_ensemble.py`:
   until then `04_plan.py` and `test_committed_ensemble_contains_the_checkpoint` refuse the stale ensemble.
+- **The seed spread is explained: the planner's closed loop.** `scripts/control_response.py` (`plan/response.py`,
+  `results/tables/control_response.json`) shows that controls push countries into states no country has been in,
+  and each seed's network responds differently: 19-38% of the efficiency effort and 22-74% of the low-carbon push
+  survive to 2050, the low-carbon push alone moves energy demand by -39% to +39%, and maximum effort's realised
+  intensity fall is 0.9-4.6%/yr against the 3.0%/yr limit. With the network kept on the BAU path, adding the
+  controls on top (open loop) cuts 79-84% but double-counts, since the limits are total rates; lifting total rates
+  to the limits (frontier) cuts 61-70%. The planner is unchanged (still closed loop). Rerun `control_response.py`
+  after `02b_train_ensemble.py`: `test_committed_control_response_matches_the_ensemble` checks the table.
 - **Selection re-checked after a leak; it holds.** Every fit with a cutoff leaked post-cutoff drivers through the
   full-run loss's curvature term until `46cc5ce`; full-data fits (checkpoint, ensemble, tie-break checks) were never
   affected. The leak-free rerun in `results/sweep_val/report.json` (all 16 configs, 4000 steps, seeds 0-1; leaky
@@ -88,4 +96,5 @@ README "Limitations (read these)" and "What changed on 2026-11-12". The open que
 level with trend-Kaya given the true drivers (ahead on the test folds, behind on the validation folds) and behind
 driver-free baselines ex ante; the model transfers to unseen countries at about twice trend-Kaya's error; and
 training seeds of the selected config disagree on the achievable cut (26-59%), so robust plans cost twice the
-effort.
+effort. That disagreement comes from the closed-loop planner relying on the network off the data (README, "Why
+the training seeds disagree"); whether to plan at the frontier instead is the owner's decision.

@@ -10,8 +10,10 @@ nothing after 2015 is scored):
    the error on the same countries of the validation sweep's own model (trained on all 60
    countries, the 12 included), with trend-Kaya for reference; per country too.
 2. The energy-intensity trend of 12 mature economies in the validation models'
-   forecasts, against their pre-cutoff (10-year) and realised trends; and in the
-   planning ensemble's BAU (2022-2032, heuristic drivers) against 2012-2022.
+   forecasts, against their pre-cutoff (10-year) and realised trends; their final-year
+   CO2 error against trend-Kaya's; their share of the model's per-country MAPE gap to
+   trend-Kaya over all 60 countries; and the planning ensemble's BAU intensity trend for
+   them (2022-2032, heuristic drivers) against 2012-2022.
 3. For the cutoff-2009 validation models: each forecast year's natural intensity change
    split into its damped-momentum and network-correction parts. The models are refitted
    (the result records whether the refit reproduces the sweep's output), and the split
@@ -194,11 +196,22 @@ def main() -> None:
             "per_country": per_country,
         }
         trend = lambda D, i: (np.log(D[i, -1] / panel.gdp[i, k + H]) - np.log(D[i, 0] / panel.gdp[i, k])) / H  # noqa: E731
+        one_c = lambda pred, i: M.mape(pred[i:i + 1], true[i:i + 1], mask[i:i + 1])  # noqa: E731
+        gap_share = {}
+        for s in seeds:
+            gap = np.array([one_c(intrain[s], i) - one_c(tk, i) for i in range(panel.n_countries)])
+            gap_share[s] = {"mean_country_gap_pts": float(100 * gap.mean()),
+                            "mature_part_pts": float(100 * gap[mature].sum() / panel.n_countries),
+                            "mature_share": float(gap[mature].sum() / gap.sum())}
         out["mature_intensity_trend_pct_per_year"][co] = {
             "model_by_seed": {s: float(100 * np.mean([trend(runs[co][j]["D_realized"], i) for i in mature]))
                               for j, s in enumerate(seeds)},
             "pre_cutoff_10y": float(100 * np.mean([(lI[i, k] - lI[i, k - 10]) / 10 for i in mature])),
             "realised": float(100 * np.mean([(lI[i, k + H] - lI[i, k]) / H for i in mature])),
+            "final_year_co2_error_by_seed": {s: float(np.mean([intrain[s][i, -1] / true[i, -1] - 1 for i in mature]))
+                                             for s in seeds},
+            "final_year_co2_error_trend_kaya": float(np.mean([tk[i, -1] / true[i, -1] - 1 for i in mature])),
+            "gap_to_trend_kaya_by_seed": gap_share,
         }
 
     from carbon_world_model.plan import optimize as O
@@ -228,7 +241,10 @@ def main() -> None:
         m = out["mature_intensity_trend_pct_per_year"][co]
         print(f"mature-economy intensity trend, cutoff {co}: model "
               + ", ".join(f"{v:+.2f}" for v in m["model_by_seed"].values())
-              + f" %/yr | pre-cutoff {m['pre_cutoff_10y']:+.2f}, realised {m['realised']:+.2f}")
+              + f" %/yr | pre-cutoff {m['pre_cutoff_10y']:+.2f}, realised {m['realised']:+.2f} | final-year CO2 "
+              + ", ".join(f"{100 * v:+.1f}%" for v in m["final_year_co2_error_by_seed"].values())
+              + f" (trend-Kaya {100 * m['final_year_co2_error_trend_kaya']:+.1f}%) | share of gap to trend-Kaya "
+              + ", ".join(f"{100 * v['mature_share']:.0f}%" for v in m["gap_to_trend_kaya_by_seed"].values()))
     b = out["mature_intensity_trend_pct_per_year"]["planning_bau_2022_2032"]
     print(f"planning BAU 2022-2032: mean {np.mean(list(b['by_seed'].values())):+.2f} %/yr "
           f"(observed 2012-2022 {b['observed_2012_2022']:+.2f})")

@@ -58,7 +58,15 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 - **The transfer test now trains its shared dynamics with `fit(country_w=...)`**, the deployed recipe (`0c93b5c`);
   it used plain Adam, which was unstable for `ms_full`. `spatial_transfer(..., end_year=...)` scores only up to
   `end_year`; a validation-period transfer (cutoff 2009, `end_year=2015`) gave 12.5-13.7% over three seeds
-  against trend-Kaya's 9.0%.
+  against trend-Kaya's 9.0%. `transfer.json` also records the test-fold model's error on the same 12 countries
+  (trained on all 60): 7.9% per seed against the transfer run's 15.4% (one seed), a penalty of about 7 points.
+  `scripts/transfer_diagnostics.py` (validation period only, about 15 minutes with 4 workers; needs the val sweep
+  outputs) finds only about 1 point there (12.6% transfer, 11.6% in-training, trend-Kaya 9.6%). Most of the
+  validation gap is a bias of the cutoff-2005-2009 models: they stall 12 mature economies' efficiency trend
+  (forecast -0.8 to +0.6 %/yr against -1.8 to -2.5 realised), through weak damped momentum plus a network
+  correction that pushes their intensity up. The deployed ensemble's BAU mostly keeps that trend (-1.9 against
+  -2.2 %/yr). Choosing a new country's starting latent (random or the training mean) changed nothing beyond
+  adaptation noise, which is about 1 point.
 - Sweep job outputs record their step count and full config; report entries record their step count. Scores
   never pool outputs trained differently (apart from the seed) or without that record. Older job caches lack
   it; delete and rerun them. Caches written before `46cc5ce` (2026-11-11) carry the same record but were
@@ -84,8 +92,15 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## Where the next steps are
 
-README "Limitations (read these)" and "What changed on 2026-11-12". The open questions there: forecasts are only
-level with trend-Kaya given the true drivers (ahead on the test folds, behind on the validation folds) and behind
-driver-free baselines ex ante; the model transfers to unseen countries at about twice trend-Kaya's error; and
-training seeds of the selected config disagree on the achievable cut (26-59%), so robust plans cost twice the
-effort.
+README "Limitations (read these)" and "What changed on 2026-11-12". The open questions there:
+- Forecasts are only level with trend-Kaya given the true drivers (ahead on the test folds, behind on the
+  validation folds) and behind driver-free baselines ex ante.
+- Transfer to unseen countries is worse than trend extrapolation, but the transfer penalty is not settled (about
+  1 point on the validation period, about 7 on the single test-period run). Settling it needs the owner's call:
+  more transfer seeds on the spent test period, or a fresh holdout year from a newer OWID release (the panel ends
+  in 2022).
+- The cutoff-2005-2009 models stall mature economies' efficiency trend. Candidate fixes are structural (a longer
+  momentum memory, or damping toward a country's own long-run drift rather than toward zero). They would be new
+  configurations, so validate them on the validation folds; re-selection is the owner's decision.
+- Training seeds of the selected config disagree on the achievable cut (26-59%), so robust plans cost twice the
+  effort.

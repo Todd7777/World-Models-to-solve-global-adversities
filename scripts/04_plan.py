@@ -69,7 +69,8 @@ def main() -> None:
 
     bud15 = tcre.remaining_budget_gtco2(1.5, clim)
     bud20 = tcre.remaining_budget_gtco2(2.0, clim)
-    print(f"\nremaining global budget from 2022: 1.5C ~{bud15:,.0f} Gt, 2.0C ~{bud20:,.0f} Gt")
+    print(f"\nremaining global CO2 budget from 2023 (50%, Forster et al. 2025): 1.5C ~{bud15:,.0f} Gt, "
+          f"2.0C ~{bud20:,.0f} Gt")
 
     # Cost-of-abatement frontier under SSP2.
     ssp2 = scens[SSPS.index("SSP2")]

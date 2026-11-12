@@ -19,6 +19,10 @@ Neither is a confidence interval; the deltas come from overlapping windows.
 Both are reported for the expanded sample (11 cutoffs x seeds 0-3) and, for comparison,
 for the previous sample (cutoffs 1998/2000/2003/2005 x seeds 0-1).
 
+Budget shares printed here compare fossil+industry CO2 2023-2050 with the 50% budgets
+only (a lenient lower-bound accounting); scripts/11_budgets.py gives the full comparison
+with budget uncertainty, land-use CO2 and post-2050 emissions.
+
 Usage:  python scripts/09_backtest_error.py
 Writes results/tables/planning_with_backtest_error.json.
 """

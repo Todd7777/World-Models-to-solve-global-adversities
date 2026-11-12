@@ -98,6 +98,10 @@ def main() -> None:
         save(F.fig_driver_error(load("planning_with_backtest_error.json"),
                                 load("planning_with_driver_error.json")),
              "fig13_planning_by_error_source.png")
+
+    # Carbon-budget likelihoods with full accounting (scripts/11_budgets.py).
+    if os.path.exists(os.path.join(TAB, "budget_likelihoods.json")):
+        save(F.fig_budget_likelihoods(load("budget_likelihoods.json")), "fig14_budget_likelihoods.png")
     print("[ok] figures:", sorted(os.listdir(FIG)))
 
 

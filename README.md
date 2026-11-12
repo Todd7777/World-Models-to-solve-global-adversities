@@ -27,12 +27,14 @@ CWM couples three things that are usually kept apart:
 > assumptions, and its limitations (below) are reported as prominently as its results.
 > The most important: **planning results still depend on model structure the data do not
 > pin down.** A stability term in training removes learned oscillations and narrows that
-> spread, but does not remove it (see "Planning"). Once the model's own long-horizon
-> backtest errors and the historical errors of GDP and population projections are carried
-> into the planning ranges, **this model can no longer rule 1.5 °C in or out**: under
-> maximum feasible effort it is met in 19% of cases without a learned reaction to the plan,
-> and in none with the fitted dynamics. Maximum effort stays within the 2 °C budget in 98%
-> of cases, and in every case for the selected configuration.
+> spread, but does not remove it (see "Planning"). The project's carbon budgets were also
+> too large: they attributed all remaining warming to CO₂, giving about 2.7 times (1.5 °C)
+> and 1.5 times (2 °C) the published values. With the published budgets, their
+> uncertainty, the model's and the drivers' forecast errors, and all CO₂ until net zero
+> counted: **1.5 °C has a 17% or lower likelihood in every case, even at maximum feasible
+> effort. 2 °C at maximum effort is roughly as likely as not** (median 43% with the fitted
+> dynamics, 70% without a learned reaction to the plan), and unlikely under
+> business-as-usual (median 18%). See "Carbon-budget likelihoods".
 
 ---
 
@@ -101,7 +103,7 @@ What this does and does not show:
   countries at R² 0.990 (MAPE 12.9%), against MAPE 9.3% for the previous selection and
   7.6% for trend-Kaya.
 
-### Planning: one robust conclusion (2 °C), wide uncertainty about 1.5 °C
+### Planning: 1.5 °C out of reach, 2 °C undecided, wide uncertainty
 
 Feasibility limits come from the fastest *sustained* historical transitions: low-carbon
 share +1.8 points/yr, energy intensity −3.0%/yr.
@@ -156,15 +158,13 @@ for the selected configuration. The BAU gap is entirely a difference in energy d
 the second configuration uses 30% more energy in 2050 with a 5% cleaner mix, hence 24%
 more CO₂.
 
-**Carbon budgets, model as fitted.** Scaled to global, cumulative 2023–2050 CO₂ under
+**Carbon budgets.** Scaled to global, cumulative 2023–2050 fossil and industry CO₂ under
 maximum feasible effort is 647 – 1,026 Gt across the 8 stabilised cases (4 models × fitted
-or open-loop dynamics), and 631 – 1,226 Gt across the 12 unconstrained cases. Taken at face
-value, every case exceeds the ≈578 Gt remaining 1.5 °C budget, by 12% at the closest.
-**That verdict does not survive the model's own forecast errors** (see "Planning ranges
-with backtest error carried in" below). The conclusion that does survive is that maximum
-feasible effort keeps cumulative emissions within the ≈1,689 Gt 2 °C budget: in 98% of
-cases once both model and driver errors are included, and in all of the selected
-configuration's.
+or open-loop dynamics), and 631 – 1,226 Gt across the 12 unconstrained cases. Budget
+verdicts are in "Carbon-budget likelihoods" below. Earlier versions of this README
+compared these numbers with budgets about 1.5–2.7 times too large and without land-use or
+post-2050 CO₂. They concluded first that 1.5 °C was out of reach, then that it was
+undecided, and that 2 °C was robust; the last two do not hold.
 
 The model also produces a cost-of-abatement frontier, per-country allocations and a
 **robust plan** optimised against all five SSPs at once. Under the selected model's
@@ -286,22 +286,15 @@ Global cumulative CO₂ 2023–2050 (Gt), stabilised tied models, SSP2:
 
 What this shows:
 
-- **1.5 °C stays undecided.** Without a learned reaction to the plan, maximum effort falls
-  below the ≈578 Gt budget in 16.5% of cases (25% with the previous 8 backtests); with the
-  fitted dynamics in none, though the lowest case (581 Gt) sits on the budget line. For the
-  selected model alone across SSP1–5 the shares are 16% and 0%.
-- **2 °C holds in 99% of cases.** Maximum effort stays within the ≈1,689 Gt budget in 349 of
-  352 cases (351 with the cap). All exceptions are `ms_percap_damped_stab10` with fitted
-  dynamics and its two most negative drifts (−3.3 and −3.6 %/yr, from 1997 and 1999 backtest
-  models fitted on 8-10 years of data). None of the selected configuration's 176 cases
-  exceeds it. Business-as-usual exceeds the 2 °C budget in 10% of cases.
+- **Budget verdicts:** see "Carbon-budget likelihoods" below. (This section originally
+  compared these ranges with budgets that were too large.)
 - **More backtests narrowed the central range and widened the extremes.** The 10th–90th
   percentile range for maximum effort with fitted dynamics went from 669–1,373 to 711–1,311 Gt;
   the envelope grew, as envelopes do with more draws.
 - **Backtest error still dominates the planning spread**, well beyond the structural
   disagreement between tied models (797–1,026 Gt as fitted).
-- **Not yet included here:** error in the GDP and population drivers (next section), and the
-  uncertainty in the budgets and the TCRE themselves.
+- **Not yet included here:** error in the GDP and population drivers (next section), and
+  budget uncertainty and full CO₂ accounting ("Carbon-budget likelihoods").
 
 ### Planning ranges with GDP and population driver error carried in
 
@@ -364,16 +357,78 @@ What this shows:
   projections and the model ran low (China's boom). Pairing them therefore widens the upper
   end more than treating them as independent: the paired 90th percentile for fitted max
   effort is 1,482 Gt, against 1,409 Gt independent.
-- **1.5 °C stays undecided.** Maximum effort falls below the ≈578 Gt budget in 18.8% of
-  open-loop cases and none with the fitted dynamics (12.5% and 0% for the selected
-  configuration).
-- **2 °C now holds in 98% of cases.** Maximum effort exceeds the ≈1,689 Gt budget in 8 of
-  352 paired cases (2.3%; 1.2% independent). All 8 are `ms_percap_damped_stab10` with fitted
-  dynamics from the 1997–1999 cutoffs, whose backtest models were fitted on 8–10 years of
-  data. The selected configuration never exceeds it (at most 1,032 Gt). Business-as-usual
-  exceeds the 2 °C budget in 17% of paired cases.
-- **Still missing:** uncertainty in the carbon budgets and the TCRE themselves, and driver
-  errors from any period other than 1997–2022.
+- **Budget verdicts:** see "Carbon-budget likelihoods" below. (This section originally
+  compared these ranges with budgets that were too large.)
+- **Still missing:** driver errors from any period other than 1997–2022.
+
+### Carbon-budget likelihoods
+
+A remaining carbon budget is uncertain, and it covers all CO₂ (fossil, industry and land
+use) until net zero. Earlier versions of this project used one number per target,
+(target − 1.24 °C) / TCRE. That attributes all remaining warming to CO₂, and it was compared
+with fossil and industry CO₂ for 2023–2050 only. All three choices made the targets look
+easier. This section replaces them ([`climate/budgets.py`](src/carbon_world_model/climate/budgets.py),
+`scripts/11_budgets.py`, [`budget_likelihoods.json`](results/tables/budget_likelihoods.json),
+`fig14_budget_likelihoods.png`).
+
+**Budgets.** Remaining carbon budgets by likelihood are from Forster et al. (2025),
+*Indicators of Global Climate Change 2024*, ESSD 17, 2641–2680, Table 8. They run from the
+start of 2025, reflect TCRE uncertainty (median 0.45 °C per 1000 GtCO₂), and include
+future non-CO₂ warming and an Earth-system-feedback adjustment. They are rebased to the
+start of 2023 by adding the 40.6 and 41.6 GtCO₂ emitted in 2023 and 2024 (Global Carbon
+Budget 2024). The paper notes that non-CO₂ mitigation can move them by about ±200 GtCO₂.
+(Its Table 8 caption says "start of 2024"; the header, text and summary table say 2025,
+which is used here.)
+
+| GtCO₂ from the start of 2023 | 17% | 33% | 50% | 67% | 83% | earlier project value |
+|---|---|---|---|---|---|---|
+| 1.5 °C | 402 | 282 | 212 | 162 | 112 | 578 |
+| 1.7 °C | 992 | 722 | 572 | 472 | 372 | 1,022 |
+| 2.0 °C | 1,872 | 1,392 | 1,132 | 952 | 772 | 1,689 |
+
+**Accounting.** Total CO₂ from 2023 until net zero = the model's fossil and industry CO₂
+for 2023–2050, plus land-use CO₂ falling linearly from 4.2 GtCO₂/yr (2024) to zero in 2050,
+plus a tail after 2050 falling linearly from the path's 2050 level to net zero in 2070. The
+tail is an assumption, not a model output. Sensitivities: fossil 2023–2050 only (the old
+practice, a lower bound), net zero by 2060, constant land-use CO₂, and non-CO₂ ±200 GtCO₂.
+All were fixed before the results were computed.
+
+**Likelihood of staying below each threshold**, model and driver errors (paired), all
+stabilised tied models, SSP2; median [10th–90th percentile] across cases. "17%" means 17%
+or less: the table does not go lower.
+
+| | 1.5 °C | 1.7 °C | 2 °C | cases ≥ 50% for 2 °C |
+|---|---|---|---|---|
+| business-as-usual | ≤17% in every case | ≤17% [≤17–≤17] | 18% [≤17–40] | 1% |
+| max effort, fitted dynamics | ≤17% in every case | ≤17% [≤17–20] | **43% [≤17–68]** | 39% |
+| max effort, no learned reaction | ≤17% in every case | 21% [≤17–36] | **70% [37–83]** | 81% |
+| selected configuration, max effort, fitted | ≤17% in every case | ≤17% [≤17–22] | 50% [37–71] | 50% |
+
+How much the accounting choices matter (max effort, fitted dynamics, 2 °C, median
+likelihood): 43% headline; 71% counting fossil 2023–2050 only; 53% with net zero by 2060;
+39% with constant land-use CO₂; 31% / 59% with non-CO₂ budgets 200 GtCO₂ smaller / larger.
+
+What this shows:
+
+- **1.5 °C is out of reach in every case**, with a likelihood of 17% or less under each
+  accounting variant and each non-CO₂ sensitivity (varied one at a time). That includes
+  maximum effort with no learned reaction to the plan and fossil CO₂ to 2050 only. Combining
+  the most lenient accounting (no land-use or post-2050 CO₂) with the most generous non-CO₂
+  budget (+200 GtCO₂) lifts 15% of maximum-effort cases above 17%, to at most 42%.
+- **2 °C at maximum effort is undecided:** roughly as likely as not with the fitted dynamics,
+  and about 70% likely if the system does not push back against the plan. Under
+  business-as-usual it is unlikely (median 18%).
+- **The earlier verdicts came from the budget, not the model.** "1.5 °C undecided" and
+  "2 °C robust (98%)" came from budgets about 2.7 and 1.5 times too large, compared with
+  fossil CO₂ to 2050 only.
+- **Post-2050 emissions and land-use CO₂ now carry much of the weight.** Maximum-effort
+  paths still emit 14–38 GtCO₂ (global) in 2050 as fitted, and 11–56 GtCO₂ (10th–90th
+  percentile) with errors. So when net zero arrives moves the 2 °C likelihood by about 10
+  points per decade (53% for 2060, 43% for 2070).
+- **These likelihoods use the published TCRE uncertainty for a given total.** The spread
+  across cases reflects this project's error propagation, which is a set of cases, not a
+  probability distribution.
+
 
 ---
 
@@ -392,10 +447,11 @@ All in [`results/figures/`](results/figures), regenerated by `scripts/05_make_fi
 | `fig7_ssp_pathways_robust.png` | BAU and max effort (fitted and open loop) per SSP; robust planning |
 | `fig8_mix_ssp2.png` | Fuel-mix transition, BAU vs maximum feasible effort (SSP2) |
 | `fig9_frontier_ssp2.png` | Cost-of-abatement frontier (SSP2) |
-| `fig10_structural_ssp2.png` | Planning results across the stabilised validation-tied models vs carbon budgets |
+| `fig10_structural_ssp2.png` | Planning results across the stabilised validation-tied models (budget lines: 50% budgets, which cover all CO₂ to net zero, so this comparison is lenient) |
 | `fig11_longrun_checks.png` | Long-horizon backtests (cumulative CO₂ error); energy-ladder decoupling vs own past |
 | `fig12_planning_with_backtest_error.png` | Planning ranges with and without backtest error, against the 1.5 °C and 2 °C budgets |
 | `fig13_planning_by_error_source.png` | Planning ranges by error source: model, GDP/population drivers, both |
+| `fig14_budget_likelihoods.png` | Likelihood of staying below 1.5 / 1.7 / 2 °C with published budgets and full CO₂ accounting |
 
 ---
 
@@ -445,7 +501,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 | Training | `train/fit.py`, `train/losses.py` | full run, multiple shooting, stability term |
 | Evaluation | `eval/` | rolling-origin protocol, baselines, transfer, conformal calibration |
 | C: Planning | `plan/optimize.py`, `plan/scenario.py`, `plan/diagnostics.py` | optimal and robust control; open-loop counterfactual; control retention |
-| D: Climate | `climate/tcre.py` | cumulative CO₂ → warming and carbon budgets |
+| D: Climate | `climate/tcre.py`, `climate/budgets.py` | cumulative CO₂ → warming; published carbon budgets and their likelihoods |
 
 ---
 
@@ -453,7 +509,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 66 tests
+python -m pytest -q                  # 70 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
@@ -478,6 +534,7 @@ done
 python scripts/08_longrun.py         # long-run level checks -> longrun.json
 python scripts/09_backtest_error.py  # planning ranges with backtest error carried in
 python scripts/10_driver_error.py    # ... and with GDP/population driver error
+python scripts/11_budgets.py         # budget likelihoods with full CO2 accounting
 python scripts/05_make_figures.py
 ```
 
@@ -485,14 +542,19 @@ python scripts/05_make_figures.py
 
 ## Limitations (read these)
 
+- **The carbon budgets were too large until 2026-11-12.** The project's own formula ignored
+  non-CO₂ warming and was compared with fossil CO₂ to 2050 only. Earlier claims ("1.5 °C
+  undecided", "2 °C robust") depended on that. The published budgets and full accounting
+  now used still rest on assumptions: the timing of net zero after 2050 (a linear decline
+  to 2070), future land-use CO₂, and the TCRE-only likelihoods of the published table.
 - **Planning results are uncertain in two ways the data cannot resolve.** First, structure:
   stabilised configurations tied on validation give 2050 BAU emissions from 39 to 48 Gt and
   max-effort cuts from 24% to 49% (fitted dynamics), and how strongly the dynamics push back
   against a plan is not identified. Second, forecast error: carrying the model's own
   long-horizon backtest errors and the historical errors of GDP and population projections
   into the ranges widens the fitted max-effort range from 806–1,008 to 713–1,482 Gt (10th–90th
-  percentile), so 1.5 °C can be neither ruled in nor out. Use the ranges, not single-model
-  planning numbers.
+  percentile), enough to make 2 °C at maximum effort a near coin flip. Use the ranges, not
+  single-model planning numbers.
 - **Long-run levels are checked, but only weakly.** Over 14-20-year backtests no method,
   including this model, gets aggregate levels right; cumulative-CO₂ errors of about ±10% are
   realistic. The 11 cutoffs overlap heavily and all straddle China's boom and slowdown, so

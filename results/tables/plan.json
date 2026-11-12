@@ -820,8 +820,8 @@
     }
   ],
   "budgets": {
-    "global_1p5_gt": 577.7777777777778,
-    "global_2p0_gt": 1688.888888888889,
+    "global_1p5_gt": 212.2,
+    "global_2p0_gt": 1132.2,
     "tcre_degC_per_ttco2": 0.45
   },
   "robust": {

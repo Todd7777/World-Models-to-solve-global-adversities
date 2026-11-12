@@ -20,6 +20,9 @@ Ranges are 10th-90th percentiles over cases with envelopes alongside; not confid
 intervals. Driver errors are used unscaled: over 2015-2022 the naive trend's aggregate
 GDP error was slightly larger than the 2014 SSP2's.
 
+Budget shares printed here compare fossil+industry CO2 2023-2050 with the 50% budgets
+only (a lenient lower-bound accounting); scripts/11_budgets.py gives the full comparison.
+
 Usage:  python scripts/10_driver_error.py
 Writes results/tables/planning_with_driver_error.json.
 """
@@ -88,16 +91,18 @@ def main() -> None:
             base = {"config": r["config"], "seed": r["seed"], "kind": kind,
                     "driver": r["source"], "driver_cutoff": r["cutoff"]}
             path = np.asarray(r["paths"][kind])
+            base["y2050_global_gt"] = tcre.scale_to_global(float(path[-1]) / 1000.0)
             cases.append({**base, "combo": f"driver:{r['source']}", "cum_gt": global_cum(path)})
             if r["source"] != "naive_long":
                 continue
             for d in drifts[r["config"]]:
-                c = global_cum(correct_path(path, d["delta"]))
-                cases.append({**base, "combo": "both:independent", "cum_gt": c,
-                              "emission_cutoff": d["cutoff"], "emission_seed": d["seed"]})
+                cp = correct_path(path, d["delta"])
+                c, y = global_cum(cp), tcre.scale_to_global(float(cp[-1]) / 1000.0)
+                extra = {"cum_gt": c, "y2050_global_gt": y,
+                         "emission_cutoff": d["cutoff"], "emission_seed": d["seed"]}
+                cases.append({**base, "combo": "both:independent", **extra})
                 if d["cutoff"] == r["cutoff"]:
-                    cases.append({**base, "combo": "both:paired", "cum_gt": c,
-                                  "emission_cutoff": d["cutoff"], "emission_seed": d["seed"]})
+                    cases.append({**base, "combo": "both:paired", **extra})
 
     combos = ("driver:none", "driver:naive_long", "driver:ssp_v9", "both:paired", "both:independent")
     summary = {}

@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-12: 66 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-12: 70 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
 ## State on 2026-11-12
@@ -54,18 +54,23 @@ python -m pytest -q   # 2026-11-12: 66 pass (python -m: a standalone `pytest` ma
   `results/tables/planning_with_backtest_error.json`): each long backtest gives a trend-rate error delta (44
   per config), and every planning path is corrected by exp(-delta*h). Headline ranges are the 10th-90th
   percentile over cases (decided before the expansion; envelopes widen with more draws), envelopes alongside.
-  Maximum effort is below the 1.5C budget in 16.5% of open-loop cases and 0% with fitted dynamics; it stays
-  within the 2C budget in 349/352 cases (exceptions: ms_percap_damped_stab10's two most negative drifts) and
-  in all 176 of the selected config's.
+  Fitted max effort: 711-1311 Gt (q10-q90) global fossil CO2 2023-2050.
 - GDP/population driver error is carried in too (`eval/propagate.driver_error_vectors`, `perturb_drivers`,
   `scripts/10_driver_error.py`, `results/tables/planning_with_driver_error.json`). Joint per-country
   trend-rate errors come from naive trailing-10-year projections at the 11 long cutoffs (14-20 years) and
   from the 2014 SSPs over 2015-2022; the models are rerun under SSP2 with perturbed drivers. Combined with the
   emission drifts paired by cutoff (headline; independent as sensitivity): fitted max effort 713-1482 Gt
-  (q10-q90), open loop below 1.5C in 18.8% of cases, max effort above 2C in 8/352 cases (all
-  ms_percap_damped_stab10, 1997-1999 cutoffs), selected config never (max 1032 Gt). The errors compounded
+  (q10-q90), open loop 550-955 Gt; selected config fitted 692-978 Gt. The errors compounded
   historically (both ran low from 1997-2002), so pairing widens the upper tail more than independence.
-  Headline: "2C robust (98%; selected config 100%), 1.5C undecided".
+  (The 1.5C/2C shares in 09/10 compare fossil CO2 2023-2050 with 50% budgets only; use 11 for verdicts.)
+- Carbon budgets are now the published ones (`climate/budgets.py`: Forster et al. 2025 ESSD Table 8, from
+  2025, rebased to 2023 with GCB 2024 totals 40.6 + 41.6 Gt; `tcre.remaining_budget_gtco2` returns the 50%
+  value: 212 Gt for 1.5C, 1132 Gt for 2C). The earlier formula (target - 1.24)/TCRE ignored non-CO2 warming
+  and gave 578 / 1689 Gt (`budgets.tcre_only_budget`). `scripts/11_budgets.py` turns every case into a
+  likelihood of staying below 1.5/1.7/2C with full accounting: fossil 2023-2050 + land-use CO2 (4.2 Gt/yr
+  falling to 0 in 2050) + a post-2050 tail falling linearly to net zero in 2070 (assumption), with
+  sensitivities. Result (both errors, paired): 1.5C <=17% in every case; 2C at max effort median 43%
+  (fitted) / 70% (open loop), BAU 18%. Headline: "1.5C out of reach, 2C at max effort undecided".
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
@@ -75,5 +80,6 @@ python -m pytest -q   # 2026-11-12: 66 pass (python -m: a standalone `pytest` ma
 README "Limitations (read these)", especially the first: a way to constrain or test how the dynamics
 respond to controls. Backtest error dominates the planning spread, but more cutoffs in 1997-2007 add little
 independent information (one China regime shift); genuinely new information would need other regions'
-shocks or a different validation design. Budget/TCRE uncertainty is not yet propagated; driver errors are
+shocks or a different validation design. The post-2050 tail is an assumption, and the 2C verdict moves
+~10 points per decade of net-zero timing; a model run to net zero would remove it. Driver errors are
 measured only from 1997-2022 naive projections and one SSP vintage. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.

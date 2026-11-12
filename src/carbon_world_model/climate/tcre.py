@@ -28,11 +28,17 @@ def avoided_warming(cum_bau_gt: float, cum_scenario_gt: float, clim: ClimateConf
     return warming_from_cumulative(cum_bau_gt - cum_scenario_gt, clim)
 
 
-def remaining_budget_gtco2(target_degC: float, clim: ClimateConfig) -> float:
-    """Remaining global CO2 budget (GtCO2) from the base year to hold peak warming at
-    `target_degC` above pre-industrial, using TCRE and the realised warming to date."""
-    headroom = target_degC - clim.warming_baseline_degC
-    return (headroom / clim.tcre_degC_per_ttco2) * 1000.0
+def remaining_budget_gtco2(target_degC: float, clim: ClimateConfig | None = None,
+                           likelihood: float = 0.5) -> float:
+    """Remaining global CO2 budget (GtCO2, total CO2 incl. land use) from the start of 2023
+    for a `likelihood` of holding peak warming below `target_degC`: the published
+    estimate (climate/budgets.py, Forster et al. 2025), which allows for non-CO2 warming.
+
+    Until 2026-11-12 this returned (target - 1.24) / TCRE, which attributes all remaining
+    warming to CO2 and gave 578 / 1689 GtCO2 for 1.5 / 2 C, about 2.7x / 1.5x the published
+    50% values (see budgets.tcre_only_budget)."""
+    from .budgets import budget_gt
+    return budget_gt(target_degC, likelihood, base_year=2023)
 
 
 def scale_to_global(panel_cum_gt: float, coverage: float = 0.926) -> float:

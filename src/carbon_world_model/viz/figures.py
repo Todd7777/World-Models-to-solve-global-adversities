@@ -327,9 +327,9 @@ def fig_structural(panel, st: dict) -> plt.Figure:
                               ("global_cum_max_gt", OI["red"], "s", "max effort, fitted"),
                               ("global_cum_open_loop_gt", OI["blue"], "D", "max effort, open loop")]:
         ax2.scatter([m[key] for m in st["models"]], y, color=col, marker=mk, s=38, label=lab, zorder=3)
-    for b, lab in [(s["budget_1p5_gt"], "1.5 °C budget"), (s["budget_2p0_gt"], "2 °C budget")]:
+    for b, lab in [(s["budget_1p5_gt"], "1.5 °C budget, 50% (all CO2 to net zero)"), (s["budget_2p0_gt"], "2 °C budget, 50% (all CO2 to net zero)")]:
         ax2.axvline(b, color=OI["black"], lw=1.1, ls="--")
-        ax2.text(b, len(names) - 0.4, f" {lab}", fontsize=8, va="bottom")
+        ax2.text(b, len(names) - 0.4, f" {lab.split(',')[0]} (50%)", fontsize=8, va="bottom")
     ax2.set_yticks(y, names, fontsize=8)
     ax2.set_ylim(-0.6, len(names) + 0.4)
     ax2.set(xlabel="cumulative 2023-2050 CO2, scaled to global (Gt)",
@@ -418,7 +418,7 @@ def fig_backtest_error(pe: dict) -> plt.Figure:
                 label="+ backtest error: 10th-90th percentile" if i == 0 else None)
         ax.plot(base["envelope"], [i, i], color=OI["black"], lw=2, marker="|", ms=14,
                 label="model as fitted" if i == 0 else None)
-    for b, txt, ls in [(pe["budget_1p5_gt"], "1.5 °C budget", "--"), (pe["budget_2p0_gt"], "2 °C budget", ":")]:
+    for b, txt, ls in [(pe["budget_1p5_gt"], "1.5 °C budget, 50% (all CO2 to net zero)", "--"), (pe["budget_2p0_gt"], "2 °C budget, 50% (all CO2 to net zero)", ":")]:
         ax.axvline(b, color=OI["red"], lw=1.4, ls=ls, label=txt)
     ax.set_yticks(np.arange(len(rows)), [r[0] for r in rows], fontsize=8)
     ax.invert_yaxis()
@@ -449,8 +449,8 @@ def fig_driver_error(pe: dict, de: dict) -> plt.Figure:
                     label="all cases" if i == 0 else None)
             ax.plot(r["q10_q90"], [i, i], color=OI["blue"], lw=8, solid_capstyle="butt",
                     label="10th-90th percentile" if i == 0 else None)
-        for b, txt, ls in [(de["budget_1p5_gt"], "1.5 °C budget", "--"),
-                           (de["budget_2p0_gt"], "2 °C budget", ":")]:
+        for b, txt, ls in [(de["budget_1p5_gt"], "1.5 °C budget, 50% (all CO2 to net zero)", "--"),
+                           (de["budget_2p0_gt"], "2 °C budget, 50% (all CO2 to net zero)", ":")]:
             ax.axvline(b, color=OI["red"], lw=1.4, ls=ls, label=txt)
         ax.set(title=title, xlabel="cumulative 2023-2050 CO2, global (Gt)")
     axes[0].set_yticks(np.arange(len(srcs)), [s[0] for s in srcs], fontsize=8)
@@ -458,4 +458,50 @@ def fig_driver_error(pe: dict, de: dict) -> plt.Figure:
     axes[1].legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=4)
     fig.suptitle("Planning ranges by error source: stabilised validation-tied models, SSP2",
                  fontweight="bold")
+    return _finish(fig)
+
+
+def fig_budget_likelihoods(bl: dict) -> plt.Figure:
+    """Likelihood of staying below 1.5 / 1.7 / 2 C for every planning case
+    (scripts/11_budgets.py): headline accounting and both error sources (paired)."""
+    kinds = [("max_open_loop", "max effort, no learned reaction"),
+             ("max_fitted", "max effort, fitted dynamics"), ("bau", "business-as-usual")]
+    targets = (1.5, 1.7, 2.0)
+    cols = {1.5: OI["red"], 1.7: OI["orange"], 2.0: OI["blue"]}
+    R = bl["results"]
+    fig, ax = plt.subplots(figsize=(11, 4.8))
+    y, labels = 0, []
+    for kind, klab in kinds:
+        for t in targets:
+            h = R[f"both_paired|{kind}|all|headline|+0|{t}"]
+            lo, hi = (100 * v for v in h["q10_q90"])
+            ax.plot([lo, hi], [y, y], color=cols[t], lw=7, alpha=0.75, solid_capstyle="butt",
+                    label=f"{t} °C: 10th-90th percentile of cases" if (kind, t) in
+                    (("max_open_loop", 1.7), ("max_open_loop", 2.0)) else None)
+            if h["share_at_or_below_17"] == 1.0:
+                ax.text(19, y, "17% or less in every case", fontsize=7.5, va="center",
+                        color=OI["grey"])
+            ax.plot(100 * h["median"], y, "o", color=OI["black"], ms=5,
+                    label="median (headline accounting)" if (kind, t) == ("max_open_loop", 1.5) else None)
+            le = R[f"both_paired|{kind}|all|lenient|+0|{t}"]
+            ax.plot(100 * le["median"], y, "o", mfc="none", mec=OI["black"], ms=8,
+                    label="median, fossil 2023-2050 only (lenient)" if (kind, t) == ("max_open_loop", 1.5) else None)
+            for sh, mk in (("-200", "<"), ("+200", ">")):
+                v = R[f"both_paired|{kind}|all|headline|{sh}|{t}"]["median"]
+                ax.plot(100 * v, y, mk, color=OI["grey"], ms=6,
+                        label=f"median, non-CO2 {sh} Gt" if (kind, t) == ("max_open_loop", 1.5) else None)
+            labels.append(f"{klab}: {t} °C")
+            y += 1
+        y += 0.6
+    ticks = [i + 0.6 * (i // 3) for i in range(len(labels))]
+    ax.set_yticks(ticks, labels, fontsize=8)
+    ax.set_ylim(ticks[-1] + 1.1, -0.6)
+    for x, txt in ((50, "as likely as not"), (66, "likely")):
+        ax.axvline(x, color=OI["grey"], lw=1, ls=":")
+        ax.text(x + 0.5, ticks[-1] + 0.95, txt, fontsize=7.5, color=OI["grey"], va="bottom")
+    ax.set_xlim(10, 90)
+    ax.set(xlabel="likelihood of staying below the threshold (%), published budgets (Forster et al. 2025)\n"
+                  "values at 17% mean 17% or less; at 83% mean 83% or more",
+           title="Carbon-budget likelihoods: model + driver error (paired), all CO2 to net zero in 2070")
+    ax.legend(fontsize=7.5, loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=3)
     return _finish(fig)

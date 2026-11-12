@@ -167,22 +167,29 @@ bit-for-bit unchanged; only the world-model fits differ:
 | growth persistence (ignores drivers): score | 11.15 | 11.15 |
 | `orig`, realised / ex-ante: score | 19.96 / 27.03 | 18.84 / 24.18 |
 | 80% interval coverage | 0.859 | 0.872 |
-| transfer to 12 unseen countries, MAPE | 21.2% | 15.4% (trend-Kaya 7.6%) |
+| transfer to 12 unseen countries, MAPE (seed 0) | 21.2% | 15.4% (trend-Kaya 7.6%) |
 
 The leak had not flattered the model; if anything, it cost it a little, as on the
 validation folds. The transfer number also reflects the corrected shared-model training:
-the held-out countries' adapted in-sample error falls from 14.9% to 5.2%, but their
-forecast error is still about twice trend-Kaya's. China's final-year CO₂ is still
-undershot by 6–8%, almost all of it energy demand
+the held-out countries' adapted in-sample error falls from 14.9% to 5.2%. China's
+final-year CO₂ is still undershot by 6–8%, almost all of it energy demand
 (`results/tables/china_decomposition.json`).
 
-**Where the transfer error comes from.** The model trained on all 60 countries forecasts
-the 12 transfer countries over 2016–2022 at 7.9% error per seed, about level with
-trend-Kaya (7.6%). So on the test period most of the 15.4% is the cost of transfer. On the
-validation period (`scripts/transfer_diagnostics.py`) the cost is only about 1 point, and
-most of the gap there comes from a bias shared by every model trained up to 2005–2009:
-they stall mature economies' efficiency gains (see Limitations). The two periods
-disagree, so the transfer penalty is not settled.
+**Where the transfer error comes from.** One seed was not enough. With the owner's
+go-ahead, the transfer test was rerun for all five test-fold seeds: same protocol, cutoff
+2015, same 12 countries. Seed 0, the 15.4% above, was the worst of the five:
+
+| 12 transfer countries, 2016–2022 | per seed | mean |
+|---|---|---|
+| transfer protocol | 15.4, 9.1, 10.1, 11.4, 13.4% | 11.9% |
+| model trained on all 60 countries | 7.9, 9.5, 7.0, 8.3, 6.5% | 7.9% |
+| trend-Kaya | | 7.6% |
+
+So on the test period transfer costs about 4 points, and its seed-to-seed spread (about 6
+points) is twice the in-training model's. On the validation period
+(`scripts/transfer_diagnostics.py`) the cost is about 1 point, and most of the gap there
+comes from a bias shared by every model trained up to 2005–2009: they stall mature
+economies' efficiency gains (see Limitations).
 
 ---
 
@@ -397,24 +404,23 @@ other than the one the script runs it under. The processed panel
   the selected configuration is slightly ahead of trend-Kaya extrapolation on the test
   folds (score 8.33 against 9.49), but behind it on the validation folds (11.38 against
   9.85): level, within seed noise. Given the drivers that were available at the time,
-  baselines that ignore drivers beat both (test score 11.15 against 13.68). CWM's value is being a *structural, differentiable* simulator that
-  supports counterfactual and planning queries no extrapolative baseline can perform —
-  not point forecasting.
-- **Transfer to unseen countries is worse than trend extrapolation, and how much of that
-  is the cost of transfer is not settled.** Fitted on 48 countries up to 2015 and adapted
-  to 12 held-out ones from their own data up to 2015, the model forecasts their 2016–2022
-  emissions with 15.4% error, against 7.6% for trend-Kaya
-  (`results/tables/transfer.json`; one seed; 3% for Germany and Turkey to 31% for the
-  United Kingdom). The model that trained on all 60 countries forecasts the same 12 over
-  the same years with 7.9% error per seed (6.1% for the five-seed mean), so on the test
-  period transfer costs about 7 points. On the validation period it costs about 1 point:
-  12.6% against 11.6% in-training, with trend-Kaya at 9.6% (cutoffs 2005–2009, two
-  seeds, `scripts/transfer_diagnostics.py`). The two periods disagree, and the test-period
-  run is a single seed (adaptation noise is about 1 point). Settling it needs more transfer
-  seeds on the test period, which is spent, or a fresh holdout year. The earlier 21% came
-  from the leaky loss and an optimiser that was unstable for this configuration. Nothing
-  after the cutoff is used, but the held-out countries' data up to the cutoff do inform
-  the shared emission factors, normalisation and static features.
+  baselines that ignore drivers beat both (test score 11.15 against 13.68). CWM's value
+  is being a *structural, differentiable* simulator that supports counterfactual and
+  planning queries no extrapolative baseline can perform — not point forecasting.
+- **Transfer to unseen countries is worse than trend extrapolation.** Fitted on 48
+  countries up to 2015 and adapted to 12 held-out ones from their own data up to 2015, the
+  model forecasts their 2016–2022 emissions with 11.9% error averaged over five seeds
+  (9.1–15.4%), against 7.6% for trend-Kaya (`results/tables/transfer.json`). By country
+  the error ranges from 6% (Germany, Turkey) to 18% (United Kingdom, Kuwait). The model
+  that trained on all 60 countries forecasts the same 12 over the same years with 7.9%
+  error per seed (6.1% for the five-seed mean), so transfer costs about 4 points on the
+  test period. On the validation period it costs about 1 point (12.6% against 11.6%
+  in-training, trend-Kaya 9.6%; `scripts/transfer_diagnostics.py`), and most of the gap
+  to trend-Kaya there comes from the bias in the next item. One transfer seed is not a
+  reliable measurement: on the test period the seeds differ by up to 6.4 points. The
+  earlier 21% came from the leaky loss and an optimiser that was unstable for this
+  configuration. Nothing after the cutoff is used, but the held-out countries' data up to
+  the cutoff do inform the shared emission factors, normalisation and static features.
 - **Models trained on data up to 2005–2009 stall mature economies' efficiency gains.**
   For 12 mature economies (the United Kingdom, United States, Germany, France, Italy,
   Japan and six smaller European ones), the validation models forecast an

@@ -505,3 +505,52 @@ def fig_budget_likelihoods(bl: dict) -> plt.Figure:
            title="Carbon-budget likelihoods: model + driver error (paired), all CO2 to net zero in 2070")
     ax.legend(fontsize=7.5, loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=3)
     return _finish(fig)
+
+
+def fig_to_2100(t: dict) -> plt.Figure:
+    """Model runs to 2100 (scripts/12_to_2100.py) against the assumed post-2050 tail, and
+    the 2 C likelihoods each implies."""
+    yrs = np.array(t["years"])
+    k50 = int(np.where(yrs == 2050)[0][0])
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 4.8), gridspec_kw={"width_ratios": [1.3, 1]})
+    cols = {"bau": OI["grey"], "max_fitted": OI["red"], "max_open_loop": OI["blue"]}
+    labs = {"bau": "business-as-usual", "max_fitted": "max effort, fitted dynamics",
+            "max_open_loop": "max effort, no learned reaction"}
+    for i, (name, paths) in enumerate(t["fitted_paths"].items()):
+        for kind, p in paths.items():
+            g = np.array(p["global_mt"]) / 1000 / 0.926
+            ax1.plot(yrs, g, color=cols[kind], lw=1.4, alpha=0.85, label=labs[kind] if i == 0 else None)
+            if kind == "max_fitted":
+                tail = g[k50] * np.clip((2070 - yrs[k50:]) / 20, 0, 1)
+                ax1.plot(yrs[k50:], tail, color=cols[kind], lw=1.1, ls="--",
+                         label="assumed tail: linear to net zero in 2070" if i == 0 else None)
+    ax1.axhline(0, color=OI["black"], lw=0.8)
+    ax1.axvline(2050, color=OI["grey"], lw=0.8, ls=":")
+    ax1.text(2051, ax1.get_ylim()[1] * 0.95, "beyond 2050: extrapolation", fontsize=8, color=OI["grey"], va="top")
+    ax1.set(xlabel="year", ylabel="fossil + industry CO2, global (Gt/yr)",
+            title="Stabilised tied models as fitted, SSP2, run to 2100")
+    ax1.legend(fontsize=8, loc="upper right")
+
+    S = t["summary"]
+    rows = [("all tied models, fitted dynamics", "paired|model|all|max_fitted"),
+            ("all tied models, no learned reaction", "paired|model|all|max_open_loop"),
+            ("selected model, fitted dynamics", "paired|model|selected|max_fitted"),
+            ("selected model, no learned reaction", "paired|model|selected|max_open_loop")]
+    y = np.arange(len(rows))
+    for off, acc, col, lab in [(-0.18, "total_tail_2070", OI["orange"], "post-2050 tail assumed (net zero 2070)"),
+                               (0.18, "total_model_to_2100", OI["purple"], "model run to 2100 (upper bound)")]:
+        med = [100 * S[k][f"{acc}|2.0"]["median"] for _, k in rows]
+        lo = [100 * S[k][f"{acc}|2.0"]["q10_q90"][0] for _, k in rows]
+        hi = [100 * S[k][f"{acc}|2.0"]["q10_q90"][1] for _, k in rows]
+        ax2.barh(y + off, med, 0.34, color=col, label=lab,
+                 xerr=[np.array(med) - lo, np.array(hi) - med],
+                 error_kw={"ecolor": OI["black"], "elinewidth": 0.8, "capsize": 2})
+    ax2.axvline(50, color=OI["grey"], lw=1, ls=":")
+    ax2.set_yticks(y, [r[0] for r in rows], fontsize=8)
+    ax2.invert_yaxis()
+    ax2.set_xlim(0, 90)
+    ax2.set(xlabel="likelihood of staying below 2 °C (%), max effort, model + driver error\n"
+                   "bar: median; whisker: 10th-90th percentile of cases",
+            title="2 °C at maximum effort: assumed tail vs model")
+    ax2.legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.4, -0.22), ncol=2)
+    return _finish(fig)

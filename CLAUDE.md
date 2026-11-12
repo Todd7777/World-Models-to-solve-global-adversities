@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-12: 70 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-13: 71 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
 ## State on 2026-11-12
@@ -70,7 +70,15 @@ python -m pytest -q   # 2026-11-12: 70 pass (python -m: a standalone `pytest` ma
   likelihood of staying below 1.5/1.7/2C with full accounting: fossil 2023-2050 + land-use CO2 (4.2 Gt/yr
   falling to 0 in 2050) + a post-2050 tail falling linearly to net zero in 2070 (assumption), with
   sensitivities. Result (both errors, paired): 1.5C <=17% in every case; 2C at max effort median 43%
-  (fitted) / 70% (open loop), BAU 18%. Headline: "1.5C out of reach, 2C at max effort undecided".
+  (fitted) / 70% (open loop), BAU 18%.
+- Runs to 2100 (`scripts/12_to_2100.py`, `results/tables/to_2100.json`) replace the assumed tail with the
+  model: errors frozen at 2050, total = fossil 2023-2100 + land use (a lower bound, since no case reaches zero).
+  No max-effort case reaches net zero: fossil shares stall at 20-40% (learned pushback in never-seen
+  near-zero-fossil states; in the open loop, pinned BAU changes keep adding oil/gas, an artefact) and process
+  CO2 has no lever. 2C at max effort falls to <=18% (fitted) / <=46% (open loop) from 43% / 70% with the
+  assumed tail. Headline: "1.5C out of reach; 2C at max effort ~20-70% depending on post-2050 dynamics".
+- The clean-energy push now follows the CURRENT fossil mix (`dynamics.rollout` u_clean/clean_w/fossil_mask,
+  `optimize._push`); the old 2022-mix split wasted the push once a fuel ran out. Effect through 2050: a few Gt.
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
@@ -80,6 +88,8 @@ python -m pytest -q   # 2026-11-12: 70 pass (python -m: a standalone `pytest` ma
 README "Limitations (read these)", especially the first: a way to constrain or test how the dynamics
 respond to controls. Backtest error dominates the planning spread, but more cutoffs in 1997-2007 add little
 independent information (one China regime shift); genuinely new information would need other regions'
-shocks or a different validation design. The post-2050 tail is an assumption, and the 2C verdict moves
-~10 points per decade of net-zero timing; a model run to net zero would remove it. Driver errors are
+shocks or a different validation design. Post-2050 behaviour is now the largest open question: the
+assumed tail and the model run to 2100 differ by ~25 points for 2C. The model cannot represent
+near-zero-fossil states (out of distribution), has no process-CO2 lever or negative emissions, and the
+stability term only covers 30 years of the uncontrolled run. Driver errors are
 measured only from 1997-2022 naive projections and one SSP vintage. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.

@@ -32,9 +32,12 @@ CWM couples three things that are usually kept apart:
 > and 1.5 times (2 °C) the published values. With the published budgets, their
 > uncertainty, the model's and the drivers' forecast errors, and all CO₂ until net zero
 > counted: **1.5 °C has a 17% or lower likelihood in every case, even at maximum feasible
-> effort. 2 °C at maximum effort is roughly as likely as not** (median 43% with the fitted
-> dynamics, 70% without a learned reaction to the plan), and unlikely under
-> business-as-usual (median 18%). See "Carbon-budget likelihoods".
+> effort.** For 2 °C at maximum effort, the answer turns on what happens after 2050. If
+> emissions fall linearly to net zero by 2070, it is roughly as likely as not (median 43%
+> with the fitted dynamics, 70% without a learned reaction to the plan). Run to 2100
+> instead, **the model never reaches net zero**, and the likelihood falls to at most 18%
+> and 46%. Under business-as-usual 2 °C is unlikely either way. See "Carbon-budget
+> likelihoods" and "Running the model to 2100".
 
 ---
 
@@ -424,10 +427,66 @@ What this shows:
 - **Post-2050 emissions and land-use CO₂ now carry much of the weight.** Maximum-effort
   paths still emit 14–38 GtCO₂ (global) in 2050 as fitted, and 11–56 GtCO₂ (10th–90th
   percentile) with errors. So when net zero arrives moves the 2 °C likelihood by about 10
-  points per decade (53% for 2060, 43% for 2070).
+  points per decade (53% for 2060, 43% for 2070). The next section replaces the assumed
+  tail with the model's own run to 2100.
 - **These likelihoods use the published TCRE uncertainty for a given total.** The spread
   across cases reflects this project's error propagation, which is a set of cases, not a
   probability distribution.
+
+### Running the model to 2100
+
+The budget comparison above assumes that after 2050 emissions fall linearly to net zero by
+2070. Here the stabilised tied models are instead run under SSP2 to 2100 (the SSP drivers'
+horizon), as fitted and with the model's and drivers' errors (paired), for
+business-as-usual and maximum feasible effort (`scripts/12_to_2100.py`,
+[`to_2100.json`](results/tables/to_2100.json), `fig15_to_2100.png`).
+
+Rules fixed before the runs:
+- **Errors are frozen at their 2050 values.** They were measured over 14–20 years, and
+  extending their linear growth to 78 years would scale some countries' GDP by factors of
+  up to about 200.
+- **Total CO₂ = model fossil and industry CO₂ 2023–2100, plus land-use CO₂ falling to zero
+  in 2050.** No case reaches zero by 2100, so this is a lower bound on CO₂ before net zero
+  and the likelihoods are upper bounds.
+- **Process CO₂ (cement, flaring) has no lever in the model** and stays at its 2022 level.
+  As a sensitivity, it falls linearly to zero by 2070 under maximum effort.
+
+**A fix found on the way.** Over these horizons the max-effort clean-energy push turned out
+to stall: it was split by each country's 2022 fossil mix, so once a fuel ran out its share
+of the push was wasted. It now takes from the fossil fuels in proportion to their current
+shares (see "Method"). Through 2050 this changes results by at most a few GtCO₂.
+
+**2 °C likelihood at maximum effort** (both errors paired; median [10th–90th percentile]):
+
+| | post-2050 tail assumed (net zero 2070) | model run to 2100 (upper bound) | ... with process CO₂ phased out by 2070 |
+|---|---|---|---|
+| all tied models, fitted dynamics | 43% [17–68] | **18%** [17–38] | 21% |
+| all tied models, no learned reaction | 70% [38–83] | **46%** [17–73] | 58% |
+| selected model, fitted dynamics | 50% [37–72] | **25%** [17–42] | 30% |
+| selected model, no learned reaction | 71% [61–83] | **49%** [38–72] | 62% |
+
+What the runs show:
+
+- **No maximum-effort case reaches net zero by 2100.** With fitted dynamics, emissions in
+  2100 are 7.7–69 GtCO₂/yr (10th–90th percentile; 9–27 as fitted), and only 2% of cases fall
+  below 5 GtCO₂/yr. Without a learned reaction, 57% of cases fall below 5 GtCO₂/yr, but
+  none reach zero.
+- **Fossil shares stall at 20–40%**, even though the push could remove them by the 2060s.
+  With fitted dynamics, the learned dynamics push back in near-zero-fossil states that no
+  country has ever been in. Without a learned reaction (open loop), the business-as-usual
+  changes pinned in each year keep adding oil and gas: China's natural mix shift out of coal
+  continues after the plan has already removed the coal. That is an artefact of the open-loop
+  construction far from business-as-usual, not a finding about the world.
+- **The stability term does not reach this far.** It constrains the uncontrolled free run
+  for 30 years after the training cutoff. One tied configuration's max-effort path changes
+  direction 17 times between 2050 and 2100.
+- **1.5 °C stays at 17% or less, and 1.7 °C at about 17–19%,** whichever way the tail is
+  handled.
+- **So the 2 °C answer depends on what happens after 2050, which nothing here can settle.**
+  The assumed tail presumes a decline the model does not produce; the model's own run is a
+  78-year extrapolation into states it has never seen. The 25-point gap between them is a
+  measure of that uncertainty, and the honest statement is a range: at maximum feasible
+  effort, roughly 20–70% depending on dynamics and post-2050 assumptions.
 
 
 ---
@@ -452,6 +511,7 @@ All in [`results/figures/`](results/figures), regenerated by `scripts/05_make_fi
 | `fig12_planning_with_backtest_error.png` | Planning ranges with and without backtest error, against the 1.5 °C and 2 °C budgets |
 | `fig13_planning_by_error_source.png` | Planning ranges by error source: model, GDP/population drivers, both |
 | `fig14_budget_likelihoods.png` | Likelihood of staying below 1.5 / 1.7 / 2 °C with published budgets and full CO₂ accounting |
+| `fig15_to_2100.png` | Models run to 2100 against the assumed post-2050 tail; 2 °C likelihood under each |
 
 ---
 
@@ -489,7 +549,11 @@ every script rebuilds the model from that record; a test fails if the committed
 checkpoint does not match the selected configuration.
 
 Planning controls (clean-deployment effort and efficiency effort) enter the dynamics
-additively and are zero during fitting. Emissions response to effort is **monotonic**
+additively and are zero during fitting. The clean-deployment push moves share into
+low-carbon fuels and takes it from the fossil fuels in proportion to their current
+shares, so it delivers its feasibility bound until fossil fuels are gone. Before
+2026-11-13 it was split by each country's 2022 fossil mix, and stalled once one fuel ran
+out. Emissions response to effort is **monotonic**
 (verified in the test suite). Warming is obtained from cumulative emissions via the
 TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely range
 0.27–0.63).
@@ -509,7 +573,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 70 tests
+python -m pytest -q                  # 71 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
@@ -535,6 +599,7 @@ python scripts/08_longrun.py         # long-run level checks -> longrun.json
 python scripts/09_backtest_error.py  # planning ranges with backtest error carried in
 python scripts/10_driver_error.py    # ... and with GDP/population driver error
 python scripts/11_budgets.py         # budget likelihoods with full CO2 accounting
+python scripts/12_to_2100.py         # models run to 2100 instead of an assumed tail
 python scripts/05_make_figures.py
 ```
 
@@ -545,8 +610,12 @@ python scripts/05_make_figures.py
 - **The carbon budgets were too large until 2026-11-12.** The project's own formula ignored
   non-CO₂ warming and was compared with fossil CO₂ to 2050 only. Earlier claims ("1.5 °C
   undecided", "2 °C robust") depended on that. The published budgets and full accounting
-  now used still rest on assumptions: the timing of net zero after 2050 (a linear decline
-  to 2070), future land-use CO₂, and the TCRE-only likelihoods of the published table.
+  now used still rest on assumptions: what happens after 2050, future land-use CO₂, and the
+  TCRE-only likelihoods of the published table. After 2050 the project has only two
+  bounding views: an assumed decline to net zero by 2070, and the model's own run to 2100,
+  which never reaches net zero and is a long extrapolation. They differ by about 25 points
+  in the 2 °C likelihood at maximum effort. The model also has no lever for process CO₂ and
+  no negative emissions.
 - **Planning results are uncertain in two ways the data cannot resolve.** First, structure:
   stabilised configurations tied on validation give 2050 BAU emissions from 39 to 48 Gt and
   max-effort cuts from 24% to 49% (fitted dynamics), and how strongly the dynamics push back

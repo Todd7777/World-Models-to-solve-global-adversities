@@ -102,6 +102,10 @@ def main() -> None:
     # Carbon-budget likelihoods with full accounting (scripts/11_budgets.py).
     if os.path.exists(os.path.join(TAB, "budget_likelihoods.json")):
         save(F.fig_budget_likelihoods(load("budget_likelihoods.json")), "fig14_budget_likelihoods.png")
+
+    # Model runs to 2100 vs the assumed post-2050 tail (scripts/12_to_2100.py).
+    if os.path.exists(os.path.join(TAB, "to_2100.json")):
+        save(F.fig_to_2100(load("to_2100.json")), "fig15_to_2100.png")
     print("[ok] figures:", sorted(os.listdir(FIG)))
 
 

@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-12: 63 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-12: 66 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
 ## State on 2026-11-12
@@ -56,7 +56,16 @@ python -m pytest -q   # 2026-11-12: 63 pass (python -m: a standalone `pytest` ma
   percentile over cases (decided before the expansion; envelopes widen with more draws), envelopes alongside.
   Maximum effort is below the 1.5C budget in 16.5% of open-loop cases and 0% with fitted dynamics; it stays
   within the 2C budget in 349/352 cases (exceptions: ms_percap_damped_stab10's two most negative drifts) and
-  in all 176 of the selected config's. Headline: "2C robust (99%), 1.5C undecided".
+  in all 176 of the selected config's.
+- GDP/population driver error is carried in too (`eval/propagate.driver_error_vectors`, `perturb_drivers`,
+  `scripts/10_driver_error.py`, `results/tables/planning_with_driver_error.json`). Joint per-country
+  trend-rate errors come from naive trailing-10-year projections at the 11 long cutoffs (14-20 years) and
+  from the 2014 SSPs over 2015-2022; the models are rerun under SSP2 with perturbed drivers. Combined with the
+  emission drifts paired by cutoff (headline; independent as sensitivity): fitted max effort 713-1482 Gt
+  (q10-q90), open loop below 1.5C in 18.8% of cases, max effort above 2C in 8/352 cases (all
+  ms_percap_damped_stab10, 1997-1999 cutoffs), selected config never (max 1032 Gt). The errors compounded
+  historically (both ran low from 1997-2002), so pairing widens the upper tail more than independence.
+  Headline: "2C robust (98%; selected config 100%), 1.5C undecided".
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
 - Branch `claude/clever-fermi-rm4429` holds a separate Space Solar World Model (`src/space_solar_world_model/`).
   It split from this branch at `ed4c64f` and has not been merged.
@@ -66,5 +75,5 @@ python -m pytest -q   # 2026-11-12: 63 pass (python -m: a standalone `pytest` ma
 README "Limitations (read these)", especially the first: a way to constrain or test how the dynamics
 respond to controls. Backtest error dominates the planning spread, but more cutoffs in 1997-2007 add little
 independent information (one China regime shift); genuinely new information would need other regions'
-shocks or a different validation design. Driver (GDP/population) error beyond SSP1-5 and budget/TCRE
-uncertainty are not yet propagated. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.
+shocks or a different validation design. Budget/TCRE uncertainty is not yet propagated; driver errors are
+measured only from 1997-2022 naive projections and one SSP vintage. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.

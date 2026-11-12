@@ -427,3 +427,35 @@ def fig_backtest_error(pe: dict) -> plt.Figure:
            title=f"Planning ranges with long-horizon backtest error ({n} backtests per configuration)")
     ax.legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3)
     return _finish(fig)
+
+
+def fig_driver_error(pe: dict, de: dict) -> plt.Figure:
+    """How each error source widens the planning ranges: model as fitted, + emission backtest
+    error (scripts/09), + GDP/population driver error (scripts/10), + both."""
+    kinds = [("max_fitted", "max effort, fitted dynamics"),
+             ("max_open_loop", "max effort, no learned reaction"),
+             ("bau", "business-as-usual")]
+    srcs = [("as fitted", de["summary"]["driver:none"]),
+            ("+ emission backtest error", pe["summary"]["expanded"]["linear"]),
+            ("+ driver error (naive projections, 1997-2007)", de["summary"]["driver:naive_long"]),
+            ("+ driver error (2014 SSP projections)", de["summary"]["driver:ssp_v9"]),
+            ("+ both, paired by cutoff", de["summary"]["both:paired"]),
+            ("+ both, independent", de["summary"]["both:independent"])]
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.8), sharey=True)
+    for ax, (kind, title) in zip(axes, kinds):
+        for i, (lab, s) in enumerate(srcs):
+            r = s[kind]["global_cum_gt"] if "global_cum_gt" in s[kind] else s[kind]
+            ax.plot(r["envelope"], [i, i], color=OI["sky"], lw=8, solid_capstyle="butt", alpha=0.6,
+                    label="all cases" if i == 0 else None)
+            ax.plot(r["q10_q90"], [i, i], color=OI["blue"], lw=8, solid_capstyle="butt",
+                    label="10th-90th percentile" if i == 0 else None)
+        for b, txt, ls in [(de["budget_1p5_gt"], "1.5 °C budget", "--"),
+                           (de["budget_2p0_gt"], "2 °C budget", ":")]:
+            ax.axvline(b, color=OI["red"], lw=1.4, ls=ls, label=txt)
+        ax.set(title=title, xlabel="cumulative 2023-2050 CO2, global (Gt)")
+    axes[0].set_yticks(np.arange(len(srcs)), [s[0] for s in srcs], fontsize=8)
+    axes[0].invert_yaxis()
+    axes[1].legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=4)
+    fig.suptitle("Planning ranges by error source: stabilised validation-tied models, SSP2",
+                 fontweight="bold")
+    return _finish(fig)

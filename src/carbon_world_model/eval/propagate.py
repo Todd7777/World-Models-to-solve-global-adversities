@@ -63,3 +63,76 @@ def correct_path(path: np.ndarray, delta: float, h_cap: int | None = None) -> np
     if h_cap is not None:
         h = np.minimum(h, h_cap)
     return np.asarray(path) * np.exp(-delta * h)
+
+
+# ---------------------------------------------------------------------------
+# Driver (GDP / population) error
+# ---------------------------------------------------------------------------
+# Planning drivers are SSP paths. Their error is measured the same way as the model's:
+# as a per-country trend-rate error delta (slope through the origin of
+# log(projected / realised) vs horizon). Each historical projection gives one JOINT
+# vector over all countries, which keeps the cross-country correlation that matters for
+# the global total. Two sources:
+#   'naive_long': each country's trailing 10-year growth continued from every long
+#                 backtest cutoff (eval/rolling.PHASES longval/longtest), 14-20 years.
+#   'ssp_v9':     the 2014-vintage SSP projections (SSP1-5), harmonised at 2014, against
+#                 realised 2015-2022 (8 years, including COVID).
+# Over 2015-2022 the naive trend's aggregate GDP error (+1.50%/yr) was close to, and
+# slightly larger than, the 2014 SSP2's (+1.31%/yr), so naive long-horizon errors stand
+# in for SSP errors at horizons no SSP vintage can yet be checked on.
+
+NAIVE_LOOKBACK = 10
+
+
+def _naive_path(series: np.ndarray, k: int, H: int) -> np.ndarray:
+    j = max(0, k - NAIVE_LOOKBACK)
+    r = (np.log(series[:, k]) - np.log(series[:, j])) / (k - j)
+    return series[:, k:k + 1] * np.exp(r[:, None] * np.arange(1, H + 1))
+
+
+def driver_error_vectors(panel, source: str) -> list[dict]:
+    """Joint per-country GDP and population trend-rate errors, one record per projection."""
+    out = []
+    if source == "naive_long":
+        for ph in LONG_PHASES:
+            cutoffs, horizon_of = PHASES[ph]
+            for co in cutoffs:
+                k = int(np.where(panel.years == co)[0][0])
+                H = horizon_of(co)
+                rg, rp = panel.gdp[:, k + 1:k + H + 1], panel.population[:, k + 1:k + H + 1]
+                ng, npop = _naive_path(panel.gdp, k, H), _naive_path(panel.population, k, H)
+                out.append({"source": source, "label": f"naive from {co}", "cutoff": int(co),
+                            "horizon": H, **_deltas(ng, npop, rg, rp)})
+    elif source == "ssp_v9":
+        from ..data.ssp import SSPS, load_processed, ssp_driver_paths
+        base, end = 2014, int(panel.years[-1])
+        k = int(np.where(panel.years == base)[0][0])
+        series = load_processed("v9")
+        for s in SSPS:
+            g, p = ssp_driver_paths(panel, series, s, base, np.arange(base, end + 1))
+            out.append({"source": source, "label": f"{s} (2014 vintage)", "cutoff": base,
+                        "horizon": end - base,
+                        **_deltas(g[:, 1:], p[:, 1:], panel.gdp[:, k + 1:], panel.population[:, k + 1:])})
+    else:
+        raise ValueError(source)
+    return out
+
+
+def _deltas(proj_gdp, proj_pop, real_gdp, real_pop) -> dict:
+    h = np.arange(1, proj_gdp.shape[1] + 1)
+
+    def slope(le):
+        return (le * h).sum(-1) / (h * h).sum()
+    return {"delta_gdp": slope(np.log(proj_gdp / real_gdp)).tolist(),
+            "delta_pop": slope(np.log(proj_pop / real_pop)).tolist(),
+            "delta_gdp_aggregate": float(slope(np.log(proj_gdp.sum(0) / real_gdp.sum(0))))}
+
+
+def perturb_drivers(scen, delta_gdp, delta_pop):
+    """Scenario whose GDP / population paths are corrected by exp(-delta * h) per country
+    (index 0, the observed anchor year, is unchanged)."""
+    import dataclasses
+    h = np.arange(scen.gdp.shape[1], dtype=float)[None, :]
+    return dataclasses.replace(
+        scen, gdp=scen.gdp * np.exp(-np.asarray(delta_gdp)[:, None] * h),
+        pop=scen.pop * np.exp(-np.asarray(delta_pop)[:, None] * h))

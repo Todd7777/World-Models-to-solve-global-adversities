@@ -28,11 +28,11 @@ CWM couples three things that are usually kept apart:
 > The most important: **planning results still depend on model structure the data do not
 > pin down.** A stability term in training removes learned oscillations and narrows that
 > spread, but does not remove it (see "Planning"). Once the model's own long-horizon
-> backtest errors (44 per configuration) are carried into the planning ranges, **this model
-> can no longer rule 1.5 °C in or out**: under maximum feasible effort it is met in 16% of
-> cases without a learned reaction to the plan, and in none with the fitted dynamics.
-> Maximum effort stays within the 2 °C budget in 99% of cases, and in every case for the
-> selected configuration.
+> backtest errors and the historical errors of GDP and population projections are carried
+> into the planning ranges, **this model can no longer rule 1.5 °C in or out**: under
+> maximum feasible effort it is met in 19% of cases without a learned reaction to the plan,
+> and in none with the fitted dynamics. Maximum effort stays within the 2 °C budget in 98%
+> of cases, and in every case for the selected configuration.
 
 ---
 
@@ -162,8 +162,9 @@ or open-loop dynamics), and 631 – 1,226 Gt across the 12 unconstrained cases. 
 value, every case exceeds the ≈578 Gt remaining 1.5 °C budget, by 12% at the closest.
 **That verdict does not survive the model's own forecast errors** (see "Planning ranges
 with backtest error carried in" below). The conclusion that does survive is that maximum
-feasible effort keeps cumulative emissions within the ≈1,689 Gt 2 °C budget: in 99% of
-error-adjusted cases, and in all of the selected configuration's.
+feasible effort keeps cumulative emissions within the ≈1,689 Gt 2 °C budget: in 98% of
+cases once both model and driver errors are included, and in all of the selected
+configuration's.
 
 The model also produces a cost-of-abatement frontier, per-country allocations and a
 **robust plan** optimised against all five SSPs at once. Under the selected model's
@@ -299,8 +300,80 @@ What this shows:
   the envelope grew, as envelopes do with more draws.
 - **Backtest error still dominates the planning spread**, well beyond the structural
   disagreement between tied models (797–1,026 Gt as fitted).
-- **Still missing:** error in the GDP and population drivers beyond the five SSPs, and the
+- **Not yet included here:** error in the GDP and population drivers (next section), and the
   uncertainty in the budgets and the TCRE themselves.
+
+### Planning ranges with GDP and population driver error carried in
+
+The planning runs use SSP drivers. The spread across SSP1–5 is a range of scenarios, not
+forecast error: each SSP is itself a projection that will be wrong. This section measures
+how wrong such projections have been and reruns the models with the drivers perturbed
+accordingly ([`eval/propagate.py`](src/carbon_world_model/eval/propagate.py),
+`scripts/10_driver_error.py`,
+[`planning_with_driver_error.json`](results/tables/planning_with_driver_error.json),
+`fig13_planning_by_error_source.png`).
+
+**Measured driver errors**, as per-country trend-rate errors in GDP and population (the
+same form as the emission errors). Each historical projection gives one joint vector over
+all 60 countries, which keeps the cross-country correlation that matters for the global
+total.
+
+- **The 2014-vintage SSPs (SSP1–5)**, harmonised at 2014 and checked against realised
+  2015–2022 data. They over-projected aggregate GDP growth by 1.2–1.6 %/yr (SSP2: 1.3 %/yr,
+  China 1.6 %/yr), partly because of COVID. Population errors were small (most countries
+  within ±0.7 %/yr).
+- **Naive projections from the long backtest cutoffs 1997–2007:** each country's trailing
+  10-year growth continued for 14–20 years. Their aggregate GDP error ranges from −0.3 to
+  +1.6 %/yr, with the same era pattern as the emission errors (too low from the 1990s, too
+  high from the mid-2000s). China's growth was always under-projected (−1.9 to 0 %/yr) and
+  the US always over-projected (+0.6 to +1.9 %/yr).
+- **Why naive projections stand in for SSPs:** over the one window where both can be
+  checked (2015–2022), the naive trend's aggregate GDP error (+1.50 %/yr) was close to,
+  and slightly larger than, the 2014 SSP2's (+1.31 %/yr). No SSP vintage can yet be checked
+  over 14–20 years. The naive errors are used unscaled, which leans conservative.
+
+**Combining with the model's own error.** In log terms, a forecast's total error is
+exactly its error with realised drivers plus the effect of the driver error. So each
+perturbed run is combined with the same configuration's emission drifts:
+
+- **paired** (headline): each driver vector from cutoff c with the emission drifts from
+  that same cutoff, keeping the errors the two actually had together;
+- **independent** (sensitivity): every driver vector with every emission drift.
+
+Both choices were fixed before the runs.
+
+Global cumulative CO₂ 2023–2050 (Gt), stabilised tied models, SSP2, 10th–90th percentile
+[all cases]:
+
+| | business-as-usual | max effort, fitted dynamics | max effort, open loop |
+|---|---|---|---|
+| model as fitted | 1,148 – 1,255 | 806 – 1,008 | 651 – 701 |
+| + emission backtest error (previous section) | 942 – 1,668 | 711 – 1,311 | 553 – 886 |
+| + driver error only, naive projections | 1,147 – 1,387 | 813 – 1,128 | 648 – 746 |
+| + driver error only, 2014 SSPs | 1,040 – 1,133 | 731 – 899 | 599 – 650 |
+| **+ both, paired by cutoff** | **943 – 1,880** [738 – 2,628] | **713 – 1,482** [611 – 2,103] | **550 – 955** [446 – 1,280] |
+| + both, independent | 965 – 1,767 [663 – 2,649] | 721 – 1,409 [535 – 2,104] | 561 – 916 [411 – 1,291] |
+| selected configuration only, both, paired | — | 692 – 978 [≤ 1,032] | 564 – 773 |
+
+What this shows:
+
+- **Driver error alone is smaller than the model's own error**, and its sign depends on
+  the era. The 1990s naive projections under-projected growth, so correcting for them raises
+  emissions; the 2014 SSPs over-projected growth, so correcting for them lowers emissions.
+- **Historically the two errors compounded.** From the 1997–2002 cutoffs, both the GDP
+  projections and the model ran low (China's boom). Pairing them therefore widens the upper
+  end more than treating them as independent: the paired 90th percentile for fitted max
+  effort is 1,482 Gt, against 1,409 Gt independent.
+- **1.5 °C stays undecided.** Maximum effort falls below the ≈578 Gt budget in 18.8% of
+  open-loop cases and none with the fitted dynamics (12.5% and 0% for the selected
+  configuration).
+- **2 °C now holds in 98% of cases.** Maximum effort exceeds the ≈1,689 Gt budget in 8 of
+  352 paired cases (2.3%; 1.2% independent). All 8 are `ms_percap_damped_stab10` with fitted
+  dynamics from the 1997–1999 cutoffs, whose backtest models were fitted on 8–10 years of
+  data. The selected configuration never exceeds it (at most 1,032 Gt). Business-as-usual
+  exceeds the 2 °C budget in 17% of paired cases.
+- **Still missing:** uncertainty in the carbon budgets and the TCRE themselves, and driver
+  errors from any period other than 1997–2022.
 
 ---
 
@@ -322,6 +395,7 @@ All in [`results/figures/`](results/figures), regenerated by `scripts/05_make_fi
 | `fig10_structural_ssp2.png` | Planning results across the stabilised validation-tied models vs carbon budgets |
 | `fig11_longrun_checks.png` | Long-horizon backtests (cumulative CO₂ error); energy-ladder decoupling vs own past |
 | `fig12_planning_with_backtest_error.png` | Planning ranges with and without backtest error, against the 1.5 °C and 2 °C budgets |
+| `fig13_planning_by_error_source.png` | Planning ranges by error source: model, GDP/population drivers, both |
 
 ---
 
@@ -379,7 +453,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 63 tests
+python -m pytest -q                  # 66 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
@@ -403,6 +477,7 @@ for ph in longval longtest; do
 done
 python scripts/08_longrun.py         # long-run level checks -> longrun.json
 python scripts/09_backtest_error.py  # planning ranges with backtest error carried in
+python scripts/10_driver_error.py    # ... and with GDP/population driver error
 python scripts/05_make_figures.py
 ```
 
@@ -414,9 +489,10 @@ python scripts/05_make_figures.py
   stabilised configurations tied on validation give 2050 BAU emissions from 39 to 48 Gt and
   max-effort cuts from 24% to 49% (fitted dynamics), and how strongly the dynamics push back
   against a plan is not identified. Second, forecast error: carrying the model's own
-  long-horizon backtest errors into the ranges widens the fitted max-effort range from
-  797–1,026 to 711–1,311 Gt (10th–90th percentile), so 1.5 °C can be neither ruled in nor
-  out. Use the ranges, not single-model planning numbers.
+  long-horizon backtest errors and the historical errors of GDP and population projections
+  into the ranges widens the fitted max-effort range from 806–1,008 to 713–1,482 Gt (10th–90th
+  percentile), so 1.5 °C can be neither ruled in nor out. Use the ranges, not single-model
+  planning numbers.
 - **Long-run levels are checked, but only weakly.** Over 14-20-year backtests no method,
   including this model, gets aggregate levels right; cumulative-CO₂ errors of about ±10% are
   realistic. The 11 cutoffs overlap heavily and all straddle China's boom and slowdown, so
@@ -434,7 +510,9 @@ python scripts/05_make_figures.py
   weights (10, 100) were not tuned further. Seed-to-seed variation is comparable to the
   gaps between top configurations.
 - **Drivers are exogenous.** GDP and population paths are assumptions, and results are
-  conditional on them.
+  conditional on them. Their forecast error is now propagated, but measured only from
+  naive projections in 1997–2022 and from one SSP vintage over 8 years (including COVID),
+  and extrapolated from 14–20-year windows to 28 years.
 - **Feasibility bounds are judgement calls.** They come from the fastest *sustained*
   decade-long national rates, with caps to exclude petrostate GDP-volatility artefacts.
   Reasonable people would choose somewhat different numbers.

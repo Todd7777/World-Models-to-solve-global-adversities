@@ -92,6 +92,12 @@ def main() -> None:
     if os.path.exists(os.path.join(TAB, "planning_with_backtest_error.json")):
         save(F.fig_backtest_error(load("planning_with_backtest_error.json")),
              "fig12_planning_with_backtest_error.png")
+
+    # ... and with GDP/population driver error (scripts/10_driver_error.py).
+    if os.path.exists(os.path.join(TAB, "planning_with_driver_error.json")):
+        save(F.fig_driver_error(load("planning_with_backtest_error.json"),
+                                load("planning_with_driver_error.json")),
+             "fig13_planning_by_error_source.png")
     print("[ok] figures:", sorted(os.listdir(FIG)))
 
 

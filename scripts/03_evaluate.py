@@ -11,9 +11,10 @@ full-data model; writes JSON tables to results/tables/:
                                  intensity, per test cutoff
   driver_decomposition.json      how much of the ex-ante error comes from the SSP GDP path
   calibration.json               split-conformal intervals (val-calibrated, test-checked)
-  transfer.json                  spatial transfer to held-out countries, with the error of
-                                 the test-fold model (trained on all countries) on the
-                                 same countries and years for comparison
+  transfer.json                  spatial transfer to held-out countries, for each test-fold
+                                 seed and their mean, with the error of the test-fold model
+                                 (trained on all countries) on the same countries and years
+                                 for comparison
 
 Refuses to run unless results/tables/config.json, which scripts/02_train.py writes with
 the checkpoint, matches make_config(<selected>): the in-sample table must describe the
@@ -153,9 +154,26 @@ def main() -> None:
     dump(cal, "calibration.json")
     print(f"[F] split-conformal 80% interval: test coverage {cal['test_coverage']:.3f}")
 
-    # 8. spatial transfer
+    # 8. spatial transfer, for each test-fold seed: adapting a new country's latent is
+    # noisy, so a single seed is not enough.
     if not a.skip_transfer:
-        tr = spatial_transfer(panel, cfg, test_every=5, cutoff=2015, seed=0, verbose=False)
+        by_seed = {s: spatial_transfer(panel, cfg, test_every=5, cutoff=2015, seed=s, verbose=False)
+                   for s in seeds}
+        first = by_seed[seeds[0]]
+        mean = lambda f: float(np.mean([f(t) for t in by_seed.values()]))  # noqa: E731
+        tr = {
+            "test_countries": first["test_countries"], "holdout_years": first["holdout_years"],
+            "seeds": list(seeds),
+            "world_model": {m: mean(lambda t: t["world_model"][m]) for m in ("mape", "rmse_mt", "r2")},
+            "world_model_by_seed": {s: t["world_model"] for s, t in by_seed.items()},
+            "trend_kaya": first["trend_kaya"],
+            "train_insample_mape": mean(lambda t: t["train_insample_mape"]),
+            "adapt_insample_mape": mean(lambda t: t["adapt_insample_mape"]),
+            "per_country": {c: {"world_model": mean(lambda t: t["per_country"][c]["world_model"]),
+                                "trend_kaya": first["per_country"][c]["trend_kaya"]}
+                            for c in first["test_countries"]},
+            "shared_training": first["shared_training"],
+        }
         # The same countries and years forecast by the test-fold model, which trained on
         # all 60 countries: separates the cost of transfer from how well they forecast.
         co, H = tr["holdout_years"][0] - 1, len(tr["holdout_years"])
@@ -168,8 +186,10 @@ def main() -> None:
                                  "per_seed_mape": [M.mape(f, true, msk) for f in fcs],
                                  "seed_ensemble_mape": M.mape(np.mean(fcs, 0), true, msk)}
         dump(tr, "transfer.json")
-        print(f"[G] transfer to 12 unseen countries: WM MAPE {100*tr['world_model']['mape']:.1f}% "
-              f"R2 {tr['world_model']['r2']:.3f} | trend-Kaya MAPE {100*tr['trend_kaya']['mape']:.1f}%"
+        per = [100 * t["world_model"]["mape"] for t in by_seed.values()]
+        print(f"[G] transfer to 12 unseen countries, seeds {list(seeds)}: WM MAPE "
+              f"{100*tr['world_model']['mape']:.1f}% mean ({min(per):.1f}-{max(per):.1f}%) "
+              f"| trend-Kaya MAPE {100*tr['trend_kaya']['mape']:.1f}%"
               + (f" | same countries, trained on: MAPE {100*np.mean(tr['in_training']['per_seed_mape']):.1f}% "
                  f"per seed" if fcs else ""))
     with open(os.path.join(OUT, "selected_config.json"), "w") as fh:

@@ -13,9 +13,13 @@ change over time, so check `sinfo` and `module spider python` if a default fails
 ```bash
 git clone https://github.com/Todd7777/World-Models-to-solve-global-adversities.git
 cd World-Models-to-solve-global-adversities
-git checkout claude/amazing-ritchie-026u0w
 bash scripts/slurm/setup_fasrc.sh          # venv in ~/cwm-venv (override with CWM_VENV)
 ```
+
+The default branch has the current code. Code from before 2026-11-10 writes job outputs
+without a training record, which the current code refuses to pool, and rewrites
+`report.json` with entries that the current code reads as the 3000-step round 1. Run the
+sweep, the aggregation and any later analysis on the same code.
 
 The processed panel and SSP series are committed, so no data download is needed.
 
@@ -33,6 +37,10 @@ mkdir -p logs && sbatch --array=1-$(wc -l < jobs.txt) scripts/slurm/sweep_array.
 Use `--partition=serial_requeue` on the `sbatch` line for the cheapest (preemptible)
 queue; jobs are short (about 1-3 minutes each) and safely re-runnable.
 
+Each output records how it was trained. If you pass `--steps N` here, pass the same
+`--steps N` to `06_sweep.py` below: outputs trained for another number of steps (or
+older outputs without the record) are refused, not skipped or pooled.
+
 ## 3. Aggregate
 
 When the array finishes, score everything (this runs no new fits when all outputs exist):
@@ -41,6 +49,8 @@ When the array finishes, score everything (this runs no new fits when all output
 python scripts/06_sweep.py --phase test --configs ms,orig --seeds 0,1,2,3,4,5,6,7,8,9 --ssp
 ```
 
-This writes `results/sweep_test/report.json`, which is tracked by git; commit it to
-bring the results back. The per-job `.npz` caches are git-ignored; copy them with
-`rsync` if you want to re-analyse them elsewhere.
+This merges the configs passed into `results/sweep_test/report.json` (other entries are
+kept; `--overwrite` replaces the file), which is tracked by git; commit it to bring the
+results back. A report holds one training length: the sweep refuses to add entries
+trained for another number of steps. The per-job `.npz` caches are git-ignored; copy
+them with `rsync` if you want to re-analyse them elsewhere.

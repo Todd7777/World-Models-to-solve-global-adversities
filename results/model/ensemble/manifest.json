@@ -1,0 +1,121 @@
+{
+  "config": {
+    "data": {
+      "co2_csv": "data/raw/owid_co2/owid-co2-data.csv",
+      "energy_csv": "data/raw/owid_energy/owid-energy-data.csv",
+      "processed_npz": "data/processed/panel.npz",
+      "meta_json": "data/processed/panel_meta.json",
+      "year_start": 1990,
+      "year_end": 2022,
+      "min_primary_energy_twh": 50.0,
+      "min_year_coverage": 0.9,
+      "max_countries": 60
+    },
+    "model": {
+      "hidden": 64,
+      "embed_dim": 8,
+      "depth": 2,
+      "max_share_change_per_year": 0.05,
+      "max_intensity_change_per_year": 0.08,
+      "seed": 0,
+      "time_features": false,
+      "level_mode": "per_capita",
+      "momentum": "ema",
+      "ema_decay": 0.7,
+      "damped_trend": true,
+      "phi_init": 0.6
+    },
+    "train": {
+      "lr": 0.003,
+      "steps": 4000,
+      "weight_decay": 0.0001,
+      "w_emissions": 1.0,
+      "w_demand": 0.5,
+      "w_mix": 1.0,
+      "w_smooth": 0.01,
+      "w_aggregate": 0.5,
+      "w_level": 0.2,
+      "grad_clip": 1.0,
+      "recency_halflife": 0.0,
+      "multi_shoot": true,
+      "shoot_horizon": 8,
+      "shoot_stride": 1,
+      "w_full": 1.0,
+      "w_shoot": 1.0
+    }
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "members": {
+    "0": {
+      "source": "results/model/params_full.pkl",
+      "final_loss": 0.024267954751849174,
+      "insample_co2_r2": 0.9996500754788418,
+      "insample_co2_mape": 0.03326872702585817
+    },
+    "1": {
+      "source": "trained",
+      "final_loss": 0.024251339957118034,
+      "insample_co2_r2": 0.9995552419193193,
+      "insample_co2_mape": 0.03299795982147002
+    },
+    "2": {
+      "source": "trained",
+      "final_loss": 0.024158697575330734,
+      "insample_co2_r2": 0.9996080527062438,
+      "insample_co2_mape": 0.032477664839308536
+    },
+    "3": {
+      "source": "trained",
+      "final_loss": 0.024310456588864326,
+      "insample_co2_r2": 0.999511119612147,
+      "insample_co2_mape": 0.032917675797113626
+    },
+    "4": {
+      "source": "trained",
+      "final_loss": 0.024085715413093567,
+      "insample_co2_r2": 0.9996185198281758,
+      "insample_co2_mape": 0.03268144064684247
+    },
+    "5": {
+      "source": "trained",
+      "final_loss": 0.02470606565475464,
+      "insample_co2_r2": 0.9996678858036578,
+      "insample_co2_mape": 0.033963142205913885
+    },
+    "6": {
+      "source": "trained",
+      "final_loss": 0.024173690006136894,
+      "insample_co2_r2": 0.9995834380157762,
+      "insample_co2_mape": 0.032495067317015895
+    },
+    "7": {
+      "source": "trained",
+      "final_loss": 0.024067873135209084,
+      "insample_co2_r2": 0.9996391143302815,
+      "insample_co2_mape": 0.032405882378742604
+    },
+    "8": {
+      "source": "trained",
+      "final_loss": 0.024135280400514603,
+      "insample_co2_r2": 0.9995802166577858,
+      "insample_co2_mape": 0.03241281622180188
+    },
+    "9": {
+      "source": "trained",
+      "final_loss": 0.023940255865454674,
+      "insample_co2_r2": 0.9995963539860474,
+      "insample_co2_mape": 0.03287886694241433
+    }
+  }
+}

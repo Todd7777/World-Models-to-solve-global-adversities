@@ -2,26 +2,30 @@
 
 Usage:  python scripts/05_make_figures.py
 Requires scripts 01-04 (and the sweeps) to have produced the tables and checkpoint.
+Refuses to run, before writing anything, unless results/tables/config.json, which
+scripts/02_train.py writes with the checkpoint, matches default_config(): the
+configuration the checkpoint is run under here.
 """
 import json
 import os
+import sys
 
 import numpy as np
 
-from carbon_world_model.config import default_config
 from carbon_world_model.data.panel import Panel
 from carbon_world_model.data.ssp import SSPS, load_processed, ssp_driver_paths
 from carbon_world_model.model.world_model import WorldModel
 from carbon_world_model.model.emissions import estimate_emission_factors, reconstruction_report
 from carbon_world_model.train.fit import load_params
-from carbon_world_model.eval.configs import make_config
-from carbon_world_model.eval.rolling import job_path
+from carbon_world_model.eval.configs import ProvenanceError, check_default_checkpoint
+from carbon_world_model.eval.rolling import load_jobs
 from carbon_world_model.eval.baselines import trend_kaya
 from carbon_world_model.plan.scenario import build_scenario
-from carbon_world_model.plan import optimize as O
 from carbon_world_model.viz import figures as F
 
 FIG, TAB = "results/figures", "results/tables"
+CHECKPOINT = "results/model/params_full.pkl"
+CHECKPOINT_CONFIG = os.path.join(TAB, "config.json")  # written by 02_train.py with CHECKPOINT
 
 
 def load(name):
@@ -34,12 +38,12 @@ def save(fig, name):
 
 
 def main() -> None:
-    cfg = default_config()
+    cfg = check_default_checkpoint(CHECKPOINT_CONFIG)  # before anything is written
     panel = Panel.load(cfg)
     os.makedirs(FIG, exist_ok=True)
     selected = load("selected_config.json")["config"]
     wm = WorldModel.build(panel, cfg)
-    params = load_params("results/model/params_full.pkl")
+    params = load_params(CHECKPOINT)
 
     ef = estimate_emission_factors(panel, "nnls")
     save(F.fig_reconstruction(panel, ef, reconstruction_report(panel, ef)), "fig1_reconstruction.png")
@@ -52,8 +56,7 @@ def main() -> None:
     yrs = panel.years[k:]
     series = {}
     for name, label in ((selected, f"world model ({selected})"), ("orig", "world model (original)")):
-        runs = [np.load(job_path("results/sweep_test", name, 2015, s)) for s in range(5)
-                if os.path.exists(job_path("results/sweep_test", name, 2015, s))]
+        runs = load_jobs("results/sweep_test", name, [2015], range(5))[0].get(2015, [])
         if runs:
             series[label] = (yrs, np.mean([r["co2_realized"] for r in runs], 0)[panel.country_index("China")])
     series["trend-Kaya"] = (yrs, trend_kaya(panel, 2015)[panel.country_index("China"), k:])
@@ -62,17 +65,13 @@ def main() -> None:
     save(F.fig_ssp_drivers(panel, load_processed("v9"), load_processed("v3.2"), ssp_driver_paths, SSPS),
          "fig6_ssp_drivers.png")
     plan = load("plan.json")
-    save(F.fig_ssp_pathways(panel, plan), "fig7_ssp_pathways_robust.png")
+    traj = dict(np.load(os.path.join(TAB, "plan_trajectories.npz")))
+    save(F.fig_ssp_pathways(panel, plan, traj), "fig7_ssp_pathways_robust.png")
 
-    # Fuel mix BAU vs max-feasible under SSP2 (energy-weighted aggregate shares).
+    # Fuel mix BAU vs max-feasible under SSP2 (energy-weighted aggregate shares, averaged
+    # over the seed ensemble by 04_plan.py).
     scen = build_scenario(panel, cfg, end_year=2050, ssp="SSP2")
-    bau, mx = O.business_as_usual(wm, params, scen), O.max_ambition(wm, params, scen)
-
-    def agg(res):
-        E = res.shares * res.D[:, :, None]
-        return E.sum(axis=0) / np.clip(E.sum(axis=(0, 2))[:, None], 1e-9, None)
-
-    save(F.fig_mix(panel, scen.years, agg(bau), agg(mx)), "fig8_mix_ssp2.png")
+    save(F.fig_mix(panel, traj["years"], traj["bau_mix"], traj["max_mix"]), "fig8_mix_ssp2.png")
 
     # Cost-of-abatement frontier (SSP2), reusing the planning panel layout.
     legacy = {"scenario": {"years": plan["years"]},
@@ -84,4 +83,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ProvenanceError as e:
+        sys.exit(f"05_make_figures.py: {e}")

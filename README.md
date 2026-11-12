@@ -27,13 +27,15 @@ CWM couples three things that are usually kept apart:
 > the future and not policy advice. Its results are conditional on documented
 > assumptions, and its limitations (below) are reported as prominently as its strengths.
 
-> **Current state (2026-11-11).** A model configuration has been selected on the
-> validation folds (`ms_full`: multiple shooting, per-capita levels, EMA momentum, a
-> damped trend, no calendar-time inputs), the checkpoint retrained with it, and the
-> held-out test folds scored once. The planning numbers are means over ten training
-> seeds of that configuration, with their range, because single seeds disagree widely.
-> See [What changed on 2026-11-11](#what-changed-on-2026-11-11) and
-> [on 2026-11-10](#what-changed-on-2026-11-10).
+> **Current state (2026-11-12).** The selected configuration is `ms_full` (multiple
+> shooting, per-capita levels, EMA momentum, a damped trend, no calendar-time inputs),
+> and the checkpoint is trained with it. On 2026-11-11 a leak was found and fixed in how
+> backtest models were trained: their loss saw realised GDP and population after the
+> cutoff. Re-scored leak-free, the validation folds still lead to `ms_full`. The
+> test-fold, calibration and transfer numbers below were computed with the leak and
+> await re-measurement. The planning numbers, means over ten training seeds of
+> full-data fits, are unaffected. See
+> [What changed on 2026-11-12](#what-changed-on-2026-11-12).
 
 ---
 
@@ -53,7 +55,10 @@ The physics layer alone reconstructs reported CO₂ with **R² = 0.9986** (media
 coal 0.316 > oil 0.231 > gas 0.198 MtCO₂/TWh.
 
 **Out of sample, it matches trend extrapolation given the true drivers, and does no
-better.** The leak-free protocol keeps model selection (validation cutoffs 2005, 2007
+better.** *(These test-fold numbers come from fits trained before the 2026-11-11 leak
+fix and await re-measurement; see
+[What changed on 2026-11-12](#what-changed-on-2026-11-12).)* The protocol keeps model
+selection (validation cutoffs 2005, 2007
 and 2009, six-year horizons) apart from reporting (test cutoffs 2015–2017, horizons to
 2022, scored once, after selection). On the test folds, given realised GDP and
 population, the selected configuration's per-country error (MAPE) is 7.6% against 7.8%
@@ -94,6 +99,65 @@ the selected configuration, with the lowest and highest seed in brackets:
 
 The raw numbers are in [`results/tables/`](results/tables) and the figures in
 [`results/figures/`](results/figures).
+
+---
+
+## What changed on 2026-11-12
+
+**A leak in how backtest models were trained.** Every fit with a cutoff (validation
+folds, test folds, transfer test) trains on a free rollout that runs past the cutoff on
+realised GDP and population. Two terms of that loss were not confined to the years up to
+the cutoff. The curvature penalty saw the post-cutoff years (and, in the transfer test,
+the held-out countries' trajectories). The level term's normaliser, a scale that cancels,
+saw them too, which affected only rounding. Scrambling every post-cutoff value changed
+the curvature term about 150-fold. Fifteen of the sixteen configurations were affected;
+`ms_full_shootonly`, which trains without that loss, was not. The fix (`46cc5ce`) confines
+both terms to the fit window, and a test now checks that a fit on data scrambled after the
+cutoff gives bit-for-bit the same parameters. Fits on all the data were not affected:
+`scripts/02_train.py` still reproduces the checkpoint byte for byte, so the planning
+ensemble and every planning number stand.
+
+**The validation folds, leak-free.** All sixteen configurations were rerun
+(`results/sweep_val/report.json`; the leaky report is in git history at `2648dda`). Scores
+moved by about the size of seed noise (median 0.9 points, against 1.2 between seeds of
+one configuration), in both directions:
+
+| configuration | leaky | leak-free |
+|---|---|---|
+| `ms_percap_damped` | 11.05 | 10.79 |
+| `ms_percap` | 12.20 | 10.96 |
+| `ms_full_shootonly` | 11.29 | 11.29 (unaffected) |
+| `ms_full` (selected) | 11.70 | 11.38 |
+| `ms_notime_percap` | 11.85 | 12.06 |
+| `orig` | 15.87 | 19.99 |
+| trend-Kaya baseline | 9.85 | 9.85 |
+
+Multiple shooting still beats every other configuration on each seed, and trend-Kaya
+still beats every configuration. The leaders changed: `ms_percap` rose from seventh to
+second. The tie-break that chose `ms_full` uses planning checks on four training seeds of
+full-data fits, which the leak did not touch. It was extended to the two new candidates
+(`results/tables/selection/`), and `ms_full` is still the only one whose planning checks
+hold with smooth projections on every seed:
+
+- `ms_percap_damped` fails effort monotonicity on one seed.
+- `ms_percap` oscillates every year on one seed, and its training spikes on three.
+- `ms_full_shootonly` oscillates on three seeds, `ms_notime_percap` on two.
+
+So the selection stands.
+
+**The transfer test trained with the wrong optimiser.** It fitted its shared dynamics
+with plain Adam at a constant rate, not the clipped, cosine-scheduled AdamW that every
+other fit uses, and for `ms_full` that training spiked and did not recover. It now uses
+the deployed recipe (`0c93b5c`). On a transfer scored on the validation period only
+(cutoff 2009, years 2010–2015, three seeds), the error on the 12 unseen countries falls
+from 13.7–19.7% to 12.5–13.7%, against 9.0% for trend-Kaya: better, but still worse than
+extrapolation.
+
+**Awaiting re-measurement:** the test-fold, calibration and transfer tables, and the
+out-of-sample numbers quoted above, come from leaky fits; the transfer number also comes
+from the old optimiser. Re-scoring the test folds once, leak-free, for the
+already-selected `ms_full` (and `orig`) would correct them without revisiting the
+selection.
 
 ---
 
@@ -264,7 +328,7 @@ python scripts/02b_train_ensemble.py # train seeds 1-9 for the planning ensemble
 python scripts/03_backtest.py        # physics-layer and in-sample tables
 python scripts/04_plan.py            # BAU / max-ambition / frontier / warming, SSP1-5
 python scripts/seed_sensitivity.py   # retrain with seeds 0-3: stability and spread
-pytest -q                            # 66 tests
+pytest -q                            # 70 tests
 ```
 
 Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` scores
@@ -285,13 +349,13 @@ other than the one the script runs it under. The processed panel
 
 ## Limitations (read these)
 
-- **The selection rests on few seeds and one tie-break.** On the validation folds (2
-  seeds, `results/sweep_val/report.json`) the three leading configurations are within
-  seed noise of each other, so `ms_full`, third on score (11.70 against 11.05 for
-  `ms_percap_damped`), was chosen because its planning checks held for each of four
-  training seeds. A different tie-break could have chosen differently. The test folds
-  were scored once, after the choice, and must not be used to revisit it. The round-1
-  report (3000 training steps) is kept in `tests/data/report_round1_3000steps.json`.
+- **The selection rests on few seeds and one tie-break.** On the leak-free validation
+  folds (2 seeds, `results/sweep_val/report.json`) the four leading configurations are
+  within seed noise of each other (10.79–11.38). `ms_full`, fourth on score, is the only
+  one whose planning checks held, with smooth projections, for each of four training
+  seeds. A different tie-break could have chosen differently. The test folds were scored
+  once, after the choice, and must not be used to revisit it. The round-1 report (3000
+  training steps) is kept in `tests/data/report_round1_3000steps.json`.
 - **Training seeds disagree, and the ensemble covers only that.** The selected
   configuration trains without the loss spikes of the original one
   (`results/tables/seed_sensitivity.json`; the original's are in
@@ -304,17 +368,21 @@ other than the one the script runs it under. The processed panel
 - **Short-horizon forecasting is not where this model wins.** Given the true drivers,
   the selected configuration only matches trend-Kaya extrapolation on the test folds
   (score 9.40 against 9.49: lower per-country error, higher aggregate error), and on the
-  validation folds trend-Kaya is better (9.85 against 11.70). Given the drivers that were
-  available at the time, baselines that ignore drivers beat both (test score 11.15
-  against 14.09). CWM's value is being a *structural, differentiable* simulator that
+  leak-free validation folds trend-Kaya is better (9.85 against 11.38). Given the drivers
+  that were available at the time, baselines that ignore drivers beat both (test score
+  11.15 against 14.09). The test scores come from fits trained before the 2026-11-11
+  leak fix. CWM's value is being a *structural, differentiable* simulator that
   supports counterfactual and planning queries no extrapolative baseline can perform —
   not point forecasting.
 - **It does not transfer to unseen countries.** Fitted on 48 countries up to 2015 and
-  adapted to 12 held-out ones from their own data up to 2015, it forecasts their
+  adapted to 12 held-out ones from their own data up to 2015, it forecast their
   2016–2022 emissions with 21% error, against 8% for trend-Kaya extrapolation
-  (`results/tables/transfer.json`). Nothing after 2015 is used, but the held-out
-  countries' data up to 2015 do inform the shared emission factors, normalisation and
-  static features.
+  (`results/tables/transfer.json`). That run used the leaky loss and an optimiser that
+  was unstable for this configuration. With both fixed, a transfer scored on the
+  validation period (cutoff 2009, years 2010–2015) gives 12.5–13.7% over three seeds,
+  against 9.0% for trend-Kaya: still worse than extrapolation. Nothing after the cutoff
+  is used, but the held-out countries' data up to the cutoff do inform the shared
+  emission factors, normalisation and static features.
 - **Drivers are exogenous.** GDP and population paths are assumptions; results are
   conditional on them. Planning uses SSP1–5 drivers (IIASA SSP database v3.2) with SSP2
   as the default; the earlier heuristic (recent CAGR tapering to a long-run rate) is

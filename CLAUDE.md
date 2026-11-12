@@ -22,15 +22,15 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-11: 66 pass
+pytest             # 2026-11-12: 70 pass
 ```
 
 If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
 `python -m pytest`.
 
-## State on 2026-11-11
+## State on 2026-11-12
 
-- **All 66 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
+- **All 70 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
   `ms_full` (`SELECTED_CONFIG` in `config.py`). `scripts/02_train.py` reproduces it bit for bit (seed 0, about 2.5
   minutes on 4 cores). Seeds 0-3 all pass the planning tests (`results/tables/seed_sensitivity.json`).
 - **Planning uses a ten-seed ensemble** (`results/model/ensemble/`, `scripts/02b_train_ensemble.py`; seed 0 is a
@@ -39,24 +39,30 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   widely: maximum-effort cut 26-59% (mean 41%), and the checkpoint is the most optimistic of the ten. A plan robust
   to every SSP and seed costs +119% effort. After any retrain of the checkpoint, rerun `02b_train_ensemble.py`:
   until then `04_plan.py` and `test_committed_ensemble_contains_the_checkpoint` refuse the stale ensemble.
-- **Selection is under review (2026-11-11).** `ms_full` was chosen on 2026-11-10 from a validation sweep whose fits
-  leaked post-cutoff drivers through the training loss's curvature term (fixed in `46cc5ce`). The leak-free rerun
-  now in `results/sweep_val/report.json` (all 16 configs, 4000 steps, seeds 0-1) changes the leader group:
-  `ms_percap_damped` 10.79, `ms_percap` 10.96 (was 7th), `ms_full_shootonly` 11.29 (unaffected, identical),
-  `ms_full` 11.38, `ms_notime_percap` 12.06; trend-Kaya 9.85. Multiple shooting still wins on every seed. The
-  tie-break that chose `ms_full` (planning checks on four seeds of full-data fits, `results/tables/selection/`,
-  via `seed_sensitivity.py --config`) was unaffected by the leak but covered only the old three leaders. Until the
-  owner decides, `SELECTED_CONFIG` stays `ms_full` and the test folds stay untouched. The leaky report is in
-  git history at `2648dda`. Round 1 (3000 steps; no `steps` fields, read as 3000 via `LEGACY_REPORT_STEPS`) is
-  in `tests/data/report_round1_3000steps.json`.
-- **The test folds are spent.** `results/sweep_test/report.json` (`ms_full` and `orig`, 5 seeds, realised and
-  SSP-v9 drivers) was scored once, after selection: `ms_full` 9.40 against trend-Kaya 9.49 with realised drivers,
-  14.09 against growth persistence 11.15 ex ante; `orig` 19.96. Never use them to revisit the selection.
-  `03_evaluate.py --config ms_full` wrote the out-of-sample tables (calibration: 0.859 coverage at 80%; transfer
-  to 12 unseen countries: MAPE 21% against trend-Kaya's 8%) and `05_make_figures.py` the figures.
+- **Selection re-checked after a leak; it holds.** Every fit with a cutoff leaked post-cutoff drivers through the
+  full-run loss's curvature term until `46cc5ce`; full-data fits (checkpoint, ensemble, tie-break checks) were never
+  affected. The leak-free rerun in `results/sweep_val/report.json` (all 16 configs, 4000 steps, seeds 0-1; leaky
+  report in history at `2648dda`) gives `ms_percap_damped` 10.79, `ms_percap` 10.96 (was 7th),
+  `ms_full_shootonly` 11.29 (unaffected, identical), `ms_full` 11.38, `ms_notime_percap` 12.06; trend-Kaya 9.85.
+  Multiple shooting still wins on every seed. The tie-break (planning checks with smooth projections on four seeds
+  of full-data fits, `results/tables/selection/`, via `seed_sensitivity.py --config`) now covers all five; only
+  `ms_full` passes on every seed. Round 1 (3000 steps; no `steps` fields, read as 3000 via `LEGACY_REPORT_STEPS`)
+  is in `tests/data/report_round1_3000steps.json`.
+- **The test folds are spent, and their tables predate the leak fix.** `results/sweep_test/report.json` (`ms_full`
+  and `orig`, 5 seeds, realised and SSP-v9 drivers) was scored once, after selection, from leaky fits: `ms_full`
+  9.40 against trend-Kaya 9.49 with realised drivers, 14.09 against growth persistence 11.15 ex ante; `orig` 19.96.
+  `03_evaluate.py --config ms_full` wrote the out-of-sample tables from them (calibration: 0.859 coverage at 80%;
+  transfer: MAPE 21% against trend-Kaya's 8%). Re-scoring the same two configs leak-free would correct these
+  without revisiting the selection; it waits on the owner. Never use the test folds to revisit the selection.
+- **The transfer test now trains its shared dynamics with `fit(country_w=...)`**, the deployed recipe (`0c93b5c`);
+  it used plain Adam, which was unstable for `ms_full`. `spatial_transfer(..., end_year=...)` scores only up to
+  `end_year`; a validation-period transfer (cutoff 2009, `end_year=2015`) gave 12.5-13.7% over three seeds
+  against trend-Kaya's 9.0%.
 - Sweep job outputs record their step count and full config; report entries record their step count. Scores
   never pool outputs trained differently (apart from the seed) or without that record. Older job caches lack
-  it; delete and rerun them.
+  it; delete and rerun them. Caches written before `46cc5ce` (2026-11-11) carry the same record but were
+  trained with the leaky loss, which the guards cannot see: delete them too (caches are git-ignored, so this
+  concerns machines that ran sweeps before then, such as a cluster).
 - `06_sweep.py` merges into `<root>/report.json`, replacing only the configs passed; `--overwrite` replaces the
   whole report. Before fitting anything it refuses to put a second training length (or other folds) into a
   report, and to reuse cached outputs trained differently from what the run asks for. It does not check seeds:
@@ -77,6 +83,9 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## Where the next steps are
 
-README "Limitations (read these)" and "What changed on 2026-11-11". The open questions there: forecasts only
-match trend-Kaya given the true drivers, the model does not transfer to unseen countries, and training seeds of
-the selected config disagree on the achievable cut (26-59%), so robust plans cost twice the effort.
+README "Limitations (read these)" and "What changed on 2026-11-12". First, with the owner's go-ahead: re-score
+the test folds leak-free for `ms_full` and `orig` (`06_sweep.py --phase test --configs ms_full,orig --seeds
+0,1,2,3,4 --ssp --overwrite` into a clean `results/sweep_test`, then `03_evaluate.py --config ms_full` and
+`05_make_figures.py`). The open questions: forecasts only match trend-Kaya given the true drivers, the model
+transfers worse than trend extrapolation, and training seeds of the selected config disagree on the achievable
+cut (26-59%), so robust plans cost twice the effort.

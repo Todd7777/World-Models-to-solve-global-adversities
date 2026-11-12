@@ -11,7 +11,9 @@ full-data model; writes JSON tables to results/tables/:
                                  intensity, per test cutoff
   driver_decomposition.json      how much of the ex-ante error comes from the SSP GDP path
   calibration.json               split-conformal intervals (val-calibrated, test-checked)
-  transfer.json                  spatial transfer to held-out countries
+  transfer.json                  spatial transfer to held-out countries, with the error of
+                                 the test-fold model (trained on all countries) on the
+                                 same countries and years for comparison
 
 Refuses to run unless results/tables/config.json, which scripts/02_train.py writes with
 the checkpoint, matches make_config(<selected>): the in-sample table must describe the
@@ -41,6 +43,7 @@ from carbon_world_model.eval.rolling import (
 from carbon_world_model.eval.backtest import insample_report, conformal_split
 from carbon_world_model.eval.baselines import trend_kaya
 from carbon_world_model.eval.transfer import spatial_transfer
+from carbon_world_model.eval import metrics as M
 
 OUT = "results/tables"
 CHECKPOINT = "results/model/params_full.pkl"
@@ -153,9 +156,22 @@ def main() -> None:
     # 8. spatial transfer
     if not a.skip_transfer:
         tr = spatial_transfer(panel, cfg, test_every=5, cutoff=2015, seed=0, verbose=False)
+        # The same countries and years forecast by the test-fold model, which trained on
+        # all 60 countries: separates the cost of transfer from how well they forecast.
+        co, H = tr["holdout_years"][0] - 1, len(tr["holdout_years"])
+        k = int(np.where(panel.years == co)[0][0])
+        rows = [panel.countries.index(c) for c in tr["test_countries"]]
+        fcs = [r["co2_realized"][rows, 1:H + 1] for r in test_runs.get(co, [])]
+        if fcs:
+            true, msk = panel.co2[rows, k + 1:k + H + 1], panel.mask[rows, k + 1:k + H + 1]
+            tr["in_training"] = {"seeds": len(fcs),
+                                 "per_seed_mape": [M.mape(f, true, msk) for f in fcs],
+                                 "seed_ensemble_mape": M.mape(np.mean(fcs, 0), true, msk)}
         dump(tr, "transfer.json")
         print(f"[G] transfer to 12 unseen countries: WM MAPE {100*tr['world_model']['mape']:.1f}% "
-              f"R2 {tr['world_model']['r2']:.3f} | trend-Kaya MAPE {100*tr['trend_kaya']['mape']:.1f}%")
+              f"R2 {tr['world_model']['r2']:.3f} | trend-Kaya MAPE {100*tr['trend_kaya']['mape']:.1f}%"
+              + (f" | same countries, trained on: MAPE {100*np.mean(tr['in_training']['per_seed_mape']):.1f}% "
+                 f"per seed" if fcs else ""))
     with open(os.path.join(OUT, "selected_config.json"), "w") as fh:
         json.dump({"config": a.config}, fh)
 

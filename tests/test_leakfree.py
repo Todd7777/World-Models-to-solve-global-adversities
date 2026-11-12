@@ -120,3 +120,30 @@ def test_loss_window_excludes_everything_outside_it(panel, cfg):
     lb, gb = jax.value_and_grad(loss)(p, other)
     assert float(la) == float(lb)
     assert _same_tree(ga, gb)
+
+
+def test_fit_with_country_weights_ignores_other_countries(panel):
+    """fit(country_w=...) as the spatial-transfer test trains its shared dynamics: given
+    the model build, scrambling every value of the countries weighted 0 leaves the fitted
+    parameters bit-for-bit unchanged. (orig: no shooting loss, whose level normaliser,
+    a scale that cancels, still reads every row.)"""
+    cfg = make_config("orig", steps=2)
+    rows = np.ones(panel.n_countries)
+    rows[::5] = 0.0
+    rng = np.random.default_rng(2)
+    out = rows == 0
+
+    def scr(a):
+        a = a.copy()
+        a[out] = a[out] * rng.uniform(0.3, 3.0, size=a[out].shape)
+        return a
+
+    energy = scr(panel.energy)
+    other = dataclasses.replace(
+        panel, energy=energy, primary_energy=energy.sum(axis=2), co2=scr(panel.co2),
+        co2_by_source=scr(panel.co2_by_source), process_co2=scr(panel.process_co2),
+        gdp=scr(panel.gdp), population=scr(panel.population))
+    wm = WorldModel.build(panel, cfg, upto_year=CUT)
+    a = fit(panel, cfg, wm=wm, train_year_max=CUT, verbose=False, country_w=rows).params
+    b = fit(other, cfg, wm=wm, train_year_max=CUT, verbose=False, country_w=rows).params
+    assert _same_tree(a, b)

@@ -106,20 +106,36 @@ def shoot_loss(traj, batch, cfg):
 
 
 def fit(panel, cfg: Config, wm: WorldModel | None = None, train_year_max: int | None = None,
-        seed: int | None = None, verbose: bool = True) -> FitResult:
+        seed: int | None = None, verbose: bool = True,
+        country_w: np.ndarray | None = None) -> FitResult:
+    """Fit by differentiable simulation on data up to `train_year_max` (all data if None).
+
+    country_w: None to fit every country, or [C] weights of 0 or 1 to fit only the
+    countries weighted 1 (the spatial-transfer test trains its shared dynamics this way,
+    with the same recipe as the deployed model). The loss then reads only those
+    countries' rows, except the shooting loss's level normaliser, whose scale cancels.
+    """
     wm = WorldModel.build(panel, cfg, upto_year=train_year_max) if wm is None else wm
     params = wm.init_params(seed=cfg.train.seed if seed is None else seed)
     targets = _targets(panel)
     mask = year_window_mask(panel, train_year_max, cfg.train.recency_halflife)
+    if country_w is not None:
+        cw = jnp.asarray(np.asarray(country_w, dtype=float))
+        mask = mask * cw[:, None]
     cut_idx = panel.n_years - 1 if train_year_max is None else _year_index(panel, train_year_max)
-    # The full run rolls out over every panel year, so with a cutoff the loss is told where
-    # the fit window ends (see loss_terms); without one it covers all data, as before.
+    # The full run rolls out over every panel year and country, so with a cutoff or a
+    # country subset the loss is told where the fit window ends (see loss_terms); without
+    # either it covers all data, as before.
     window = None
-    if train_year_max is not None:
-        window = jnp.asarray(np.broadcast_to(panel.years[None, :] <= train_year_max,
-                                             panel.co2.shape).astype(np.float32))
+    if train_year_max is not None or country_w is not None:
+        last = panel.years[-1] if train_year_max is None else train_year_max
+        rows = (np.ones(panel.n_countries, dtype=bool) if country_w is None
+                else np.asarray(country_w) > 0)
+        window = jnp.asarray(((panel.years[None, :] <= last) & rows[:, None]).astype(np.float32))
     batch = (shooting_batch(wm, panel, cut_idx, cfg.train.shoot_horizon, cfg.train.shoot_stride)
              if cfg.train.multi_shoot else None)
+    if batch is not None and country_w is not None:
+        batch["mask"] = batch["mask"] * jnp.tile(cw, batch["n_starts"])[:, None]
     static, ef = jnp.asarray(wm.static), jnp.asarray(wm.ef)
 
     sched = optax.cosine_decay_schedule(cfg.train.lr, cfg.train.steps, alpha=0.1)

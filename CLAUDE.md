@@ -48,12 +48,13 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   of full-data fits, `results/tables/selection/`, via `seed_sensitivity.py --config`) now covers all five; only
   `ms_full` passes on every seed. Round 1 (3000 steps; no `steps` fields, read as 3000 via `LEGACY_REPORT_STEPS`)
   is in `tests/data/report_round1_3000steps.json`.
-- **The test folds are spent, and their tables predate the leak fix.** `results/sweep_test/report.json` (`ms_full`
-  and `orig`, 5 seeds, realised and SSP-v9 drivers) was scored once, after selection, from leaky fits: `ms_full`
-  9.40 against trend-Kaya 9.49 with realised drivers, 14.09 against growth persistence 11.15 ex ante; `orig` 19.96.
-  `03_evaluate.py --config ms_full` wrote the out-of-sample tables from them (calibration: 0.859 coverage at 80%;
-  transfer: MAPE 21% against trend-Kaya's 8%). Re-scoring the same two configs leak-free would correct these
-  without revisiting the selection; it waits on the owner. Never use the test folds to revisit the selection.
+- **The test folds are spent.** They were scored after selection, for `ms_full` and `orig` only (5 seeds, realised
+  and SSP-v9 drivers): first from leaky fits on 2026-11-10, then once more, leak-free, on 2026-11-12 with the
+  owner's go-ahead, as a correction. `results/sweep_test/report.json` and the tables now hold the leak-free run:
+  `ms_full` 8.33 against trend-Kaya 9.49 with realised drivers (leaky: 9.40), 13.68 against growth persistence
+  11.15 ex ante (leaky: 14.09); `orig` 18.84. `03_evaluate.py --config ms_full` wrote the out-of-sample tables
+  (calibration: 0.872 coverage at 80%; transfer: MAPE 15.4% against trend-Kaya's 7.6%) and `05_make_figures.py`
+  the figures. Never use the test folds to revisit the selection.
 - **The transfer test now trains its shared dynamics with `fit(country_w=...)`**, the deployed recipe (`0c93b5c`);
   it used plain Adam, which was unstable for `ms_full`. `spatial_transfer(..., end_year=...)` scores only up to
   `end_year`; a validation-period transfer (cutoff 2009, `end_year=2015`) gave 12.5-13.7% over three seeds
@@ -83,9 +84,8 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## Where the next steps are
 
-README "Limitations (read these)" and "What changed on 2026-11-12". First, with the owner's go-ahead: re-score
-the test folds leak-free for `ms_full` and `orig` (`06_sweep.py --phase test --configs ms_full,orig --seeds
-0,1,2,3,4 --ssp --overwrite` into a clean `results/sweep_test`, then `03_evaluate.py --config ms_full` and
-`05_make_figures.py`). The open questions: forecasts only match trend-Kaya given the true drivers, the model
-transfers worse than trend extrapolation, and training seeds of the selected config disagree on the achievable
-cut (26-59%), so robust plans cost twice the effort.
+README "Limitations (read these)" and "What changed on 2026-11-12". The open questions there: forecasts are only
+level with trend-Kaya given the true drivers (ahead on the test folds, behind on the validation folds) and behind
+driver-free baselines ex ante; the model transfers to unseen countries at about twice trend-Kaya's error; and
+training seeds of the selected config disagree on the achievable cut (26-59%), so robust plans cost twice the
+effort.

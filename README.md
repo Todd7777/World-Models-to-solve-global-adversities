@@ -31,10 +31,10 @@ CWM couples three things that are usually kept apart:
 > shooting, per-capita levels, EMA momentum, a damped trend, no calendar-time inputs),
 > and the checkpoint is trained with it. On 2026-11-11 a leak was found and fixed in how
 > backtest models were trained: their loss saw realised GDP and population after the
-> cutoff. Re-scored leak-free, the validation folds still lead to `ms_full`. The
-> test-fold, calibration and transfer numbers below were computed with the leak and
-> await re-measurement. The planning numbers, means over ten training seeds of
-> full-data fits, are unaffected. See
+> cutoff. Re-scored leak-free, the validation folds still lead to `ms_full`, and the
+> test folds were then re-scored once, leak-free, for the same configuration. The
+> out-of-sample numbers below are the corrected ones. The planning numbers, means over
+> ten training seeds of full-data fits, were never affected. See
 > [What changed on 2026-11-12](#what-changed-on-2026-11-12).
 
 ---
@@ -54,22 +54,21 @@ The physics layer alone reconstructs reported CO₂ with **R² = 0.9986** (media
 4.7%), with emission factors recovered from data in the correct physical order:
 coal 0.316 > oil 0.231 > gas 0.198 MtCO₂/TWh.
 
-**Out of sample, it matches trend extrapolation given the true drivers, and does no
-better.** *(These test-fold numbers come from fits trained before the 2026-11-11 leak
-fix and await re-measurement; see
-[What changed on 2026-11-12](#what-changed-on-2026-11-12).)* The protocol keeps model
-selection (validation cutoffs 2005, 2007
-and 2009, six-year horizons) apart from reporting (test cutoffs 2015–2017, horizons to
-2022, scored once, after selection). On the test folds, given realised GDP and
-population, the selected configuration's per-country error (MAPE) is 7.6% against 7.8%
-for trend-Kaya extrapolation, and its error on the 60-country total 1.8% against 1.7%.
-The original configuration's per-country error is 14.0%. Given instead the SSP2 paths
-published before the cutoffs (2014 vintage), its per-country error rises to 10.8%,
-still below trend-Kaya's 11.0%, but baselines that ignore the drivers do better (8.8%).
-Those paths raise the world model's forecast of the 60-country total in the final year
-by 5–6% over the realised drivers (4–9% across SSP1–5). Its 80% prediction intervals,
-calibrated on the validation folds, cover 86% of test outcomes. It does not transfer
-well to countries it was not trained on (see Limitations).
+**Out of sample, it is about level with trend extrapolation given the true drivers.**
+The protocol keeps model selection (validation cutoffs 2005, 2007 and 2009, six-year
+horizons) apart from reporting (test cutoffs 2015–2017, horizons to 2022, scored after
+selection). On the test folds, given realised GDP and population, the selected
+configuration's per-country error (MAPE) is 7.5% against 7.8% for trend-Kaya
+extrapolation, and its error on the 60-country total 0.9% against 1.7% (score 8.3
+against 9.5). On the validation folds trend-Kaya is ahead (9.9 against 11.4), so the two
+are level within seed noise. The original configuration's per-country error is 13.6%.
+Given instead the SSP2 paths published before the cutoffs (2014 vintage), its
+per-country error rises to 10.6%, still below trend-Kaya's 11.0%, but baselines that
+ignore the drivers do better (8.8%). Those paths raise the world model's forecast of the
+60-country total in the final year by 4–5% over the realised drivers (3–8% across
+SSP1–5). Its 80% prediction intervals, calibrated on the validation folds, cover 87% of
+test outcomes. It does not transfer well to countries it was not trained on (see
+Limitations).
 
 **It plans.** Optimising inside the simulator, under feasibility limits taken from the
 fastest *sustained* historical transitions (low-carbon share +1.8%/yr, à la Denmark;
@@ -153,11 +152,29 @@ the deployed recipe (`0c93b5c`). On a transfer scored on the validation period o
 from 13.7–19.7% to 12.5–13.7%, against 9.0% for trend-Kaya: better, but still worse than
 extrapolation.
 
-**Awaiting re-measurement:** the test-fold, calibration and transfer tables, and the
-out-of-sample numbers quoted above, come from leaky fits; the transfer number also comes
-from the old optimiser. Re-scoring the test folds once, leak-free, for the
-already-selected `ms_full` (and `orig`) would correct them without revisiting the
-selection.
+**The test folds, re-scored leak-free.** With the owner's go-ahead, the test folds were
+scored a second time, for the same two configurations as on 2026-11-10 (`ms_full`,
+already selected, and `orig`). This was a measurement correction; the selection had been
+settled on the validation folds first and was not revisited. Every baseline is
+bit-for-bit unchanged; only the world-model fits differ:
+
+| test folds 2015–2017 | from leaky fits (2026-11-10) | leak-free |
+|---|---|---|
+| `ms_full`, realised drivers: score | 9.40 | 8.33 |
+| — per-country MAPE / mean aggregate error | 7.6% / 1.8% | 7.5% / 0.9% |
+| trend-Kaya, realised drivers: score | 9.49 | 9.49 |
+| `ms_full`, ex-ante SSP-v9 drivers: score | 14.09 | 13.68 |
+| growth persistence (ignores drivers): score | 11.15 | 11.15 |
+| `orig`, realised / ex-ante: score | 19.96 / 27.03 | 18.84 / 24.18 |
+| 80% interval coverage | 0.859 | 0.872 |
+| transfer to 12 unseen countries, MAPE | 21.2% | 15.4% (trend-Kaya 7.6%) |
+
+The leak had not flattered the model; if anything, it cost it a little, as on the
+validation folds. The transfer number also reflects the corrected shared-model training:
+the held-out countries' adapted in-sample error falls from 14.9% to 5.2%, but their
+forecast error is still about twice trend-Kaya's. China's final-year CO₂ is still
+undershot by 6–8%, almost all of it energy demand
+(`results/tables/china_decomposition.json`).
 
 ---
 
@@ -354,8 +371,10 @@ other than the one the script runs it under. The processed panel
   within seed noise of each other (10.79–11.38). `ms_full`, fourth on score, is the only
   one whose planning checks held, with smooth projections, for each of four training
   seeds. A different tie-break could have chosen differently. The test folds were scored
-  once, after the choice, and must not be used to revisit it. The round-1 report (3000
-  training steps) is kept in `tests/data/report_round1_3000steps.json`.
+  only after the choice: once from leaky fits and once, as a correction, leak-free, both
+  times for the same two configurations. They must not be used to revisit the choice.
+  The round-1 report (3000 training steps) is kept in
+  `tests/data/report_round1_3000steps.json`.
 - **Training seeds disagree, and the ensemble covers only that.** The selected
   configuration trains without the loss spikes of the original one
   (`results/tables/seed_sensitivity.json`; the original's are in
@@ -366,23 +385,21 @@ other than the one the script runs it under. The processed panel
   training runs of one configuration only. It does not capture the uncertainty between
   configurations, in the model's structure, or in its feasibility bounds.
 - **Short-horizon forecasting is not where this model wins.** Given the true drivers,
-  the selected configuration only matches trend-Kaya extrapolation on the test folds
-  (score 9.40 against 9.49: lower per-country error, higher aggregate error), and on the
-  leak-free validation folds trend-Kaya is better (9.85 against 11.38). Given the drivers
-  that were available at the time, baselines that ignore drivers beat both (test score
-  11.15 against 14.09). The test scores come from fits trained before the 2026-11-11
-  leak fix. CWM's value is being a *structural, differentiable* simulator that
+  the selected configuration is slightly ahead of trend-Kaya extrapolation on the test
+  folds (score 8.33 against 9.49), but behind it on the validation folds (11.38 against
+  9.85): level, within seed noise. Given the drivers that were available at the time,
+  baselines that ignore drivers beat both (test score 11.15 against 13.68). CWM's value is being a *structural, differentiable* simulator that
   supports counterfactual and planning queries no extrapolative baseline can perform —
   not point forecasting.
-- **It does not transfer to unseen countries.** Fitted on 48 countries up to 2015 and
-  adapted to 12 held-out ones from their own data up to 2015, it forecast their
-  2016–2022 emissions with 21% error, against 8% for trend-Kaya extrapolation
-  (`results/tables/transfer.json`). That run used the leaky loss and an optimiser that
-  was unstable for this configuration. With both fixed, a transfer scored on the
-  validation period (cutoff 2009, years 2010–2015) gives 12.5–13.7% over three seeds,
-  against 9.0% for trend-Kaya: still worse than extrapolation. Nothing after the cutoff
-  is used, but the held-out countries' data up to the cutoff do inform the shared
-  emission factors, normalisation and static features.
+- **It does not transfer well to unseen countries.** Fitted on 48 countries up to 2015
+  and adapted to 12 held-out ones from their own data up to 2015, it forecasts their
+  2016–2022 emissions with 15.4% error, against 7.6% for trend-Kaya extrapolation
+  (`results/tables/transfer.json`). The errors range from 3% (Germany, Turkey) to 31%
+  (United Kingdom). A transfer scored on the validation period (cutoff 2009, years
+  2010–2015) gives 12.5–13.7% over three seeds, against 9.0%. The earlier 21% came from
+  the leaky loss and an optimiser that was unstable for this configuration. Nothing
+  after the cutoff is used, but the held-out countries' data up to the cutoff do inform
+  the shared emission factors, normalisation and static features.
 - **Drivers are exogenous.** GDP and population paths are assumptions; results are
   conditional on them. Planning uses SSP1–5 drivers (IIASA SSP database v3.2) with SSP2
   as the default; the earlier heuristic (recent CAGR tapering to a long-run rate) is

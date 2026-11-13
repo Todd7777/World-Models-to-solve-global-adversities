@@ -80,10 +80,11 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   outputs) finds only about 1 point there (12.6% transfer, 11.6% in-training, trend-Kaya 9.6%). Most of the
   validation gap is a bias of the cutoff-2005-2009 models: they stall 12 mature economies' efficiency trend
   (forecast -0.8 to +0.6 %/yr against -1.8 to -2.5 realised), through weak damped momentum plus a network
-  correction that pushes their intensity up. The stall comes with dropping the calendar-time inputs
-  (`scripts/stall_by_config.py`; see "Where the next steps are"). The deployed ensemble's BAU mostly keeps that
-  trend (-1.9 against -2.2 %/yr). Choosing a new country's starting latent (random or the training mean) changed
-  nothing beyond adaptation noise, which is about 1 point.
+  correction that pushes their intensity up. Configurations with calendar-time inputs avoid it only by
+  extrapolating calendar time, so they do not fix it (`scripts/stall_by_config.py`, `scripts/time_inputs.py`; see
+  "Where the next steps are"). The deployed ensemble's BAU mostly keeps that trend (-1.9 against -2.2 %/yr).
+  Choosing a new country's starting latent (random or the training mean) changed nothing beyond adaptation noise,
+  which is about 1 point.
 - Sweep job outputs record their step count and full config; report entries record their step count. Scores
   never pool outputs trained differently (apart from the seed) or without that record. Older job caches lack
   it; delete and rerun them. Caches written before `46cc5ce` (2026-11-11) carry the same record but were
@@ -120,16 +121,28 @@ questions there:
   itself costs about 4 points on the test period and 1 on the validation period, on top of the model's general
   forecast error, and single transfer seeds differ by up to 6.4 points. A fresh holdout year from a newer OWID
   release (the panel ends in 2022) would give a check that no decision has touched.
-- The cutoff-2005-2009 models stall mature economies' efficiency trend, and the stall comes with dropping the
-  calendar-time inputs. `scripts/stall_by_config.py` (reads validation outputs, fits nothing) finds it in all 7
-  configs without them (mature trend -0.2 to -1.1 %/yr, realised -2.1) and in none of the 9 with them (-1.5 to
-  -2.7; `results/tables/stall_by_config.json`, seeds 0-1). In the four pairs that differ only in that switch,
-  dropping it weakens the trend by 1.1-1.5 %/yr and worsens the score by 0.5-1.9 points. For `ms_percap_damped`
-  against `ms_full` the expected difference was written down before two more seeds were fitted, and it held at
-  every cutoff on them. Over seeds 0-3 (`results/sweep_val_4seeds/`,
-  `results/tables/stall_by_config_4seeds.json`): -1.9 against -0.6 %/yr, score 10.70 against 11.54, better on 3
-  of 4 seeds but within seed noise. Three fixes within `ms_full` were probed on 2026-11-13 in scratch, not
-  committed, on the validation folds:
+- The cutoff-2005-2009 models stall mature economies' efficiency trend. Calendar-time inputs do not fix it, though
+  in backtests they seem to. The first item reads existing outputs. Every prediction tested on new runs (seeds 2-3,
+  calendar time held in backtests, planning BAU) was written down before the runs, and all held.
+  - `scripts/stall_by_config.py` (reads validation outputs, fits nothing): all 7 configs without time inputs
+    stall (mature trend -0.2 to -1.1 %/yr, realised -2.1). All 9 with them keep the trend (-1.5 to -2.7;
+    `results/tables/stall_by_config.json`, seeds 0-1). Over seeds 0-3 (`results/sweep_val_4seeds/`,
+    `results/tables/stall_by_config_4seeds.json`), `ms_percap_damped` forecasts -1.9 %/yr against `ms_full`'s
+    -0.6 and scores 10.70 against 11.54.
+  - That needs calendar time (`index / (T_ref - 1)`, 1 in 2022) fed past the cutoff: backtests feed it up to
+    1.3-1.4x its trained maximum, while planning holds it at 2022 (`Scenario.tfrac`). The sweep never sets
+    `forecast(tfrac_cap=...)`.
+  - `scripts/time_inputs.py` (`results/tables/time_inputs.json`, seeds 0-3) holds calendar time at the cutoff;
+    uncapped, its refits reproduce the sweep's outputs bit for bit. Held, `ms_percap_damped` stalls like
+    `ms_full` (-0.7 against -0.6 %/yr) and scores 12.57 against 11.54.
+  - In planning (full-data fits, heuristic drivers), its BAU intensity falls only 0.5 %/yr in the mature
+    economies and 0.7 elsewhere over 2022-2032 (`ms_full` 2.0 and 1.1; observed 2.2 and 1.3). Its BAU reaches
+    55.8 Gt in 2050 against 39.9. With calendar time running on to 1.875, the trend returns but BAU falls to
+    28.0 Gt.
+  - The other time-input configs' validation scores carry the same caveat. `ms_percap` (10.96) has not been
+    scored with calendar time held.
+
+  Three fixes within `ms_full` were probed on 2026-11-13 in scratch, not committed, on the validation folds:
   - A longer momentum memory (`ema_decay` 0.9 or 0.95) worsened the score (12.70 and 14.12, against 11.38) and
     left the trend stalled.
   - Damping the intensity momentum toward each country's trailing 10-year trend (trend-Kaya's window) instead of
@@ -139,13 +152,14 @@ questions there:
     missing trend restored, neither MAPE nor |agg| worse) scored 10.90 against 11.54 and restored 17% of the
     missing trend; MAPE worsened (9.26% against 9.10%), |agg| improved (1.64% against 2.44%). It fails.
 
-  None is adopted. Restoring the time inputs means re-selecting `ms_percap_damped` (last item). They are calendar
-  time, `index / (T_ref - 1)` with `T_ref` the panel length: backtests extrapolate it a few years past each cutoff,
-  and planning holds it at its 2022 value (`Scenario.tfrac`).
+  None is adopted. Most of the stall comes from the network's correction (weak damped momentum, plus a correction
+  that pushes mature economies' intensity up), so a next candidate would act on that, within a config without
+  time inputs. It would need four seeds and a judgement rule written down before the runs.
 - Training seeds of the selected config disagreed on the achievable cut (26-59%) under the old closed-loop
   planner; at the frontier it is 61-70%, and a plan robust to every SSP and seed costs +62% effort. Open there:
   the frontier's assumptions (planned change persists; maximum effort runs every country at the limits for 28
   years).
 - Whether to revisit the selection now that the tie-break no longer separates `ms_full` from `ms_percap_damped`
-  is the owner's decision; the test folds are spent. The two differ only in the calendar-time inputs, so the stall
-  above is new evidence for it.
+  is the owner's decision; the test folds are spent. The two differ only in the calendar-time inputs, and
+  `ms_percap_damped`'s lead on score needs calendar time fed past the cutoff. Held at the cutoff, as planning holds
+  it, the config scores 12.57 against 11.54, and its planning BAU stalls (above).

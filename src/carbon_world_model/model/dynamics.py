@@ -24,9 +24,11 @@ Feature/structure options (``hp``), all switchable for ablation:
                  damping phi in (0,1): the damped-trend structure known to be among the
                  most robust multi-year forecasters, nested inside the world model.
 
-Controls (for the planner) enter additively and are zero during fitting. Momentum is
-updated from the *natural* (uncontrolled) change only, so a planner cannot get
-"free" future reductions by exciting the momentum state.
+Controls enter additively and are zero during fitting; momentum is updated from the
+*natural* (uncontrolled) change only. The planner does not use them: it keeps the
+network on business as usual and applies plans on top (plan/optimize.py), because the
+network's response to controlled states is extrapolation. plan/response.py uses them to
+measure that closed loop, which the planner used until 2026-11-13.
 """
 from __future__ import annotations
 

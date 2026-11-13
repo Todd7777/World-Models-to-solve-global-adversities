@@ -10,6 +10,10 @@ with a seed ensemble of the selected configuration (plan/ensemble.py).
    ensemble member, versus a plan tuned to SSP2 and the ensemble mean -- the price of
    robustness and the regret of not hedging.
 
+Plans are applied at the feasibility frontier of each member's business as usual
+(plan/optimize.py): the network projects business as usual only, and a plan adds extra
+annual rates of intensity fall and low-carbon gain on top, capped at the limits.
+
 Central values are ensemble means: trajectories are the mean of the members' global
 totals, and the 2050 cut is that of the mean pathways. `by_seed` lists every member's
 value. The ensemble is results/model/ensemble (scripts/02b_train_ensemble.py); its
@@ -119,8 +123,7 @@ def main() -> None:
     lo, hi = per_ssp[ssp2.name]["max_cum_gt"], per_ssp[ssp2.name]["bau_cum_gt"]
     frontier = []
     for bud in np.linspace(lo + 5, hi - 5, 8):
-        r = ensemble_pathway(wm, stacked, [ssp2], budget_gt=float(bud), mode="mean",
-                             steps=1000)
+        r = ensemble_pathway(wm, stacked, [ssp2], budget_gt=float(bud), mode="mean")
         cum = r["cum_gt"][:, 0]
         frontier.append({"budget_gt": float(bud), "cum_gt": float(cum.mean()), "cost": r["cost"],
                          "final_global_mt": float(r["final_mt"][:, 0].mean()),
@@ -135,9 +138,9 @@ def main() -> None:
     # BAU; if they do not overlap that way, sit just above the worst-case floor.
     budget = (worst_max + 0.25 * (best_bau - worst_max) if best_bau > worst_max
               else 1.02 * worst_max)
-    tailored = ensemble_pathway(wm, stacked, [ssp2], budget_gt=budget, mode="mean", steps=1500)
+    tailored = ensemble_pathway(wm, stacked, [ssp2], budget_gt=budget, mode="mean")
     tail_cum = evaluate_members(wm, stacked, scens, tailored["g"], tailored["h"])["cum_gt"]
-    robust = ensemble_pathway(wm, stacked, scens, budget_gt=budget, mode="all", steps=1500)
+    robust = ensemble_pathway(wm, stacked, scens, budget_gt=budget, mode="all")
     rob_cum = robust["cum_gt"]                                                      # [K, S]
     over = {s: max(0.0, float(tail_cum[:, i].max()) - budget) for i, s in enumerate(SSPS)}
     price = 100 * (robust["cost"] / tailored["cost"] - 1)

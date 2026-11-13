@@ -18,7 +18,6 @@ import argparse
 import json
 import os
 
-import jax.numpy as jnp
 import numpy as np
 
 from carbon_world_model.config import SELECTED_CONFIG
@@ -40,12 +39,8 @@ def direction_changes(x) -> int:
 
 def effort_finals(wm, params, scen) -> list[float]:
     """2050 total CO2 for increasing uniform effort, as in tests/test_planning.py."""
-    finals = []
-    for raw in (-10.0, -1.0, 2.0, 10.0):
-        rg = jnp.full((scen.C, scen.Tf), raw)
-        ctrl, _, _ = O._controls(rg, rg, scen)
-        finals.append(float(jnp.sum(O._rollout(wm, params, scen, ctrl)["co2"][:, -1])))
-    return finals
+    return [float(O.effort_pathway(wm, params, scen, frac).global_co2[-1])
+            for frac in (0.0, 0.25, 0.75, 1.0)]
 
 
 def main() -> None:

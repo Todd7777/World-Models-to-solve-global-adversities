@@ -159,6 +159,20 @@ put the price of robustness at +47%.
 (`results/tables/seed_sensitivity.json`): training, in-sample fit and business as usual
 reproduce exactly, and the planning checks hold on all four seeds.
 
+**Calendar-time inputs do not fix the early-cutoff efficiency stall.** Earlier today,
+as merged, Limitations said the stall comes with dropping the calendar-time inputs, and
+`CLAUDE.md` named restoring them, by re-selecting `ms_percap_damped`, as the fix. The
+inputs avoid the stall in the backtests only because a backtest feeds calendar time past
+the cutoff, beyond the range the model was trained on.
+- Held at the cutoff year's value, as planning holds it at 2022, `ms_percap_damped`
+  stalls like `ms_full` and scores worse on the validation folds: 12.57 against
+  `ms_full`'s 11.54 on seeds 0–3 (10.70 with calendar time running on).
+- In planning, its business as usual lets the mature economies' energy intensity fall by
+  only 0.6%/yr over 2022–2032 (observed 2012–2022: 2.2%/yr). It reaches 55.8 Gt in 2050,
+  against 39.9 Gt for the selected configuration.
+
+Details: `scripts/time_inputs.py`, `results/tables/time_inputs.json`, Limitations.
+
 ---
 
 ## What changed on 2026-11-12
@@ -467,8 +481,9 @@ python scripts/03_backtest.py        # physics-layer and in-sample tables
 python scripts/04_plan.py            # BAU / max effort / frontier / robust plans (~7 min)
 python scripts/seed_sensitivity.py   # retrain with seeds 0-3: stability and spread
 python scripts/control_response.py  # why the seeds disagree on maximum effort
-python scripts/transfer_diagnostics.py  # where transfer error comes from (validation period)
-python scripts/stall_by_config.py    # which configurations stall mature economies' efficiency
+python scripts/transfer_diagnostics.py  # where transfer error comes from (validation)
+python scripts/stall_by_config.py    # which configurations stall the efficiency trend
+python scripts/time_inputs.py        # time inputs in backtests and in planning (~15 min)
 pytest -q                            # 76 tests
 ```
 
@@ -503,9 +518,12 @@ other than the one the script runs it under. The processed panel
   they hold for every configuration by construction, and `ms_percap_damped`, best on
   score, failed only one of them (effort monotonicity, on one seed); its projections are
   as smooth as `ms_full`'s. With today's planner the tie-break would not have separated
-  the two. They differ only in the calendar-time inputs, and without them models trained
-  up to 2005–2009 stall mature economies' efficiency gains (below). The selection has
-  not been revisited.
+  the two. They differ only in the calendar-time inputs, and `ms_percap_damped`'s lead
+  on score depends on feeding calendar time past the cutoff, which planning never does.
+  Held at the cutoff's value, as planning holds calendar time at 2022, it scores 12.57
+  against `ms_full`'s 11.54 (seeds 0–3). Its planning business as usual also stalls
+  efficiency gains (below). The sweep feeds every configuration with time inputs
+  calendar time past the cutoff. The selection has not been revisited.
 - **Training seeds disagree, and the ensemble covers only that.** The selected
   configuration trains without the loss spikes of the original one
   (`results/tables/seed_sensitivity.json`; the original's are in
@@ -557,26 +575,36 @@ other than the one the script runs it under. The processed panel
   100% means the other 48 together beat trend-Kaya. At the 2009 cutoff the damped
   momentum carries only about −1.1%/yr, and the network's correction adds +0.2 to
   +0.35%/yr where it subtracts for every other country
-  (`results/tables/transfer_diagnostics.json`). The stall comes with dropping the
-  calendar-time inputs (`scripts/stall_by_config.py`, which reads the validation outputs
-  and fits nothing; `results/tables/stall_by_config.json`). All seven configurations
-  without them forecast these economies' trend at −0.2 to −1.1%/yr, and all nine with
-  them at −1.5 to −2.7%/yr, against −2.1%/yr realised (means over the three cutoffs and
-  two seeds). In each of the four pairs that differ only in that switch, dropping it
-  weakens the trend by 1.1–1.5%/yr and worsens the score by 0.5–1.9 points. One pair is
-  `ms_percap_damped`, best on score, against `ms_full`. Two more seeds were then fitted
-  for each, with the expected difference written down first, and it held on them at
-  every cutoff. Over the four seeds (`results/sweep_val_4seeds/report.json`,
-  `results/tables/stall_by_config_4seeds.json`) `ms_percap_damped` forecasts −1.9%/yr
-  against −0.6%/yr, and scores 10.70 against 11.54 (per-country MAPE 8.56% against
-  9.10%, mean aggregate error 2.14% against 2.44%), better on three of the four seeds;
-  that score gap is within seed noise. The time inputs remove most of the stall but not
-  all of it: at the 2005 and 2007 cutoffs `ms_percap_damped` still over-predicts these
-  economies' final-year emissions by 8–18% per seed. The bias fades with more data: the
-  2015 test-fold models forecast the 12 transfer countries, four of them mature economies,
-  about as well as trend-Kaya (7.9% against 7.6%), and the planning ensemble's BAU keeps
-  most of these economies' trend (−1.9%/yr for 2022–2032, against −2.2%/yr in
-  2012–2022).
+  (`results/tables/transfer_diagnostics.json`). Configurations with calendar-time inputs
+  avoid the stall in these backtests, but only by extrapolating calendar time, so they do
+  not fix it.
+  - In the backtests, all seven configurations without the inputs forecast these
+    economies' trend at −0.2 to −1.1%/yr, and all nine with them at −1.5 to −2.7%/yr,
+    against −2.1%/yr realised (`scripts/stall_by_config.py`, which reads the validation
+    outputs and fits nothing; `results/tables/stall_by_config.json`, means over the
+    cutoffs and two seeds).
+  - Calendar time is the year's index over the panel's span: 0 in 1990, 1 in 2022. A
+    backtest feeds it past the cutoff, up to 1.3–1.4 times the largest value the model was
+    trained on; planning holds it at its 2022 value.
+  - Held at the cutoff's value in the backtests too, `ms_percap_damped` (the selected
+    configuration plus time inputs, seeds 0–3) forecasts these economies' trend at
+    −0.7%/yr, like `ms_full`'s −0.6%/yr; with calendar time running on it is −1.9%/yr.
+    Held, it scores 12.57 against `ms_full`'s 11.54 (10.70 running on;
+    `scripts/time_inputs.py`, `results/tables/time_inputs.json`, four-seed sweep outputs
+    in `results/sweep_val_4seeds/`).
+  - In planning, fitted on all the data, its business as usual lets energy intensity fall
+    by only 0.6%/yr in these economies and 0.7%/yr in the other 48 over 2022–2032. The
+    selected configuration: 2.0 and 1.1%/yr; observed 2012–2022: 2.2 and 1.3%/yr. Its
+    business as usual reaches 55.8 Gt in 2050, against 39.9 Gt.
+  - With calendar time running on to 2050, up to 1.875, the trend returns, but business
+    as usual falls to 28.0 Gt.
+
+  The time inputs tie the trend to the calendar rather than to the state of each
+  economy. The bias fades with more data:
+  - The 2015 test-fold models forecast the 12 transfer countries, four of them mature
+    economies, about as well as trend-Kaya (7.9% against 7.6%).
+  - The planning ensemble's BAU keeps most of these economies' trend: −1.9%/yr for
+    2022–2032, against −2.2%/yr in 2012–2022.
 - **Drivers are exogenous.** GDP and population paths are assumptions; results are
   conditional on them. Planning uses SSP1–5 drivers (IIASA SSP database v3.2) with SSP2
   as the default; the earlier heuristic (recent CAGR tapering to a long-run rate) is

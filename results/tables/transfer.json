@@ -22,67 +22,112 @@
     2021,
     2022
   ],
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
   "world_model": {
-    "mape": 0.1541469931400991,
-    "rmse_mt": 214.14263855543507,
-    "r2": 0.9753766689406945
+    "mape": 0.1187894155467637,
+    "rmse_mt": 130.78504386860575,
+    "r2": 0.9891898404432308
+  },
+  "world_model_by_seed": {
+    "0": {
+      "mape": 0.1541469931400991,
+      "rmse_mt": 214.14263855543507,
+      "r2": 0.9753766689406945
+    },
+    "1": {
+      "mape": 0.09057329887821859,
+      "rmse_mt": 41.05463636168447,
+      "r2": 0.9990949659380811
+    },
+    "2": {
+      "mape": 0.10064711977853388,
+      "rmse_mt": 141.282888891834,
+      "r2": 0.989281854747238
+    },
+    "3": {
+      "mape": 0.11426862825198383,
+      "rmse_mt": 125.66489156500683,
+      "r2": 0.9915205354905263
+    },
+    "4": {
+      "mape": 0.13431103768498304,
+      "rmse_mt": 131.78016396906844,
+      "r2": 0.9906751770996133
+    }
   },
   "trend_kaya": {
     "mape": 0.0756628659491408,
     "rmse_mt": 48.46290586993572,
     "r2": 0.9987388713049364
   },
-  "train_insample_mape": 0.05178199085798244,
-  "adapt_insample_mape": 0.05212936775496995,
+  "train_insample_mape": 0.03401600364605002,
+  "adapt_insample_mape": 0.048838931442398155,
   "per_country": {
     "United States": {
-      "world_model": 0.1377733002131539,
+      "world_model": 0.07845176088673157,
       "trend_kaya": 0.024428561801866897
     },
     "Germany": {
-      "world_model": 0.03431876074004031,
+      "world_model": 0.059726657425552256,
       "trend_kaya": 0.058187379692450594
     },
     "United Kingdom": {
-      "world_model": 0.3115090549496253,
+      "world_model": 0.17504153744785178,
       "trend_kaya": 0.07616559930543797
     },
     "Ukraine": {
-      "world_model": 0.17878235073752524,
+      "world_model": 0.12046045588069357,
       "trend_kaya": 0.021776862103724526
     },
     "Turkey": {
-      "world_model": 0.028774557829375443,
+      "world_model": 0.05611938159674309,
       "trend_kaya": 0.04575887457868567
     },
     "United Arab Emirates": {
-      "world_model": 0.13180952253683534,
+      "world_model": 0.12924474638915667,
       "trend_kaya": 0.1110633988444404
     },
     "Belgium": {
-      "world_model": 0.14789794035944315,
+      "world_model": 0.09296054406383988,
       "trend_kaya": 0.05041594240104371
     },
     "Uzbekistan": {
-      "world_model": 0.03988088201941676,
+      "world_model": 0.13440597363864862,
       "trend_kaya": 0.18378140217101674
     },
     "Algeria": {
-      "world_model": 0.16502375403364686,
+      "world_model": 0.09349211343155116,
       "trend_kaya": 0.06016580847965679
     },
     "Finland": {
-      "world_model": 0.23179670694924542,
+      "world_model": 0.12931446962832915,
       "trend_kaya": 0.03839366442555387
     },
     "Kuwait": {
-      "world_model": 0.1996621600686257,
+      "world_model": 0.1840144185546822,
       "trend_kaya": 0.17443989164496942
     },
     "Israel": {
-      "world_model": 0.24253492724425593,
+      "world_model": 0.17224092761738427,
       "trend_kaya": 0.06337700594084296
     }
   },
-  "shared_training": "train.fit.fit on the training countries (the deployed recipe)"
+  "shared_training": "train.fit.fit on the training countries (the deployed recipe)",
+  "in_training": {
+    "seeds": 5,
+    "per_seed_mape": [
+      0.07910014406325631,
+      0.09527426200451278,
+      0.07049964969832254,
+      0.08341350511358378,
+      0.06548669596929216
+    ],
+    "seed_ensemble_mape": 0.06144297285264297
+  }
 }

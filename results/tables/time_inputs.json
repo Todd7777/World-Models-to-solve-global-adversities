@@ -1,0 +1,275 @@
+{
+  "config": "ms_percap_damped",
+  "selected": "ms_full",
+  "seeds": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "mature": [
+    "United Kingdom",
+    "Hungary",
+    "Belgium",
+    "Denmark",
+    "Finland",
+    "Greece",
+    "United States",
+    "Italy",
+    "Sweden",
+    "France",
+    "Germany",
+    "Japan"
+  ],
+  "backtest": {
+    "root": "results/sweep_val_4seeds",
+    "running_on_reproduces_sweep_output": {
+      "2005_s0": true,
+      "2005_s1": true,
+      "2005_s2": true,
+      "2005_s3": true,
+      "2007_s0": true,
+      "2007_s1": true,
+      "2007_s2": true,
+      "2007_s3": true,
+      "2009_s0": true,
+      "2009_s1": true,
+      "2009_s2": true,
+      "2009_s3": true
+    },
+    "calendar_time": {
+      "2005": {
+        "trained_up_to": 0.46875,
+        "running_on_up_to": 0.65625
+      },
+      "2007": {
+        "trained_up_to": 0.53125,
+        "running_on_up_to": 0.71875
+      },
+      "2009": {
+        "trained_up_to": 0.59375,
+        "running_on_up_to": 0.78125
+      }
+    },
+    "realised_mature_pct_per_year": {
+      "2005": -2.464945473070721,
+      "2007": -1.830490494221134,
+      "2009": -2.1154672818223528
+    },
+    "calendar_time_running_on": {
+      "score": 10.7003930113615,
+      "country_mape": 0.08561558443634042,
+      "agg_abs_err_mean": 0.02138834567727459,
+      "score_by_seed": {
+        "0": 11.408823391393831,
+        "1": 12.07295035719489,
+        "2": 13.10335358426928,
+        "3": 11.5014308251302
+      },
+      "mature_pct_per_year": {
+        "2005": {
+          "0": -1.7360210311382673,
+          "1": -1.679584928794596,
+          "2": -1.6798871661633779,
+          "3": -1.3196868619688629
+        },
+        "2007": {
+          "0": -1.0300769523798636,
+          "1": -1.1351112025770276,
+          "2": -1.962280720622214,
+          "3": -1.1955925865945676
+        },
+        "2009": {
+          "0": -3.015041026547295,
+          "1": -2.163195764449692,
+          "2": -3.086715026487753,
+          "3": -2.352603239846335
+        }
+      },
+      "mature_pct_per_year_mean": -1.8629830422974878
+    },
+    "calendar_time_held_at_cutoff": {
+      "score": 12.565279980441291,
+      "country_mape": 0.09782798267322362,
+      "agg_abs_err_mean": 0.027824817131189283,
+      "score_by_seed": {
+        "0": 12.858110087398817,
+        "1": 13.716398537570997,
+        "2": 13.704328031465096,
+        "3": 13.138695359221634
+      },
+      "mature_pct_per_year": {
+        "2005": {
+          "0": -0.7131448692903448,
+          "1": -1.0415849411253002,
+          "2": -0.725614022272467,
+          "3": -0.6147920137261447
+        },
+        "2007": {
+          "0": -0.07535348321776109,
+          "1": -0.1649461077630852,
+          "2": -0.47247971654592236,
+          "3": 0.017194795286605138
+        },
+        "2009": {
+          "0": -1.4850058034912315,
+          "1": -0.8533448792170686,
+          "2": -1.0838688644271808,
+          "3": -0.887513082487443
+        }
+      },
+      "mature_pct_per_year_mean": -0.6750377490231121
+    },
+    "selected": {
+      "config": "ms_full",
+      "score": 11.538980917007907,
+      "country_mape": 0.09097242196638616,
+      "agg_abs_err_mean": 0.02441738720369291,
+      "mature_pct_per_year_mean": -0.6263349851976054
+    }
+  },
+  "planning_bau": {
+    "drivers": "heuristic",
+    "calendar_time": {
+      "held_at": 1.0,
+      "running_on_up_to": 1.875
+    },
+    "observed_2012_2022": {
+      "mature_pct_per_year": -2.1777680701817888,
+      "others_pct_per_year": -1.3167448415072942
+    },
+    "observed_2022_gt": 34.760140000000014,
+    "by_seed": {
+      "0": {
+        "ms_full": {
+          "mature_pct_per_year_2022_2032": -2.1360297329624314,
+          "mature_pct_per_year_2032_2050": -2.501888829965648,
+          "others_pct_per_year_2022_2032": -1.1942641595346157,
+          "others_pct_per_year_2032_2050": -1.3602204741088983,
+          "bau_2030_gt": 36.86915969848633,
+          "bau_2050_gt": 39.51809310913086
+        },
+        "ms_percap_damped, calendar time held at 2022": {
+          "mature_pct_per_year_2022_2032": -0.5206488894820034,
+          "mature_pct_per_year_2032_2050": 0.014844445553829471,
+          "others_pct_per_year_2022_2032": -0.6553132990342799,
+          "others_pct_per_year_2032_2050": -0.31084952077861105,
+          "bau_2030_gt": 42.362518310546875,
+          "bau_2050_gt": 56.90262222290039
+        },
+        "ms_percap_damped, calendar time running on": {
+          "mature_pct_per_year_2022_2032": -1.930058730383696,
+          "mature_pct_per_year_2032_2050": -2.595777183384068,
+          "others_pct_per_year_2022_2032": -1.675271258686227,
+          "others_pct_per_year_2032_2050": -1.8759211300637537,
+          "bau_2030_gt": 36.01457977294922,
+          "bau_2050_gt": 27.19072151184082
+        }
+      },
+      "1": {
+        "ms_full": {
+          "mature_pct_per_year_2022_2032": -2.0601808356642546,
+          "mature_pct_per_year_2032_2050": -1.3204135085138244,
+          "others_pct_per_year_2022_2032": -0.9464628159346603,
+          "others_pct_per_year_2032_2050": -1.0185087564856468,
+          "bau_2030_gt": 38.3232421875,
+          "bau_2050_gt": 42.11641311645508
+        },
+        "ms_percap_damped, calendar time held at 2022": {
+          "mature_pct_per_year_2022_2032": -0.5528969891269824,
+          "mature_pct_per_year_2032_2050": -0.2562357128210982,
+          "others_pct_per_year_2022_2032": -0.7517519254825934,
+          "others_pct_per_year_2032_2050": -0.4313344601065575,
+          "bau_2030_gt": 40.726680755615234,
+          "bau_2050_gt": 54.46579360961914
+        },
+        "ms_percap_damped, calendar time running on": {
+          "mature_pct_per_year_2022_2032": -1.9788757291833385,
+          "mature_pct_per_year_2032_2050": -2.2680196305660525,
+          "others_pct_per_year_2022_2032": -1.6710455873948755,
+          "others_pct_per_year_2032_2050": -1.8825564515749165,
+          "bau_2030_gt": 35.864864349365234,
+          "bau_2050_gt": 28.77017593383789
+        }
+      },
+      "2": {
+        "ms_full": {
+          "mature_pct_per_year_2022_2032": -2.164630425711455,
+          "mature_pct_per_year_2032_2050": -2.3342622459479294,
+          "others_pct_per_year_2022_2032": -1.2417445241751695,
+          "others_pct_per_year_2032_2050": -1.2852342436648732,
+          "bau_2030_gt": 37.083621978759766,
+          "bau_2050_gt": 38.64389419555664
+        },
+        "ms_percap_damped, calendar time held at 2022": {
+          "mature_pct_per_year_2022_2032": -0.20203424765664535,
+          "mature_pct_per_year_2032_2050": -0.6511690248486408,
+          "others_pct_per_year_2022_2032": -0.641987190578622,
+          "others_pct_per_year_2032_2050": -0.4027172767391462,
+          "bau_2030_gt": 40.59540939331055,
+          "bau_2050_gt": 53.70923614501953
+        },
+        "ms_percap_damped, calendar time running on": {
+          "mature_pct_per_year_2022_2032": -1.6605245398878876,
+          "mature_pct_per_year_2032_2050": -2.5984256164335884,
+          "others_pct_per_year_2022_2032": -1.9969162999930405,
+          "others_pct_per_year_2032_2050": -1.9137275835919816,
+          "bau_2030_gt": 36.37620162963867,
+          "bau_2050_gt": 30.36826515197754
+        }
+      },
+      "3": {
+        "ms_full": {
+          "mature_pct_per_year_2022_2032": -1.7118735439975874,
+          "mature_pct_per_year_2032_2050": -1.546564789446781,
+          "others_pct_per_year_2022_2032": -1.041328475807351,
+          "others_pct_per_year_2032_2050": -1.2720099046212205,
+          "bau_2030_gt": 37.61106872558594,
+          "bau_2050_gt": 39.357215881347656
+        },
+        "ms_percap_damped, calendar time held at 2022": {
+          "mature_pct_per_year_2022_2032": -0.9056154218713265,
+          "mature_pct_per_year_2032_2050": -0.17892738475769843,
+          "others_pct_per_year_2022_2032": -0.669200088515125,
+          "others_pct_per_year_2032_2050": -0.26587577428460046,
+          "bau_2030_gt": 40.32975769042969,
+          "bau_2050_gt": 58.217411041259766
+        },
+        "ms_percap_damped, calendar time running on": {
+          "mature_pct_per_year_2022_2032": -2.850071919699492,
+          "mature_pct_per_year_2032_2050": -3.136712735062761,
+          "others_pct_per_year_2022_2032": -2.3347687382839544,
+          "others_pct_per_year_2032_2050": -2.8050570420582637,
+          "bau_2030_gt": 33.792388916015625,
+          "bau_2050_gt": 25.4985294342041
+        }
+      }
+    },
+    "mean": {
+      "ms_full": {
+        "mature_pct_per_year_2022_2032": -2.018178634583932,
+        "mature_pct_per_year_2032_2050": -1.9257823434685457,
+        "others_pct_per_year_2022_2032": -1.1059499938629491,
+        "others_pct_per_year_2032_2050": -1.2339933447201596,
+        "bau_2030_gt": 37.47177314758301,
+        "bau_2050_gt": 39.90890407562256
+      },
+      "ms_percap_damped, calendar time held at 2022": {
+        "mature_pct_per_year_2022_2032": -0.5452988870342393,
+        "mature_pct_per_year_2032_2050": -0.267871919218402,
+        "others_pct_per_year_2022_2032": -0.6795631259026551,
+        "others_pct_per_year_2032_2050": -0.3526942579772288,
+        "bau_2030_gt": 41.003591537475586,
+        "bau_2050_gt": 55.82376575469971
+      },
+      "ms_percap_damped, calendar time running on": {
+        "mature_pct_per_year_2022_2032": -2.1048827297886037,
+        "mature_pct_per_year_2032_2050": -2.6497337913616175,
+        "others_pct_per_year_2022_2032": -1.9195004710895245,
+        "others_pct_per_year_2032_2050": -2.119315551822229,
+        "bau_2030_gt": 35.51200866699219,
+        "bau_2050_gt": 27.956923007965088
+      }
+    }
+  }
+}

@@ -70,38 +70,139 @@ SSP1–5). Its 80% prediction intervals, calibrated on the validation folds, cov
 test outcomes. It does not transfer well to countries it was not trained on (see
 Limitations).
 
-**It plans.** Optimising inside the simulator, under feasibility limits taken from the
-fastest *sustained* historical transitions (low-carbon share +1.8%/yr, à la Denmark;
-energy intensity −3.0%/yr, à la China), with the same heuristic GDP and population paths
-as earlier versions of this README. Each number is the mean over ten training seeds of
-the selected configuration, with the lowest and highest seed in brackets:
+**It plans.** The network projects business as usual, and a plan adds policy-driven
+change on top, up to feasibility limits taken from the fastest *sustained* historical
+transitions (low-carbon share +1.8 points/yr, à la Denmark; energy intensity −3.0%/yr, à
+la China). Maximum effort runs every country at those limits, or at its
+business-as-usual rates where those are faster. With the same heuristic GDP and
+population paths as earlier versions of this README, each number is the mean over ten
+training seeds of the selected configuration, with the lowest and highest seed in
+brackets:
 
 - **Business-as-usual** emissions for these 60 countries go from 34.8 Gt (2022) to
   **37.8 Gt in 2050** (31.9–42.1; with SSP2 drivers 36.9 Gt, and 35.0–40.3 Gt across the
   means for SSP1–5).
-- **Maximum feasible effort** bends that down to **22.1 Gt** (15.0–27.6; SSP2: 21.7 Gt),
-  a **41% cut** versus BAU (26–59%) and 36% below 2022.
-- Scaled to global, cumulative 2023–2050 emissions are **≈840 GtCO₂ even under
-  maximum ambition** (742–919; SSP2: ≈826), which **blows through the ≈578 Gt
-  remaining 1.5 °C budget** under every seed. Within historically-achieved transition
-  rates, **1.5 °C is out of reach** without negative emissions; maximum effort avoids
-  ≈0.13 °C of warming versus BAU for this group (0.08–0.18 °C over the TCRE likely
-  range; 0.10–0.17 °C over the seeds).
+- **Maximum feasible effort** bends that down to **12.6 Gt** (11.4–13.2; SSP2: 12.5 Gt),
+  a **67% cut** versus BAU (61–70%) and 64% below 2022. It assumes that planned change
+  persists, with no rebound and no crowding out (see Limitations). Until 2026-11-13 the
+  planner let the network respond to the planned states, where it extrapolates, and
+  found 41% (26–59%); see "What changed on 2026-11-13".
+- Scaled to global, cumulative 2023–2050 emissions are **≈706 GtCO₂ even under maximum
+  ambition** (680–726; SSP2: ≈700), which **blows through the ≈578 Gt remaining 1.5 °C
+  budget** under every seed. Within historically-achieved transition rates, **1.5 °C is
+  out of reach** without negative emissions; maximum effort avoids ≈0.19 °C of warming
+  versus BAU for this group (0.11–0.26 °C over the TCRE likely range; 0.15–0.21 °C over
+  the seeds).
 - The model produces the full **cost-of-abatement frontier** (minimum effort to meet any
   carbon budget) and the per-country allocation of who must cut most. Plans are
   optimised against all ten seeds at once.
-- **Hedging against the model's own uncertainty is expensive.** A plan that meets a
-  cumulative budget under every SSP *and* every seed takes 119% more effort than one
-  tuned to SSP2 and the ten-seed mean, which overshoots the budget by up to 88 Gt when
-  the least favourable seed is right. The committed checkpoint (seed 0) is the most
-  optimistic of the ten seeds: alone, it gives a 59% cut.
+- **Hedging against the model's own uncertainty costs 62% more effort.** A plan that
+  meets a cumulative budget under every SSP *and* every seed takes 62% more effort than
+  one tuned to SSP2 and the ten-seed mean, which overshoots the budget by up to 52 Gt
+  under SSP5 when the least favourable seed is right. The committed checkpoint (seed 0)
+  gives a 67% cut alone.
 
 The raw numbers are in [`results/tables/`](results/tables) and the figures in
 [`results/figures/`](results/figures).
 
 ---
 
+## What changed on 2026-11-13
+
+**The planner plans at the feasibility frontier.** Until now it fed its controls back
+into the network: a control moved a country's energy intensity or fuel mix, and the
+network computed the next year's change from a state no country has been in. Each
+training seed extrapolated differently there ("Why the training seeds disagree", below),
+so maximum effort cut 2050 emissions by 26–59% depending on the seed, and did not run at
+the stated limits. Now the network projects business as usual only. A plan adds extra
+annual rates of intensity fall and low-carbon gain on top, capped so that the total
+rates never exceed the limits (`plan/optimize.py`), and maximum effort lifts every
+country to the limits, or leaves it where business as usual is faster. Business as usual
+is unchanged. Ten-seed means under the heuristic drivers, with the lowest and highest
+seed in brackets:
+
+| | until 2026-11-12 (closed loop) | now (frontier) |
+|---|---|---|
+| maximum effort, 2050 | 22.1 Gt (15.0–27.6) | 12.6 Gt (11.4–13.2) |
+| cut versus business as usual | 41% (26–59%) | 67% (61–70%) |
+| global cumulative 2023–2050 | ≈840 Gt (742–919) | ≈706 Gt (680–726) |
+| warming avoided versus business as usual | 0.13 °C | 0.19 °C |
+| extra effort for a plan robust to every SSP and seed | +119% | +62% |
+
+The seeds now differ only through their business-as-usual paths, and the planner states
+its assumption instead of learning it: planned change persists, with no rebound and no
+crowding out (Limitations). 1.5 °C stays out of reach under every seed. The selection's
+tie-break used the old planner's checks and would no longer separate `ms_full` from
+`ms_percap_damped` (Limitations); the selection has not been revisited.
+
+**Planned low-carbon energy displaces business as usual's fossil mix.** Each unit of
+planned low-carbon gain used to come out of the country's 2022 fossil mix. Where
+business as usual phases a fuel out (mostly coal), that drove the fuel's share below
+zero, where it was clipped and the mix renormalised: applied at the frontier, that rule
+delivered less than the plan in about half of all country-years under maximum effort.
+The planned low-carbon share now displaces fossil fuels in proportion to their shares in
+business as usual that year, until none is left.
+
+**Plans are optimised to convergence.** The frontier and robust plans ran 1,000–1,500
+Adam steps at a constant learning rate, far from converged: one budget's plan cost 0.80
+effort units after 1,000 steps and 0.32 after 20,000 (0.317 after 50,000), and the
+closed-loop frontier undershot its budgets by up to 22 Gt. Plans now take 20,000 steps
+with a learning rate decaying to zero, which the frontier makes cheap
+(`scripts/04_plan.py` takes about seven minutes), and plans for an ensemble-mean budget
+meet it to within 0.03 Gt. A robust plan bounds a smooth maximum of the fifty worlds'
+cumulative emissions (log-sum-exp, at most 2 Gt above the true maximum; its worst world
+ends 0.8 Gt below the budget). That converges within 20,000 steps, while penalising each
+world separately was still improving after 40,000. Unconverged, the frontier planner had
+put the price of robustness at +47%.
+
+`scripts/seed_sensitivity.py` was rerun with the new planner
+(`results/tables/seed_sensitivity.json`): training, in-sample fit and business as usual
+reproduce exactly, and the planning checks hold on all four seeds.
+
+---
+
 ## What changed on 2026-11-12
+
+**Why the training seeds disagree on maximum effort.** The ten training seeds agree
+closely on business as usual but cut it under maximum effort by 26–59%.
+`scripts/control_response.py` (`plan/response.py`, `results/tables/control_response.json`)
+finds why. The planner's rollouts were closed-loop: a control moved a country's energy
+intensity or fuel mix, and the network computed the next year's natural change from the
+controlled state. No country has been in those states (that low-carbon share at that
+income, say), so the network's response is extrapolation, and each seed extrapolates
+differently. Under the heuristic drivers, across the ten seeds:
+
+- only 19–38% of the efficiency effort survives to 2050: the network pushes intensity
+  back up;
+- 22–74% of the push towards low-carbon energy survives;
+- the low-carbon push alone changes the 60 countries' energy demand in 2050 by −39% to
+  +39%, though it asks for no change in demand. Under SSP2, it raises one seed's
+  emissions;
+- China alone spans 5.2–13.1 Gt at maximum effort in 2050, against 14.2 Gt business as
+  usual.
+
+The seeds' damping parameters are nearly identical (0.86–0.89 for intensity, 0.50–0.54
+for the mix), so the difference lies in the network's state-dependent correction. Two
+counterfactuals keep the network on the business-as-usual path it was trained to
+reproduce:
+
+| maximum effort, 2050, heuristic drivers | cut vs BAU | intensity fall, %/yr | low-carbon share gain, points/yr |
+|---|---|---|---|
+| closed loop (the planner until 2026-11-13) | 26–59% | 0.9–4.6 | 0.97–1.80 |
+| open loop: controls added to BAU's changes | 79–84% | 3.9–4.7 | 2.11–2.47 |
+| frontier: total rates lifted to the limits | 61–70% | 3.1–3.4 | 1.80–1.88 |
+| business as usual | — | 0.9–1.7 | 0.48–1.02 |
+| feasibility limits | — | 3.0 | 1.79 |
+
+Ranges are over the ten seeds; rates are country averages over 2022–2050, weighted by
+2022 energy use. The open loop double-counts: the limits are *total* rates that
+countries have sustained for a decade, and it adds them on top of business as usual's
+own changes. The frontier lifts each country's total rates to the limits, or keeps
+business as usual's where they are faster. Its spread (9 points rather than 33) comes
+only from the members' business-as-usual paths. Under SSP2 the cuts are 23–58%, 80–84%
+and 61–69%. Since 2026-11-13 the frontier is the planner itself, and the row shows it
+with that day's corrected fuel-mix rule (before it, the frontier's low-carbon gain was
+1.70–1.84 points/yr).
 
 **A leak in how backtest models were trained.** Every fit with a cutoff (validation
 folds, test folds, transfer test) trains on a free rollout that runs past the cutoff on
@@ -327,16 +428,20 @@ year (multiple shooting). Everything is written in JAX and trained end-to-end by
 differentiable simulation (`optax` AdamW, about 2.5 minutes for 4000 steps on 4 CPU
 cores).
 
-Planning controls — clean-deployment effort and efficiency effort — enter the dynamics
-additively and are zero during fitting, so the fitted model reproduces observed behaviour
-and the planner perturbs it causally. For the committed checkpoint, and for each of four
-training seeds of the selected configuration, emissions fall **monotonically** as effort
-rises (verified in the test suite and by `scripts/seed_sensitivity.py`). Planning runs
-on an ensemble of ten training seeds (`plan/ensemble.py`): pathways are evaluated under
-every member, and plans are optimised against all of them at once, in one batched
-simulation. Warming is
-obtained from cumulative emissions via the TCRE relationship (IPCC AR6 central value
-0.45 °C per 1000 GtCO₂).
+Planning starts from business as usual. The network projects each country's natural path
+of energy intensity and fuel mix, and a plan adds policy-driven change on top: an extra
+annual fall in log intensity and an extra annual gain in the low-carbon share, per
+country and year. Each is capped so that the total rate never exceeds its feasibility
+limit, and the planned low-carbon share, split across sources in a fixed deployable
+portfolio, displaces fossil fuels in proportion to their shares in business as usual
+that year. The network is not run on the planned states: no country has been in them,
+and training seeds respond to them differently ("Why the training seeds disagree").
+Everything after business as usual is therefore closed-form and differentiable, and
+emissions fall monotonically as effort rises, by construction. Plans are optimised by
+gradient descent (Adam, with a learning rate decaying over 20,000 steps) against ten
+training seeds and the five SSPs at once (`plan/ensemble.py`), in one batched
+computation. Warming is obtained from cumulative emissions via the TCRE relationship
+(IPCC AR6 central value 0.45 °C per 1000 GtCO₂).
 
 | module | file | what it does |
 |---|---|---|
@@ -344,7 +449,8 @@ obtained from cumulative emissions via the TCRE relationship (IPCC AR6 central v
 | B — Dynamics | `model/dynamics.py`, `model/world_model.py` | learned differentiable rollout of demand + mix |
 | — Training | `train/fit.py`, `train/losses.py` | fit across countries by differentiable simulation |
 | — Evaluation | `eval/` | backtest, baselines, transfer, conformal calibration |
-| C — Planning | `plan/optimize.py`, `plan/scenario.py` | optimal control of decarbonisation pathways |
+| C — Planning | `plan/optimize.py`, `plan/scenario.py`, `plan/ensemble.py` | plans on top of business as usual, up to the feasibility limits, against a seed ensemble |
+| — Diagnostic | `plan/response.py` | why the network is kept on business as usual (the old closed loop) |
 | D — Climate | `climate/tcre.py` | cumulative CO₂ → warming and carbon budgets |
 
 ---
@@ -358,10 +464,11 @@ python scripts/01_build_dataset.py   # build the 60-country panel (committed too
 python scripts/02_train.py           # train the selected configuration (~2.5 min, CPU)
 python scripts/02b_train_ensemble.py # train seeds 1-9 for the planning ensemble (~25 min)
 python scripts/03_backtest.py        # physics-layer and in-sample tables
-python scripts/04_plan.py            # BAU / max-ambition / frontier / warming, SSP1-5
+python scripts/04_plan.py            # BAU / max effort / frontier / robust plans (~7 min)
 python scripts/seed_sensitivity.py   # retrain with seeds 0-3: stability and spread
+python scripts/control_response.py  # why the seeds disagree on maximum effort
 python scripts/transfer_diagnostics.py  # where transfer error comes from (validation period)
-pytest -q                            # 70 tests
+pytest -q                            # 76 tests
 ```
 
 Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` scores
@@ -391,15 +498,30 @@ other than the one the script runs it under. The processed panel
   times for the same two configurations. They must not be used to revisit the choice.
   The round-1 report (3000 training steps) is kept in
   `tests/data/report_round1_3000steps.json`.
+  The tie-break's planning checks were run with the closed-loop planner. At the frontier
+  they hold for every configuration by construction, and `ms_percap_damped`, best on
+  score, failed only one of them (effort monotonicity, on one seed); its projections are
+  as smooth as `ms_full`'s. With today's planner the tie-break would not have separated
+  the two. The selection has not been revisited.
 - **Training seeds disagree, and the ensemble covers only that.** The selected
   configuration trains without the loss spikes of the original one
   (`results/tables/seed_sensitivity.json`; the original's are in
   `results/tables/selection/seed_sensitivity_orig.json`), but across ten training seeds
-  BAU 2050 spans 31.9–42.1 Gt and the maximum-effort cut 26–59%. The planning numbers
-  are therefore ten-seed means, and a plan robust to the seeds costs more than twice the
-  effort of one tuned to their mean. The ensemble captures the variation between
+  BAU 2050 spans 31.9–42.1 Gt and the maximum-effort cut 61–70% (26–59% with the
+  closed-loop planner used until 2026-11-13). The planning numbers are therefore
+  ten-seed means, and a plan robust to the seeds and the SSPs costs 62% more effort than
+  one tuned to their mean under SSP2. The ensemble captures the variation between
   training runs of one configuration only. It does not capture the uncertainty between
   configurations, in the model's structure, or in its feasibility bounds.
+- **Planned change is assumed to persist, and maximum effort is generous.** The planner
+  keeps the network on business as usual and adds policy-driven change on top. It
+  therefore assumes no rebound in energy use after efficiency gains, no crowding out of
+  business as usual's own low-carbon growth, and fossil fuels displaced in proportion to
+  business as usual's mix. Letting the network respond to planned states instead (the
+  planner until 2026-11-13) relies on extrapolation that training seeds disagree on,
+  with cuts of 26–59% ("Why the training seeds disagree"). Maximum effort runs all 60
+  countries at the feasibility limits for 28 years at once, which no group of countries
+  has done: each limit is a rate that individual countries sustained for a decade.
 - **Short-horizon forecasting is not where this model wins.** Given the true drivers,
   the selected configuration is slightly ahead of trend-Kaya extrapolation on the test
   folds (score 8.33 against 9.49), but behind it on the validation folds (11.38 against

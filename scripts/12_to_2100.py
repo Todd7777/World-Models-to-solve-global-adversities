@@ -11,11 +11,12 @@ Rules fixed before running:
     values: the errors were measured over 14-20 years, and extending their linear growth
     to 78 years would scale some countries' GDP by factors of up to ~200;
   * total CO2 = model fossil+industry CO2 2023-2100 + land-use CO2 falling linearly to
-    zero in 2050. No case reaches zero by 2100 (process CO2 has no lever in the model),
-    so this is a LOWER bound on CO2 before net zero and the likelihoods are UPPER bounds;
-  * sensitivity: process CO2 (cement, flaring; held at its 2022 level by the model)
-    falls linearly to zero by 2070 under maximum effort, an assumption the model cannot
-    test.
+    zero in 2050. No case reaches zero by 2100, so this is a LOWER bound on CO2 before
+    net zero and the likelihoods are UPPER bounds;
+  * process CO2 (cement, flaring; held at its 2022 level under business-as-usual) is cut
+    under maximum effort by the history-based lever (plan/scenario.process_bound,
+    -2.7%/yr). Sensitivity ('phaseout_2070'): it is instead phased out linearly by 2070,
+    a technology assumption the model cannot test.
 Beyond 2050 the runs are long extrapolations into states (fossil shares far below any
 observed) that the model has never seen; treat them as a check on the assumed tail, not
 as a projection.

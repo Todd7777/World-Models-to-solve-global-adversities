@@ -35,7 +35,8 @@ def main() -> None:
     scens = ssp_ensemble(panel, cfg, end_year=2050)
     heur = build_scenario(panel, cfg, end_year=2050, ssp=None)
     print(f"feasibility (sustained frontier): clean-share +{scens[0].g_max*100:.1f}%/yr, "
-          f"efficiency {scens[0].h_max*100:.1f}%/yr | 2022 emissions {base_2022:,.0f} Mt")
+          f"efficiency {scens[0].h_max*100:.1f}%/yr, process CO2 -{scens[0].p_max*100:.1f}%/yr | "
+          f"2022 emissions {base_2022:,.0f} Mt")
 
     per_ssp = {}
     print(f"\n{'scenario':16s} {'BAU 2050':>10s} {'BAU cum':>9s} {'MAX 2050':>10s} {'MAX cum':>9s} "
@@ -86,7 +87,7 @@ def main() -> None:
     budget = (worst_max + 0.25 * (best_bau - worst_max) if best_bau > worst_max
               else 1.02 * worst_max)
     tailored = O.optimize_pathway(wm, params, ssp2, budget_gt=budget, penalty=2.0, steps=1500)
-    ev_tail = O.evaluate_controls(wm, params, scens, tailored.g, tailored.h)
+    ev_tail = O.evaluate_controls(wm, params, scens, tailored.g, tailored.h, tailored.p)
     robust = O.robust_pathway(wm, params, scens, budget_gt=budget, penalty=2.0, mode="all",
                               steps=1500)
     print(f"\nrobust planning, budget {budget:,.0f} Gt (2023-2050, 60 countries):")
@@ -109,7 +110,7 @@ def main() -> None:
 
     result = {
         "years": [int(y) for y in ssp2.years], "base_2022_mt": base_2022,
-        "feasibility": {"g_max": ssp2.g_max, "h_max": ssp2.h_max},
+        "feasibility": {"g_max": ssp2.g_max, "h_max": ssp2.h_max, "p_max": ssp2.p_max},
         "scenarios": per_ssp, "frontier_ssp2": frontier,
         "budgets": {"global_1p5_gt": bud15, "global_2p0_gt": bud20,
                     "tcre_degC_per_ttco2": clim.tcre_degC_per_ttco2},

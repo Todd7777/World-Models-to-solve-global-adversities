@@ -81,3 +81,23 @@ def test_clean_push_removes_fossil_at_its_bound_even_after_a_fuel_runs_out(panel
                   "u_deploy": jnp.full((scen.C, scen.Tf, 1), gm) * shift})
     oil_gas = panel.shares()[:, -1, 1:3].sum(-1) > 0.05
     assert np.all(old[oil_gas, -1] > 0.05)   # the old form leaves oil and gas in place
+
+
+def test_process_lever_bound_and_effect(panel, cfg, wm, params):
+    """Max effort cuts process CO2 by exactly p_max per year (compounding) from the year
+    after it starts, and the lever only ever lowers emissions."""
+    import numpy as np
+    import jax.numpy as jnp
+    from carbon_world_model.plan.scenario import process_bound
+    scen = build_scenario(panel, cfg, end_year=2050)
+    assert 0.0 < scen.p_max == process_bound(panel) <= 0.035
+    big = jnp.full((scen.C, scen.Tf), 8.0)
+    ctrl, _, _ = O._controls(big, big, scen)
+    proc = np.asarray(O._abated_process(jnp.asarray(scen.process), ctrl))
+    p = float(np.asarray(ctrl["u_proc"])[0, 0])
+    np.testing.assert_allclose(proc[:, 0], scen.process[:, 0])
+    np.testing.assert_allclose(proc[:, -1], scen.process[:, -1] * np.exp(-p * (scen.Tf - 1)), rtol=1e-5)
+    off = dict(ctrl, u_proc=jnp.zeros_like(ctrl["u_proc"]))
+    co2_on = np.asarray(O._rollout(wm, params, scen, ctrl)["co2"]).sum(0)
+    co2_off = np.asarray(O._rollout(wm, params, scen, off)["co2"]).sum(0)
+    assert np.all(co2_on[1:] < co2_off[1:]) and co2_on[0] == co2_off[0]

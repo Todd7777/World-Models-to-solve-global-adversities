@@ -38,6 +38,7 @@ class PlanResult:
     global_co2: np.ndarray   # [Tf] sum across countries (Mt)
     cum_gt: float            # cumulative GtCO2 over horizon (excl. anchor year)
     cost: float              # total transition effort (model units)
+    p: np.ndarray | None = None  # [C, Tf] process-CO2 abatement effort
 
 
 def _push(g, h, scen: Scenario) -> dict:
@@ -52,10 +53,24 @@ def _push(g, h, scen: Scenario) -> dict:
             "fossil_mask": jnp.asarray(fmask)}
 
 
-def _controls(raw_g, raw_h, scen: Scenario):
+def _controls(raw_g, raw_h, scen: Scenario, raw_p=None):
+    """Bounded controls from unconstrained parameters. Process abatement p (annual
+    fractional reduction of process CO2, bounded by scen.p_max) follows raw_h unless
+    raw_p is given; the optimisers give it separately."""
     g = scen.g_max * jax.nn.sigmoid(raw_g)             # [C,Tf]
     h = scen.h_max * jax.nn.sigmoid(raw_h)             # [C,Tf]
-    return _push(g, h, scen), g, h
+    p = scen.p_max * jax.nn.sigmoid(raw_h if raw_p is None else raw_p)
+    return {**_push(g, h, scen), "u_proc": p}, g, h
+
+
+def _abated_process(process, controls):
+    """Process CO2 after abatement: process * exp(-sum of p over earlier years). Effort in
+    year t acts from t+1, like the other controls; the anchor year is unchanged."""
+    if controls is None or "u_proc" not in controls:
+        return process
+    p = controls["u_proc"]
+    done = jnp.concatenate([jnp.zeros_like(p[..., :1]), jnp.cumsum(p, axis=-1)[..., :-1]], axis=-1)
+    return process * jnp.exp(-done)
 
 
 def _inits(scen: Scenario) -> dict:
@@ -64,17 +79,20 @@ def _inits(scen: Scenario) -> dict:
 
 def _rollout(wm, params, scen: Scenario, controls, natural=None):
     drivers = {"gdp": jnp.asarray(scen.gdp), "pop": jnp.asarray(scen.pop),
-               "process": jnp.asarray(scen.process)}
+               "process": _abated_process(jnp.asarray(scen.process), controls)}
     return rollout(params, jnp.asarray(wm.static), wm.norm, jnp.asarray(wm.ef),
                    _inits(scen), drivers, controls, wm.hp, tfrac=jnp.asarray(scen.tfrac),
                    natural=natural)
 
 
-def _cost(g, h, scen: Scenario):
+def _cost(g, h, scen: Scenario, p=None):
     """Transition effort, volume-weighted by economic size with increasing marginal cost
-    (quadratic). Larger systems cost more per share-point to transform."""
+    (quadratic). Larger systems cost more per share-point to transform. Process abatement
+    p (a fractional rate, like h) is weighted like h: a modelling choice, not an
+    estimate of relative costs."""
     size = jnp.asarray(scen.gdp[:, 0]) / jnp.mean(jnp.asarray(scen.gdp[:, 0]))
-    return jnp.sum(size[:, None] * (g ** 2 + h ** 2))
+    extra = 0.0 if p is None else p ** 2
+    return jnp.sum(size[:, None] * (g ** 2 + h ** 2 + extra))
 
 
 def _summaries(traj):
@@ -83,14 +101,15 @@ def _summaries(traj):
     return co2, gco2, float(gco2[1:].sum() / 1000.0)
 
 
-def _result(traj, g, h, scen) -> PlanResult:
+def _result(traj, g, h, scen, p=None) -> PlanResult:
     co2, gco2, cum = _summaries(traj)
     C, Tf = scen.C, scen.Tf
     return PlanResult(co2=co2, shares=np.asarray(traj["shares"]), D=np.asarray(traj["D"]),
                       g=np.zeros((C, Tf)) if g is None else np.asarray(g),
                       h=np.zeros((C, Tf)) if h is None else np.asarray(h),
                       global_co2=gco2, cum_gt=cum,
-                      cost=0.0 if g is None else float(_cost(g, h, scen)))
+                      cost=0.0 if g is None else float(_cost(g, h, scen, p)),
+                      p=np.zeros((C, Tf)) if p is None else np.asarray(p))
 
 
 def business_as_usual(wm, params, scen: Scenario) -> PlanResult:
@@ -100,7 +119,7 @@ def business_as_usual(wm, params, scen: Scenario) -> PlanResult:
 def max_ambition(wm, params, scen: Scenario) -> PlanResult:
     big = jnp.full((scen.C, scen.Tf), 8.0)
     controls, g, h = _controls(big, big, scen)
-    return _result(_rollout(wm, params, scen, controls), g, h, scen)
+    return _result(_rollout(wm, params, scen, controls), g, h, scen, controls["u_proc"])
 
 
 def max_ambition_open_loop(wm, params, scen: Scenario) -> PlanResult:
@@ -116,7 +135,7 @@ def max_ambition_open_loop(wm, params, scen: Scenario) -> PlanResult:
     natural = {"dI_nat": tr["dI_nat"], "ds_nat": tr["ds_nat"]}
     big = jnp.full((scen.C, scen.Tf), 8.0)
     controls, g, h = _controls(big, big, scen)
-    return _result(_rollout(wm, params, scen, controls, natural), g, h, scen)
+    return _result(_rollout(wm, params, scen, controls, natural), g, h, scen, controls["u_proc"])
 
 
 def optimize_pathway(wm, params, scen: Scenario, lam: float = 0.0,
@@ -128,32 +147,33 @@ def optimize_pathway(wm, params, scen: Scenario, lam: float = 0.0,
     key = jax.random.PRNGKey(seed)
     raw_g = -1.0 + 0.1 * jax.random.normal(key, (scen.C, scen.Tf))
     raw_h = -1.0 + 0.1 * jax.random.normal(jax.random.fold_in(key, 1), (scen.C, scen.Tf))
+    raw_p = -1.0 + 0.1 * jax.random.normal(jax.random.fold_in(key, 2), (scen.C, scen.Tf))
     opt = optax.adam(lr)
-    st = opt.init((raw_g, raw_h))
+    st = opt.init((raw_g, raw_h, raw_p))
 
-    def obj(rg, rh):
-        controls, g, h = _controls(rg, rh, scen)
+    def obj(rg, rh, rp):
+        controls, g, h = _controls(rg, rh, scen, rp)
         gco2 = jnp.sum(_rollout(wm, params, scen, controls)["co2"], axis=0)
         cum_gt = jnp.sum(gco2[1:]) / 1000.0
-        cost = _cost(g, h, scen)
+        cost = _cost(g, h, scen, controls["u_proc"])
         j = cum_gt + lam * cost
         if budget_gt is not None:
             j = cost + penalty * jax.nn.relu(cum_gt - budget_gt) ** 2
         return j, (cum_gt, cost)
 
     @jax.jit
-    def step(rg, rh, st):
-        (j, aux), grads = jax.value_and_grad(obj, argnums=(0, 1), has_aux=True)(rg, rh)
+    def step(rg, rh, rp, st):
+        (j, aux), grads = jax.value_and_grad(obj, argnums=(0, 1, 2), has_aux=True)(rg, rh, rp)
         up, st = opt.update(grads, st)
-        rg, rh = optax.apply_updates((rg, rh), up)
-        return rg, rh, st, j, aux
+        rg, rh, rp = optax.apply_updates((rg, rh, rp), up)
+        return rg, rh, rp, st, j, aux
 
     for i in range(steps):
-        raw_g, raw_h, st, j, aux = step(raw_g, raw_h, st)
+        raw_g, raw_h, raw_p, st, j, aux = step(raw_g, raw_h, raw_p, st)
         if verbose and i % max(1, steps // 10) == 0:
             print(f"  opt step {i:4d} obj={float(j):.3f} cum={float(aux[0]):.1f}Gt cost={float(aux[1]):.2f}")
-    controls, g, h = _controls(raw_g, raw_h, scen)
-    return _result(_rollout(wm, params, scen, controls), g, h, scen)
+    controls, g, h = _controls(raw_g, raw_h, scen, raw_p)
+    return _result(_rollout(wm, params, scen, controls), g, h, scen, controls["u_proc"])
 
 
 def pareto_frontier(wm, params, scen: Scenario, budgets_gt, steps: int = 1200,
@@ -188,18 +208,21 @@ def _rollout_stack(wm, params, stk, controls):
         **controls,
         "u_int": jnp.tile(controls["u_int"], (S, 1)),
         "u_clean": jnp.tile(controls["u_clean"], (S, 1)),
+        "u_proc": jnp.tile(controls["u_proc"], (S, 1)),
     }
+    drivers = {**stk["drivers"], "process": _abated_process(stk["drivers"]["process"], tiled)}
     tr = rollout(params, jnp.asarray(wm.static), wm.norm, jnp.asarray(wm.ef), stk["inits"],
-                 stk["drivers"], tiled, wm.hp, tfrac=stk["tfrac"], country_idx=stk["country_idx"])
+                 drivers, tiled, wm.hp, tfrac=stk["tfrac"], country_idx=stk["country_idx"])
     return tr["co2"].reshape(S, stk["C"], -1)       # [S, C, Tf]
 
 
-def evaluate_controls(wm, params, scens: list[Scenario], g=None, h=None) -> dict:
+def evaluate_controls(wm, params, scens: list[Scenario], g=None, h=None, p=None) -> dict:
     """Cumulative and 2050 emissions of one control plan in each scenario."""
     stk = _stack(scens)
     controls = None
     if g is not None:
-        controls = _push(jnp.asarray(g), jnp.asarray(h), scens[0])
+        controls = {**_push(jnp.asarray(g), jnp.asarray(h), scens[0]),
+                    "u_proc": jnp.zeros_like(jnp.asarray(g)) if p is None else jnp.asarray(p)}
     co2 = np.asarray(_rollout_stack(wm, params, stk, controls))
     g_s = co2.sum(axis=1)                              # [S, Tf]
     return {"cum_gt": (g_s[:, 1:].sum(axis=1) / 1000.0).tolist(),
@@ -216,26 +239,29 @@ def robust_pathway(wm, params, scens: list[Scenario], budget_gt: float, penalty:
     key = jax.random.PRNGKey(seed)
     raw_g = -1.0 + 0.1 * jax.random.normal(key, (s0.C, s0.Tf))
     raw_h = -1.0 + 0.1 * jax.random.normal(jax.random.fold_in(key, 1), (s0.C, s0.Tf))
+    raw_p = -1.0 + 0.1 * jax.random.normal(jax.random.fold_in(key, 2), (s0.C, s0.Tf))
     opt = optax.adam(lr)
-    st = opt.init((raw_g, raw_h))
+    st = opt.init((raw_g, raw_h, raw_p))
 
-    def obj(rg, rh):
-        controls, g, h = _controls(rg, rh, s0)
+    def obj(rg, rh, rp):
+        controls, g, h = _controls(rg, rh, s0, rp)
         cum = jnp.sum(_rollout_stack(wm, params, stk, controls)[:, :, 1:], axis=(1, 2)) / 1000.0
-        cost = _cost(g, h, s0)
+        cost = _cost(g, h, s0, controls["u_proc"])
         viol = jax.nn.relu(cum - budget_gt)
         pen = jnp.sum(viol ** 2) if mode == "all" else jax.nn.relu(jnp.mean(cum) - budget_gt) ** 2
         return cost + penalty * pen, (cum, cost)
 
     @jax.jit
-    def step(rg, rh, st):
-        (j, aux), grads = jax.value_and_grad(obj, argnums=(0, 1), has_aux=True)(rg, rh)
+    def step(rg, rh, rp, st):
+        (j, aux), grads = jax.value_and_grad(obj, argnums=(0, 1, 2), has_aux=True)(rg, rh, rp)
         up, st = opt.update(grads, st)
-        rg, rh = optax.apply_updates((rg, rh), up)
-        return rg, rh, st, aux
+        rg, rh, rp = optax.apply_updates((rg, rh, rp), up)
+        return rg, rh, rp, st, aux
 
     for _ in range(steps):
-        raw_g, raw_h, st, aux = step(raw_g, raw_h, st)
-    _, g, h = _controls(raw_g, raw_h, s0)
-    ev = evaluate_controls(wm, params, scens, np.asarray(g), np.asarray(h))
-    return {"g": np.asarray(g), "h": np.asarray(h), "cost": float(_cost(g, h, s0)), **ev}
+        raw_g, raw_h, raw_p, st, aux = step(raw_g, raw_h, raw_p, st)
+    controls, g, h = _controls(raw_g, raw_h, s0, raw_p)
+    p = controls["u_proc"]
+    ev = evaluate_controls(wm, params, scens, np.asarray(g), np.asarray(h), np.asarray(p))
+    return {"g": np.asarray(g), "h": np.asarray(h), "p": np.asarray(p),
+            "cost": float(_cost(g, h, s0, p)), **ev}

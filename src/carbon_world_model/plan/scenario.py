@@ -41,6 +41,7 @@ class Scenario:
     fossil_weights: np.ndarray   # [C, F] where fossil reduction is taken from
     clean_weights: np.ndarray    # [F] where low-carbon additions go
     countries: list[str]
+    p_max: float = 0.0           # max sustained annual process-CO2 reduction (0 = lever off)
 
     @property
     def C(self):
@@ -88,6 +89,20 @@ def feasibility_bounds(panel, window: int = 10) -> tuple[float, float]:
     ei = np.log(np.clip(panel.primary_energy / np.clip(panel.gdp, 1e-6, None), 1e-9, None))
     h_max = float(min(np.percentile(_best_sustained_rate(-ei, window), 50), 0.035))
     return g_max, h_max
+
+
+def process_bound(panel, window: int = 10, cap: float = 0.035) -> float:
+    """Feasible sustained annual reduction of process CO2 (cement, flaring, other
+    industry), by the same rule as the efficiency bound: the median, over countries, of
+    the fastest decade-long decline in absolute process CO2, capped at 3.5%/yr.
+
+    Historical declines in process CO2 mostly reflect demand collapses (construction
+    busts, post-Soviet contraction, a plant closure in Hong Kong) rather than abatement,
+    and the largest emitters (China, India, Brazil, Turkey) never sustained any decline. So
+    this is a weak, history-based proxy; deep abatement (CCS, clinker substitution) is a
+    technology question these data cannot answer."""
+    lp = np.log(np.clip(panel.process_co2, 1e-3, None))
+    return float(min(np.percentile(_best_sustained_rate(-lp, window), 50), cap))
 
 
 def _heuristic_drivers(panel, Tf, gdp_longrun, pop_longrun):
@@ -140,7 +155,7 @@ def build_scenario(panel, cfg: Config, end_year: int = 2050, ssp: str | None = "
     return Scenario(name=name, years=years, gdp=gdp, pop=pop, process=process, inits=inits,
                     tfrac=np.ones(Tf), g_max=g_max, h_max=h_max,
                     fossil_weights=fossil_weights, clean_weights=clean_weights,
-                    countries=list(panel.countries))
+                    countries=list(panel.countries), p_max=process_bound(panel))
 
 
 def ssp_ensemble(panel, cfg: Config, end_year: int = 2050, vintage: str = "v3.2") -> list[Scenario]:

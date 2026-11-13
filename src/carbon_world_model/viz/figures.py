@@ -532,10 +532,10 @@ def fig_to_2100(t: dict) -> plt.Figure:
     ax1.legend(fontsize=8, loc="upper right")
 
     S = t["summary"]
-    rows = [("all tied models, fitted dynamics", "paired|model|all|max_fitted"),
-            ("all tied models, no learned reaction", "paired|model|all|max_open_loop"),
-            ("selected model, fitted dynamics", "paired|model|selected|max_fitted"),
-            ("selected model, no learned reaction", "paired|model|selected|max_open_loop")]
+    rows = [("all tied models, fitted dynamics", "paired|historical|all|max_fitted"),
+            ("all tied models, no learned reaction", "paired|historical|all|max_open_loop"),
+            ("selected model, fitted dynamics", "paired|historical|selected|max_fitted"),
+            ("selected model, no learned reaction", "paired|historical|selected|max_open_loop")]
     y = np.arange(len(rows))
     for off, acc, col, lab in [(-0.18, "total_tail_2070", OI["orange"], "post-2050 tail assumed (net zero 2070)"),
                                (0.18, "total_model_to_2100", OI["purple"], "model run to 2100 (upper bound)")]:

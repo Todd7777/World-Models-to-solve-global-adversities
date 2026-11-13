@@ -14,9 +14,10 @@ Rules fixed before running:
     zero in 2050. No case reaches zero by 2100, so this is a LOWER bound on CO2 before
     net zero and the likelihoods are UPPER bounds;
   * process CO2 (cement, flaring; held at its 2022 level under business-as-usual) is cut
-    under maximum effort by the history-based lever (plan/scenario.process_bound,
-    -2.7%/yr). Sensitivity ('phaseout_2070'): it is instead phased out linearly by 2070,
-    a technology assumption the model cannot test.
+    under maximum effort either by the history-based lever ('historical':
+    plan/scenario.process_bound, -2.7%/yr) or along published technology roadmaps
+    ('technology': plan/scenario.technology_process_floor; cement -20% by 2030 and near
+    zero by 2050, routine flaring ended by 2030).
 Beyond 2050 the runs are long extrapolations into states (fossil shares far below any
 observed) that the model has never seen; treat them as a check on the assumed tail, not
 as a projection.
@@ -45,11 +46,6 @@ END, H_CAP, SEEDS = 2100, 28, (0, 1, 2, 3)
 KINDS = ("bau", "max_fitted", "max_open_loop")
 TARGETS = (1.5, 1.7, 2.0)
 FOS = [FUELS.index(f) for f in ("coal", "oil", "gas")]
-
-
-def process_phaseout(scen, zero_year: int = 2070):
-    f = np.clip((zero_year - scen.years) / (zero_year - scen.years[0]), 0.0, 1.0)
-    return dataclasses.replace(scen, process=scen.process * f[None, :])
 
 
 def run(wm, params, scen) -> dict:
@@ -83,16 +79,18 @@ def main() -> None:
         cfg, wm, params = load_trained(panel, f"results/model/structural/{m['config']}_s{m['seed']}.pkl")
         drifts = backtest_drifts(panel, m["config"], seeds=SEEDS)
         base = build_scenario(panel, cfg, end_year=END, ssp="SSP2")
+        tech_p_max = build_scenario(panel, cfg, end_year=END, ssp="SSP2",
+                                    process_lever="technology").p_max
         years = base.years
         k2050 = int(np.where(years == 2050)[0][0])
         variants = [("as_fitted", None, base)] + [
             ("paired", v, perturb_drivers(base, v["delta_gdp"], v["delta_pop"], h_cap=H_CAP))
             for v in naive]
         for vname, vec, scen in variants:
-            for proc in ("model", "phaseout_2070"):
-                sc = scen if proc == "model" else process_phaseout(scen)
+            for proc in ("historical", "technology"):
+                sc = scen if proc == "historical" else dataclasses.replace(scen, p_max=tech_p_max)
                 res = run(wm, params, sc)
-                if vname == "as_fitted" and proc == "model":
+                if vname == "as_fitted" and proc == "historical":
                     fitted_paths[f"{m['config']}_s{m['seed']}"] = {
                         k: {"global_mt": np.asarray(v["global_mt"]).tolist(),
                             "fossil_share": np.asarray(v["fossil_share"]).tolist()}
@@ -131,7 +129,7 @@ def main() -> None:
 
     summ = {}
     for vname in ("as_fitted", "paired"):
-        for proc in ("model", "phaseout_2070"):
+        for proc in ("historical", "technology"):
             for subset in ("all", "selected"):
                 for kind in KINDS:
                     rows = [c for c in cases if c["set"] == vname and c["process"] == proc
@@ -143,7 +141,7 @@ def main() -> None:
         json.dump(out, fh, indent=2)
 
     for vname in ("as_fitted", "paired"):
-        for proc in ("model", "phaseout_2070"):
+        for proc in ("historical", "technology"):
             for subset in ("all", "selected"):
                 print(f"\n[{vname} | process {proc} | {subset} models]  q10-q90 [envelope]")
                 for kind in KINDS:

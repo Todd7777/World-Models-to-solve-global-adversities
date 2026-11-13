@@ -101,3 +101,37 @@ def test_process_lever_bound_and_effect(panel, cfg, wm, params):
     co2_on = np.asarray(O._rollout(wm, params, scen, ctrl)["co2"]).sum(0)
     co2_off = np.asarray(O._rollout(wm, params, scen, off)["co2"]).sum(0)
     assert np.all(co2_on[1:] < co2_off[1:]) and co2_on[0] == co2_off[0]
+
+
+def test_technology_floor_hits_the_roadmap_milestones():
+    import numpy as np
+    from carbon_world_model.plan.scenario import technology_process_floor
+    years = np.arange(2022, 2101)
+    pure = np.eye(3)                              # cement-only, flaring-only, other-only
+    F = technology_process_floor(years, pure)
+    at = lambda y: F[:, y - 2022]                 # noqa: E731
+    np.testing.assert_allclose(at(2022), 1.0)
+    np.testing.assert_allclose(at(2030), [0.80, 0.05, 0.80])
+    np.testing.assert_allclose(at(2050), [0.01, 0.05, 0.01])
+    np.testing.assert_allclose(at(2100), at(2050))
+    assert np.all(np.diff(F, axis=1) <= 1e-12)
+
+
+def test_max_effort_follows_the_technology_floor(panel, cfg):
+    import numpy as np
+    import jax.numpy as jnp
+    from carbon_world_model.plan.scenario import load_process_shares, technology_process_floor
+    scen = build_scenario(panel, cfg, end_year=2100, process_lever="technology")
+    big = jnp.full((scen.C, scen.Tf), 8.0)
+    ctrl, _, _ = O._controls(big, big, scen)
+    proc = np.asarray(O._abated_process(jnp.asarray(scen.process), ctrl))
+    F = technology_process_floor(scen.years, load_process_shares(panel))
+    np.testing.assert_allclose(proc, scen.process * F, rtol=2e-3)   # sigmoid(8) ~ 0.9997
+
+
+def test_process_components_match_the_panel(panel):
+    import json
+    import numpy as np
+    d = json.load(open("data/processed/process_components.json"))
+    assert d["countries"] == list(panel.countries) and d["year"] == int(panel.years[-1])
+    np.testing.assert_allclose(np.sum(d["shares"], axis=1), 1.0, atol=1e-5)

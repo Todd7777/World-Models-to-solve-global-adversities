@@ -105,6 +105,56 @@ def process_bound(panel, window: int = 10, cap: float = 0.035) -> float:
     return float(min(np.percentile(_best_sustained_rate(-lp, window), 50), cap))
 
 
+# Technology-based process bound: published roadmaps, read 2026-11-13.
+#   cement      GCCA (2021), "Concrete Future: Roadmap to Net Zero": 20% CO2 reduction per
+#               tonne of cement by 2030 against 2020, and "net zero concrete by 2050" with
+#               on-site carbon capture counted (offsets are not).
+#   flaring     World Bank, Zero Routine Flaring by 2030: governments and oil companies
+#               commit "to end routine flaring no later than 2030".
+# Assumptions made here, not sourced:
+#   * no progress counted for 2020-2022, so the 2030 milestone is applied from 2022;
+#   * "net zero" is represented as a 1% residual of 2022 direct emissions from 2050;
+#   * 5% of flaring is non-routine (safety) flaring and remains after 2030;
+#   * other industrial process CO2 follows the cement roadmap.
+# Milestones are fractions of the 2022 level, interpolated linearly in between.
+TECH_PROCESS_MILESTONES = {
+    "cement": {2022: 1.0, 2030: 0.80, 2050: 0.01},
+    "flaring": {2022: 1.0, 2030: 0.05},
+    "other_industry": {2022: 1.0, 2030: 0.80, 2050: 0.01},
+}
+PROCESS_COMPONENTS_JSON = "data/processed/process_components.json"
+
+
+def technology_process_floor(years, shares: np.ndarray) -> np.ndarray:
+    """[C, Tf] lowest process CO2 (fraction of the anchor-year level) that the roadmaps allow
+    in each year: each country's 2022 component shares applied to the milestone paths."""
+    years = np.asarray(years, dtype=float)
+    paths = []
+    for comp in ("cement", "flaring", "other_industry"):
+        m = TECH_PROCESS_MILESTONES[comp]
+        xs, ys = np.array(sorted(m)), np.array([m[k] for k in sorted(m)])
+        paths.append(np.interp(years, xs, ys))          # held at the last value afterwards
+    return np.asarray(shares) @ np.stack(paths)          # [C,3] @ [3,Tf]
+
+
+def technology_process_rates(years, shares: np.ndarray) -> np.ndarray:
+    """[C, Tf] per-year maximum abatement rates that make maximum effort follow the floor
+    exactly: p[t] = log(F[t] / F[t+1]); the last year's rate is unused (0)."""
+    F = technology_process_floor(years, shares)
+    p = np.zeros_like(F)
+    p[:, :-1] = np.log(F[:, :-1] / F[:, 1:])
+    return p
+
+
+def load_process_shares(panel) -> np.ndarray:
+    import json
+    d = json.load(open(PROCESS_COMPONENTS_JSON))
+    if d["iso_codes"] != list(getattr(panel, "iso_codes", d["iso_codes"])) or \
+            d["countries"] != list(panel.countries):
+        raise ValueError("process_components.json does not match the panel's countries")
+    return np.asarray(d["shares"], dtype=float)
+
+
 def _heuristic_drivers(panel, Tf, gdp_longrun, pop_longrun):
     k = panel.n_years - 1
     C = panel.n_countries
@@ -121,12 +171,18 @@ def _heuristic_drivers(panel, Tf, gdp_longrun, pop_longrun):
 
 def build_scenario(panel, cfg: Config, end_year: int = 2050, ssp: str | None = "SSP2",
                    ssp_vintage: str = "v3.2", gdp_longrun: float = 0.015,
-                   pop_longrun: float = 0.0) -> Scenario:
+                   pop_longrun: float = 0.0, process_lever: str = "historical") -> Scenario:
     """Anchor at the last data year (observed state) and project drivers forward.
 
     ssp='SSP1'..'SSP5' uses that SSP's GDP and population (ratio-harmonised to the
     panel's last year); ssp=None uses the heuristic (recent CAGR tapering to a long-run
     rate). Process (cement/flaring) CO2 is held at its last observed value.
+
+    process_lever: 'historical' (default) caps process abatement at process_bound(panel), a
+    constant rate; 'technology' lets maximum effort follow the roadmap floor
+    (technology_process_floor), with per-country, per-year rates. The technology bound is
+    meant for maximum-effort runs: its rates become very large near 2050, which would
+    dominate the optimisers' effort cost.
     """
     k = panel.n_years - 1
     anchor = int(panel.years[k])
@@ -155,7 +211,9 @@ def build_scenario(panel, cfg: Config, end_year: int = 2050, ssp: str | None = "
     return Scenario(name=name, years=years, gdp=gdp, pop=pop, process=process, inits=inits,
                     tfrac=np.ones(Tf), g_max=g_max, h_max=h_max,
                     fossil_weights=fossil_weights, clean_weights=clean_weights,
-                    countries=list(panel.countries), p_max=process_bound(panel))
+                    countries=list(panel.countries),
+                    p_max=(process_bound(panel) if process_lever == "historical" else
+                           technology_process_rates(years, load_process_shares(panel))))
 
 
 def ssp_ensemble(panel, cfg: Config, end_year: int = 2050, vintage: str = "v3.2") -> list[Scenario]:

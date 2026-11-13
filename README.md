@@ -449,9 +449,10 @@ Rules fixed before the runs:
 - **Total CO₂ = model fossil and industry CO₂ 2023–2100, plus land-use CO₂ falling to zero
   in 2050.** No case reaches zero by 2100, so this is a lower bound on CO₂ before net zero
   and the likelihoods are upper bounds.
-- **Process CO₂ (cement, flaring)** stays at its 2022 level under business-as-usual and is
-  cut by the process lever (−2.7%/yr, a weak historical proxy) under maximum effort. As a
-  technology sensitivity, it instead falls linearly to zero by 2070.
+- **Process CO₂ (cement, flaring)** stays at its 2022 level under business-as-usual. Under
+  maximum effort it is cut either by the history-based lever (−2.7%/yr) or, as the
+  alternative, along published technology roadmaps: cement and other industry 20% lower by
+  2030 and near zero by 2050, routine flaring ended by 2030 (see "Method").
 
 **A fix found on the way.** Over these horizons the max-effort clean-energy push turned out
 to stall: it was split by each country's 2022 fossil mix, so once a fuel ran out its share
@@ -460,14 +461,20 @@ shares (see "Method"). Through 2050 this changes results by at most a few GtCO�
 
 **2 °C likelihood at maximum effort** (both errors paired; median [10th–90th percentile]):
 
-| | post-2050 tail assumed (net zero 2070) | model run to 2100 (upper bound) | ... with process CO₂ phased out by 2070 |
+| | post-2050 tail assumed (net zero 2070) | model run to 2100 (upper bound) | ... with the technology-roadmap process bound |
 |---|---|---|---|
 | all tied models, fitted dynamics | 46% [17–70] | **21%** [17–44] | 22% |
-| all tied models, no learned reaction | 73% [41–83] | **56%** [19–80] | 60% |
+| all tied models, no learned reaction | 73% [41–83] | **56%** [19–80] | 61% |
 | selected model, fitted dynamics | 53% [40–74] | **29%** [17–48] | 31% |
 | selected model, no learned reaction | 74% [65–83] | **60%** [47–80] | 64% |
 
 What the runs show:
+
+- **Process CO₂ is not what stands between maximum effort and 2 °C.** Replacing the
+  history-based lever with the technology roadmaps (process CO₂ near zero by 2050) raises
+  the 2 °C likelihood by only 1–5 points, under either the assumed tail (46–47%, 73–75%)
+  or the model run to 2100 (21–22%, 56–61%). Process CO₂ is 6.5% of the panel's emissions.
+  What limits the outcome is the fossil energy the model does not remove.
 
 - **No maximum-effort case reaches net zero by 2100.** With fitted dynamics, emissions in
   2100 are 5.9–65 GtCO₂/yr (10th–90th percentile; 7–25 as fitted), and only 6% of cases fall
@@ -564,6 +571,24 @@ busts, post-Soviet contraction, a plant closure in Hong Kong), the largest emitt
 (China, India, Brazil, Turkey) never sustained any decline, and deep abatement (CCS,
 clinker substitution) is a technology question these data cannot answer. In the
 optimisers its effort is costed like efficiency effort, which is a modelling choice.
+
+The alternative, technology-based bound (`process_lever="technology"`,
+`plan/scenario.technology_process_floor`) instead lets maximum effort follow published
+roadmaps. Cement follows GCCA, *Concrete Future: Roadmap to Net Zero* (2021): a 20% CO₂
+cut per tonne of cement by 2030 against 2020, and "net zero concrete by 2050", with
+on-site carbon capture counted and offsets not. Flaring follows the World Bank's Zero
+Routine Flaring by 2030 initiative ("end routine flaring no later than 2030"). Each
+country's 2022 split of process CO₂ (65% cement, 17% flaring and 18% other industry
+across the panel; `data/processed/process_components.json`, from the OWID CO₂ data) is
+applied to those paths. Four further choices are assumptions, not sourced:
+- the 2030 milestone is applied from 2022, with no progress counted for 2020–2022;
+- net zero is a 1% residual from 2050;
+- 5% of flaring is non-routine and remains;
+- other industrial process CO₂ follows the cement path.
+
+This bound is optimistic by construction: it is an industry roadmap plus a voluntary
+initiative. Its annual rates also become very large near 2050, so it is used for
+maximum-effort runs only, not in the optimisers.
 Emissions response to effort is **monotonic**
 (verified in the test suite). Warming is obtained from cumulative emissions via the
 TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely range
@@ -584,7 +609,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 71 tests
+python -m pytest -q                  # 75 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
@@ -594,6 +619,7 @@ later steps run without downloading data. Full pipeline (about 3.5 h on 4 CPU co
 ```bash
 bash scripts/download_data.sh        # OWID CO2 + energy data (CC-BY); only for step 01
 python scripts/01_build_dataset.py   # 60-country panel
+python scripts/01c_process_components.py  # 2022 split of process CO2 (committed)
 python scripts/06_sweep.py --phase val --seeds 0,1 --configs orig,notime,percap,ema,damped,ms,ms_notime,ms_notime_percap,ms_notime_percap_ema,ms_full,ms_full_shootonly,notime_percap_damped,ms_ema,ms_damped,ms_percap,ms_percap_damped,ms_percap_damped_stab10,ms_percap_damped_stab100,ms_stab10,ms_stab100,ms_full_shootonly_stab10,ms_full_shootonly_stab100
 python scripts/02_train.py           # full-data model, selected config (eval/configs.SELECTED)
 python scripts/06_sweep.py --phase test --configs ms_full_shootonly_stab100,ms_percap_damped,orig --seeds 0,1,2,3,4 --ssp
@@ -625,8 +651,9 @@ python scripts/05_make_figures.py
   TCRE-only likelihoods of the published table. After 2050 the project has only two
   bounding views: an assumed decline to net zero by 2070, and the model's own run to 2100,
   which never reaches net zero and is a long extrapolation. They differ by 15–25 points in
-  the 2 °C likelihood at maximum effort. The process-CO₂ lever is only a weak historical
-  proxy, and the model has no negative emissions.
+  the 2 °C likelihood at maximum effort. Process CO₂ is bounded either by a weak historical
+  proxy or by optimistic technology roadmaps, and the 2 °C verdict moves by only 1–5 points
+  between them. The model has no negative emissions.
 - **Planning results are uncertain in two ways the data cannot resolve.** First, structure:
   stabilised configurations tied on validation give 2050 BAU emissions from 39 to 48 Gt and
   max-effort cuts from 27% to 53% (fitted dynamics), and how strongly the dynamics push back

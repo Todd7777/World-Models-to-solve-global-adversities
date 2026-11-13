@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-13: 72 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-13: 75 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
 ## State on 2026-11-13
@@ -82,6 +82,14 @@ python -m pytest -q   # 2026-11-13: 72 pass (python -m: a standalone `pytest` ma
   best decade-long decline, capped at 3.5%/yr; a weak proxy, since historical declines are mostly demand
   collapses). Controls carry `u_proc`; `optimize._abated_process` applies it to the process driver. It added
   3 points to the 2C likelihoods with the assumed tail, 3-11 points to 2100. Optimiser cost weights it like h.
+- Technology-based process bound (`build_scenario(..., process_lever="technology")`,
+  `plan/scenario.technology_process_floor`): max effort follows published roadmaps instead: cement GCCA
+  Concrete Future (2021: -20% per t cement by 2030 vs 2020, net zero by 2050) and World Bank Zero Routine
+  Flaring by 2030, applied to each country's 2022 component split (`data/processed/process_components.json`,
+  from OWID via `scripts/01c_process_components.py`). Assumptions: no 2020-22 progress, 1% residual, 5%
+  non-routine flaring, other industry follows cement. Max-effort runs only (rates explode near 2050). In
+  `scripts/12_to_2100.py` it replaces the old 2070 phase-out sensitivity. Result: only 1-5 points on 2C at max
+  effort vs the historical lever; process CO2 is not the binding constraint, residual fossil energy is.
 - The clean-energy push now follows the CURRENT fossil mix (`dynamics.rollout` u_clean/clean_w/fossil_mask,
   `optimize._push`); the old 2022-mix split wasted the push once a fuel ran out. Effect through 2050: a few Gt.
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
@@ -95,7 +103,7 @@ respond to controls. Backtest error dominates the planning spread, but more cuto
 independent information (one China regime shift); genuinely new information would need other regions'
 shocks or a different validation design. Post-2050 behaviour is now the largest open question: the
 assumed tail and the model run to 2100 differ by 15-25 points for 2C. The model cannot represent
-near-zero-fossil states (out of distribution), has only a weak process-CO2 lever and no negative emissions, and the
-stability term only covers 30 years of the uncontrolled run. Deep process abatement (CCS etc.) would
-need a technology-based bound; the 2070 phase-out is only a sensitivity. Driver errors are
+near-zero-fossil states (out of distribution), has no negative emissions, and the
+stability term only covers 30 years of the uncontrolled run. Process CO2 now has both a historical and a
+roadmap-based bound, and the choice barely matters (1-5 points). Driver errors are
 measured only from 1997-2022 naive projections and one SSP vintage. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.

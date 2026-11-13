@@ -101,8 +101,16 @@ README "Limitations (read these)" and "What changed on 2026-11-12". The open que
   itself costs about 4 points on the test period and 1 on the validation period, on top of the model's general
   forecast error, and single transfer seeds differ by up to 6.4 points. A fresh holdout year from a newer OWID
   release (the panel ends in 2022) would give a check that no decision has touched.
-- The cutoff-2005-2009 models stall mature economies' efficiency trend. Candidate fixes are structural (a longer
-  momentum memory, or damping toward a country's own long-run drift rather than toward zero). They would be new
-  configurations, so validate them on the validation folds; re-selection is the owner's decision.
+- The cutoff-2005-2009 models stall mature economies' efficiency trend. Two fixes were probed on 2026-11-13 in
+  scratch, not committed, on the validation folds with seeds 0-1:
+  - A longer momentum memory (`ema_decay` 0.9 or 0.95) worsened the score (12.70 and 14.12, against 11.38) and
+    left the trend stalled.
+  - Damping the intensity momentum toward each country's trailing 10-year trend (trend-Kaya's window) instead of
+    toward zero improved the score by 0.55 points (10.83), less than seed noise, and restored only about a fifth
+    of the missing trend. Adding the fuel-mix shares to it did not help (11.05).
+
+  Neither is adopted. Most of the stall comes from the network's correction, so a next candidate would act on
+  that (for example on the level features it reacts to), with more seeds. Any adoption is a re-selection for the
+  owner.
 - Training seeds of the selected config disagree on the achievable cut (26-59%), so robust plans cost twice the
   effort.

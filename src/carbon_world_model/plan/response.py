@@ -1,28 +1,32 @@
-"""How the learned dynamics respond to the planner's controls.
+"""Why the planner keeps the network on the business-as-usual path.
 
-A control moves a country's energy intensity or fuel mix away from the path that
-business as usual (BAU) follows, and the learned dynamics then compute the next natural
-change from the controlled state: the planner's rollouts are closed-loop. Those states,
-for instance a far larger low-carbon share than any country of that income has had, lie
-outside the training data, so the network's response there is extrapolation, and
-training seeds extrapolate differently.
+Until 2026-11-13 the planner's rollouts were closed-loop: a control moved a country's
+energy intensity or fuel mix away from the path that business as usual (BAU) follows,
+and the learned dynamics then computed the next natural change from the controlled
+state. Those states, for instance a far larger low-carbon share than any country of that
+income has had, lie outside the training data, so the network's response there was
+extrapolation, and training seeds extrapolated differently: maximum effort cut 2050
+emissions by 26-59% depending on the seed.
 
-Two counterfactuals keep the network on the BAU path it was trained to reproduce:
-`open_loop` holds the natural changes at their BAU values and adds the controls on top,
-so every unit of control persists; with `frontier_controls` it instead lifts each
-country's total annual rates of intensity fall and low-carbon-share gain to the
-feasibility bounds, or leaves them where BAU is faster (the bounds are the fastest
-sustained national rates on record, which are total rates). `control_response` compares
-the three for each ensemble member under maximum effort, for both controls together and
-each alone. Used by scripts/control_response.py; see the README, "Why the training seeds
-disagree".
+This module keeps that closed loop (`closed_loop_members`, with the old maximum controls
+`closed_loop_max`) to measure it, against two ways of keeping the network on the BAU
+path: `open_loop` holds the natural changes at their BAU values and adds the old
+controls on top, so every unit of control persists; the frontier is the planner itself
+(plan/optimize.py), which lifts each country's total annual rates to the feasibility
+limits, or leaves them where BAU is faster. `control_response` compares the three for
+each ensemble member under maximum effort, for both controls together and each alone.
+Used by scripts/control_response.py; see the README, "Why the training seeds disagree".
 """
 from __future__ import annotations
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 
 from ..config import FUELS, LOW_CARBON_FUELS
-from .ensemble import max_controls, rollout_members
+from ..model.dynamics import rollout
+from . import optimize as O
+from .ensemble import max_controls
 from .scenario import Scenario
 
 LOWC_IDX = [FUELS.index(f) for f in LOW_CARBON_FUELS]
@@ -55,7 +59,7 @@ def lowc_share(run) -> np.ndarray:
 def open_loop(wm, stacked, scen: Scenario, bau: dict, g, h) -> dict:
     """co2 and D [K, C, Tf] and shares [K, C, Tf, F] of the plan (g, h), [C, Tf] or per
     member [K, C, Tf], when the natural changes of intensity and mix stay at their BAU
-    values (`bau`, from rollout_members): the learned dynamics do not react to the
+    values (`bau`, from closed_loop_members): the learned dynamics do not react to the
     controls. As in the closed loop, the control of year t moves the state of year t+1;
     with zero controls this is BAU."""
     K, C, Tf, F = bau["shares"].shape
@@ -75,20 +79,36 @@ def open_loop(wm, stacked, scen: Scenario, bau: dict, g, h) -> dict:
     return {"co2": co2 + scen.process[None], "D": D, "shares": s}
 
 
-def frontier_controls(scen: Scenario, bau: dict):
-    """Per-member controls (g, h), each [K, C, Tf], that make open_loop's total annual
-    low-carbon-share gain max(BAU gain, g_max) and intensity fall max(BAU fall, h_max)."""
-    d_int = np.diff(log_intensity(bau, scen), axis=2)
-    d_lowc = np.diff(lowc_shares(bau), axis=2)
-    pad = np.zeros(d_int.shape[:2] + (1,))
-    h = np.concatenate([np.maximum(0.0, d_int + scen.h_max), pad], axis=2)
-    g = np.concatenate([np.maximum(0.0, scen.g_max - d_lowc), pad], axis=2)
-    return g, h
+def closed_loop_max(scen: Scenario):
+    """The old planner's maximum controls (g, h), each [C, Tf]: the limits, added to the
+    network's own changes."""
+    full = np.full((scen.C, scen.Tf), 1.0 / (1.0 + np.exp(-8.0)))
+    return scen.g_max * full, scen.h_max * full
+
+
+def closed_loop_members(wm, stacked, scen: Scenario, g=None, h=None) -> dict:
+    """co2 and D [K, C, Tf] and shares [K, C, Tf, F] of the old planner's plan (g, h)
+    under every member: the controls enter the network's state, and the network responds
+    to it. Without g and h, business as usual."""
+    controls = None
+    if g is not None:
+        shift = scen.clean_weights[None, None, :] - scen.fossil_weights[:, None, :]
+        controls = {"u_int": jnp.asarray(h), "u_deploy": jnp.asarray(g)[:, :, None] * shift}
+    drivers = {"gdp": jnp.asarray(scen.gdp), "pop": jnp.asarray(scen.pop),
+               "process": jnp.asarray(scen.process)}
+    inits = {k: jnp.asarray(v) for k, v in scen.inits.items()}
+
+    def one(p):
+        return rollout(p, jnp.asarray(wm.static), wm.norm, jnp.asarray(wm.ef), inits, drivers,
+                       controls, wm.hp, tfrac=jnp.asarray(scen.tfrac))
+
+    tr = jax.vmap(one)(stacked)
+    return {k: np.asarray(tr[k]) for k in ("co2", "D", "shares")}
 
 
 def control_response(wm, stacked, scen: Scenario, top: int = 8) -> dict:
-    """Maximum effort in the closed loop, the open loop and at the frontier, for each
-    member (lists of K), for both controls and each alone.
+    """Maximum effort in the closed loop, the open loop and at the frontier (the
+    planner), for each member (lists of K), for both controls and each alone.
 
     cut_2050_pct and energy_change_2050_pct are relative to the member's BAU in 2050.
     intensity_fall_pct_yr and lowc_gain_pp_yr are each country's average annual rates
@@ -98,17 +118,17 @@ def control_response(wm, stacked, scen: Scenario, top: int = 8) -> dict:
     share over the open loop's (clean alone). by_country lists the `top` countries whose
     maximum-effort emissions in 2050 vary most between members in the closed loop.
     """
-    g, h = max_controls(scen)
+    g, h = closed_loop_max(scen)
     z = np.zeros_like(g)
-    bau = rollout_members(wm, stacked, scen)
-    fg, fh = frontier_controls(scen, bau)
-    fz = np.zeros_like(fg)
-    plans = {"closed": {"both": (g, h), "efficiency": (z, h), "clean": (g, z)},
-             "open": {"both": (g, h), "efficiency": (z, h), "clean": (g, z)},
-             "frontier": {"both": (fg, fh), "efficiency": (fz, fh), "clean": (fg, fz)}}
-    runs = {loop: {k: (rollout_members(wm, stacked, scen, *p) if loop == "closed"
-                       else open_loop(wm, stacked, scen, bau, *p)) for k, p in ps.items()}
-            for loop, ps in plans.items()}
+    old = {"both": (g, h), "efficiency": (z, h), "clean": (g, z)}
+    fg, fh = max_controls(scen)
+    bau = closed_loop_members(wm, stacked, scen)
+    W = O.make_worlds(wm, stacked, [scen])
+    runs = {"closed": {k: closed_loop_members(wm, stacked, scen, *p) for k, p in old.items()},
+            "open": {k: open_loop(wm, stacked, scen, bau, *p) for k, p in old.items()},
+            "frontier": {k: {q: np.asarray(v) for q, v in O.apply_plan(W, *p).items()}
+                         for k, p in {"both": (fg, fh), "efficiency": (z, fh),
+                                      "clean": (fg, z)}.items()}}
 
     def last(run, key):
         return np.asarray(run[key], dtype=float).sum(axis=1)[:, -1]       # [K]

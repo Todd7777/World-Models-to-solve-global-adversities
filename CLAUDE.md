@@ -22,31 +22,37 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-12: 74 pass
+pytest             # 2026-11-13: 76 pass
 ```
 
 If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
 `python -m pytest`.
 
-## State on 2026-11-12
+## State on 2026-11-13
 
-- **All 74 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
+- **All 76 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
   `ms_full` (`SELECTED_CONFIG` in `config.py`). `scripts/02_train.py` reproduces it bit for bit (seed 0, about 2.5
   minutes on 4 cores). Seeds 0-3 all pass the planning tests (`results/tables/seed_sensitivity.json`).
 - **Planning uses a ten-seed ensemble** (`results/model/ensemble/`, `scripts/02b_train_ensemble.py`; seed 0 is a
   copy of the checkpoint). `04_plan.py` evaluates every pathway under each member and optimises plans against all
-  of them (`plan/ensemble.py`); `plan.json` holds ensemble means and every seed's values. The seeds disagree
-  widely: maximum-effort cut 26-59% (mean 41%), and the checkpoint is the most optimistic of the ten. A plan robust
-  to every SSP and seed costs +119% effort. After any retrain of the checkpoint, rerun `02b_train_ensemble.py`:
-  until then `04_plan.py` and `test_committed_ensemble_contains_the_checkpoint` refuse the stale ensemble.
-- **The seed spread is explained: the planner's closed loop.** `scripts/control_response.py` (`plan/response.py`,
-  `results/tables/control_response.json`) shows that controls push countries into states no country has been in,
-  and each seed's network responds differently: 19-38% of the efficiency effort and 22-74% of the low-carbon push
-  survive to 2050, the low-carbon push alone moves energy demand by -39% to +39%, and maximum effort's realised
-  intensity fall is 0.9-4.6%/yr against the 3.0%/yr limit. With the network kept on the BAU path, adding the
-  controls on top (open loop) cuts 79-84% but double-counts, since the limits are total rates; lifting total rates
-  to the limits (frontier) cuts 61-70%. The planner is unchanged (still closed loop). Rerun `control_response.py`
-  after `02b_train_ensemble.py`: `test_committed_control_response_matches_the_ensemble` checks the table.
+  of them (`plan/ensemble.py`); `plan.json` holds ensemble means and every seed's values. At the frontier the
+  maximum-effort cut is 61-70% (mean 67%, heuristic drivers); a plan robust to every SSP and seed costs +62%
+  effort. After any retrain of the checkpoint, rerun `02b_train_ensemble.py`: until then `04_plan.py` and
+  `test_committed_ensemble_contains_the_checkpoint` refuse the stale ensemble. Then rerun `04_plan.py` (about seven
+  minutes), `control_response.py`, `seed_sensitivity.py` and the planning figures.
+- **The planner plans at the feasibility frontier (2026-11-13, owner's decision).** The network runs on business as
+  usual only (`plan/optimize.py`: `make_worlds`, then `apply_plan`); a plan adds extra annual rates of intensity
+  fall and low-carbon gain, capped per world (member x scenario) at the room below the limits, and the planned
+  low-carbon share displaces BAU's fossil mix of the year until none is left (a running-minimum recursion, in
+  closed form). The old closed loop, which fed controls into the network, gave cuts of 26-59% because seeds
+  extrapolate differently off the data; `plan/response.py` keeps it only for the diagnostic
+  (`scripts/control_response.py`, `results/tables/control_response.json`: closed loop 26-59%, open loop 79-84%,
+  frontier 61-70%), which `test_committed_control_response_matches_the_ensemble` checks. Plans take 20,000 Adam
+  steps with a cosine-decaying rate (`STEPS`): 1,000-1,500 were far from converged, quasi-Newton methods fail on
+  the per-world caps, and the robust mode bounds a log-sum-exp (tau 0.5 Gt) because a penalty per world converges
+  too slowly. The tie-break's planning checks now hold for any config by construction, so it no longer separates
+  `ms_full` from `ms_percap_damped` (best on score; it failed only effort monotonicity, on one seed). Whether to
+  revisit the selection is the owner's decision.
 - **Selection re-checked after a leak; it holds.** Every fit with a cutoff leaked post-cutoff drivers through the
   full-run loss's curvature term until `46cc5ce`; full-data fits (checkpoint, ensemble, tie-break checks) were never
   affected. The leak-free rerun in `results/sweep_val/report.json` (all 16 configs, 4000 steps, seeds 0-1; leaky
@@ -54,7 +60,7 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   `ms_full_shootonly` 11.29 (unaffected, identical), `ms_full` 11.38, `ms_notime_percap` 12.06; trend-Kaya 9.85.
   Multiple shooting still wins on every seed. The tie-break (planning checks with smooth projections on four seeds
   of full-data fits, `results/tables/selection/`, via `seed_sensitivity.py --config`) now covers all five; only
-  `ms_full` passes on every seed. Round 1 (3000 steps; no `steps` fields, read as 3000 via `LEGACY_REPORT_STEPS`)
+  `ms_full` passes on every seed, with the closed-loop planner (those tables are kept as the record). Round 1 (3000 steps; no `steps` fields, read as 3000 via `LEGACY_REPORT_STEPS`)
   is in `tests/data/report_round1_3000steps.json`.
 - **The test folds are spent.** They were scored after selection, for `ms_full` and `orig` only (5 seeds, realised
   and SSP-v9 drivers): first from leaky fits on 2026-11-10, then once more, leak-free, on 2026-11-12 with the
@@ -71,7 +77,10 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   never pool outputs trained differently (apart from the seed) or without that record. Older job caches lack
   it; delete and rerun them. Caches written before `46cc5ce` (2026-11-11) carry the same record but were
   trained with the leaky loss, which the guards cannot see: delete them too (caches are git-ignored, so this
-  concerns machines that ran sweeps before then, such as a cluster).
+  concerns machines that ran sweeps before then, such as a cluster). `05_make_figures.py` draws fig5 from the
+  `results/sweep_test` job outputs: where the leak-free ones are absent (a fresh clone, or only older caches),
+  it drops or misdraws the world-model lines, so keep the committed fig5 (`git checkout` it) instead of committing
+  a redrawn one.
 - `06_sweep.py` merges into `<root>/report.json`, replacing only the configs passed; `--overwrite` replaces the
   whole report. Before fitting anything it refuses to put a second training length (or other folds) into a
   report, and to reuse cached outputs trained differently from what the run asks for. It does not check seeds:
@@ -92,9 +101,11 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## Where the next steps are
 
-README "Limitations (read these)" and "What changed on 2026-11-12". The open questions there: forecasts are only
+README "Limitations (read these)" and "What changed on 2026-11-13". The open questions there: forecasts are only
 level with trend-Kaya given the true drivers (ahead on the test folds, behind on the validation folds) and behind
 driver-free baselines ex ante; the model transfers to unseen countries at about twice trend-Kaya's error; and
 training seeds of the selected config disagree on the achievable cut (26-59%), so robust plans cost twice the
-effort. That disagreement comes from the closed-loop planner relying on the network off the data (README, "Why
-the training seeds disagree"); whether to plan at the frontier instead is the owner's decision.
+effort. That disagreement came from the closed-loop planner; at the frontier it is 61-70% and robust plans cost
++62%. Open there: the frontier's assumptions (planned change persists; maximum effort runs every country at the
+limits for 28 years), and whether to revisit the selection now that the tie-break no longer separates `ms_full`
+from `ms_percap_damped` (the owner's decision; the test folds are spent).

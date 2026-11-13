@@ -1,9 +1,9 @@
-"""The counterfactuals of plan/response.py, and the committed diagnostic.
+"""The diagnostic of plan/response.py, and the committed table.
 
-With the natural changes held at their business-as-usual values, no control must mean
-business as usual, every unit of the efficiency control must persist, the closed loop
-must agree with the open loop until the network first sees a controlled state, and the
-frontier controls must lift the total rates of change exactly to the bounds.
+The open loop (the old planner's controls added to business as usual's own changes)
+must be business as usual without controls, keep every unit of control, and agree with
+the closed loop until the network first sees a controlled state. The frontier is the
+planner's maximum effort, checked here against a separate, step-by-step implementation.
 """
 import json
 
@@ -14,9 +14,10 @@ from carbon_world_model.config import default_config
 from carbon_world_model.plan.ensemble import (
     ENSEMBLE_DIR, load_ensemble, max_controls, rollout_members, stack_members,
 )
+from carbon_world_model.plan.optimize import FOSSIL_IDX, LOWC_IDX
 from carbon_world_model.plan.response import (
-    LOOPS, PLANS, control_response, frontier_controls, log_intensity, lowc_share, lowc_shares,
-    open_loop,
+    LOOPS, PLANS, closed_loop_max, closed_loop_members, control_response, effective_ef,
+    lowc_share, open_loop,
 )
 from carbon_world_model.plan.scenario import build_scenario
 
@@ -33,7 +34,7 @@ def stacked(wm):
 
 @pytest.fixture(scope="module")
 def bau(wm, scen, stacked):
-    return rollout_members(wm, stacked, scen)
+    return closed_loop_members(wm, stacked, scen)
 
 
 def test_open_loop_without_controls_is_business_as_usual(wm, scen, stacked, bau):
@@ -41,10 +42,11 @@ def test_open_loop_without_controls_is_business_as_usual(wm, scen, stacked, bau)
     ol = open_loop(wm, stacked, scen, bau, z, z)
     for k in ("co2", "D", "shares"):
         np.testing.assert_allclose(ol[k], bau[k], rtol=1e-4, atol=1e-6)
+        np.testing.assert_allclose(rollout_members(wm, stacked, scen)[k], bau[k], rtol=1e-5)
 
 
 def test_open_loop_keeps_every_control(wm, scen, stacked, bau):
-    g, h = max_controls(scen)
+    g, h = closed_loop_max(scen)
     z = np.zeros_like(g)
     eff = open_loop(wm, stacked, scen, bau, z, h)
     cum = np.concatenate([np.zeros((scen.C, 1)), np.cumsum(h, axis=1)[:, :-1]], axis=1)
@@ -55,24 +57,35 @@ def test_open_loop_keeps_every_control(wm, scen, stacked, bau):
 
     # The controls of the first year move the state of the second, which the network has
     # not yet responded to: both loops agree on it, and on the first year's emissions.
-    closed, opened = rollout_members(wm, stacked, scen, g, h), open_loop(wm, stacked, scen, bau, g, h)
+    closed = closed_loop_members(wm, stacked, scen, g, h)
+    opened = open_loop(wm, stacked, scen, bau, g, h)
     np.testing.assert_allclose(closed["D"][:, :, :2], opened["D"][:, :, :2], rtol=1e-4)
     np.testing.assert_allclose(closed["co2"][:, :, 0], opened["co2"][:, :, 0], rtol=1e-4)
 
 
-def test_frontier_controls_lift_the_total_rates_to_the_bounds(wm, scen, stacked, bau):
-    g, h = frontier_controls(scen, bau)
-    assert g.shape == h.shape == bau["D"].shape and g.min() >= 0 and h.min() >= 0
-    run = open_loop(wm, stacked, scen, bau, g, h)
-    d_int, d_bau = np.diff(log_intensity(run, scen), axis=2), np.diff(log_intensity(bau, scen), axis=2)
-    np.testing.assert_allclose(d_int, np.minimum(d_bau, -scen.h_max), atol=1e-6)
-    # Where no share was clipped at zero, the low-carbon share gains exactly the larger
-    # of its BAU gain and the bound; clipping only stops a country running out of fossil.
-    gain, gain_bau = np.diff(lowc_shares(run), axis=2), np.diff(lowc_shares(bau), axis=2)
-    unclipped = (run["shares"][:, :, 1:] > 0).all(axis=-1)
-    assert unclipped.mean() > 0.9
-    np.testing.assert_allclose(gain[unclipped], np.maximum(gain_bau, scen.g_max)[unclipped],
-                               atol=1e-6)
+def test_planner_max_effort_matches_a_separate_frontier(wm, scen, stacked, bau):
+    """Maximum effort recomputed year by year from business as usual: intensity falls at
+    max(BAU rate, h_max), and the planned low-carbon share grows by the room below g_max,
+    displacing BAU's fossil mix of the year, until no fossil fuel is left."""
+    K, C, Tf, _ = bau["shares"].shape
+    li = np.log(bau["D"].astype(float)) - np.log(scen.gdp)[None]
+    gap_h = np.maximum(0.0, scen.h_max - (li[..., :-1] - li[..., 1:]))
+    s = bau["shares"].astype(float)
+    gap_g = np.maximum(0.0, scen.g_max - np.diff(s[..., LOWC_IDX].sum(-1), axis=-1))
+    D = bau["D"] * np.exp(-np.concatenate([np.zeros((K, C, 1)), np.cumsum(gap_h, -1)], -1))
+    fossil = np.zeros_like(s)
+    fossil[..., FOSSIL_IDX] = s[..., FOSSIL_IDX]
+    F = fossil.sum(-1)
+    X = np.zeros((K, C, Tf))
+    for t in range(Tf - 1):
+        X[..., t + 1] = np.minimum(X[..., t] + gap_g[..., t], F[..., t + 1])
+    shares = s - fossil * (X / np.maximum(F, 1e-9))[..., None] + X[..., None] * scen.clean_weights
+    co2 = (effective_ef(wm, stacked)[:, :, None, :] * D[..., None] * shares).sum(-1)
+    mx = rollout_members(wm, stacked, scen, *max_controls(scen))
+    np.testing.assert_allclose(mx["D"], D, rtol=1e-4)
+    np.testing.assert_allclose(mx["shares"], shares, atol=1e-5)
+    np.testing.assert_allclose(mx["co2"], co2 + scen.process[None], rtol=1e-4)
+    assert (mx["co2"] < bau["co2"] + 1e-3).all() and (mx["co2"][:, :, -1] < bau["co2"][:, :, -1]).all()
 
 
 def test_committed_control_response_matches_the_ensemble(panel, wm):

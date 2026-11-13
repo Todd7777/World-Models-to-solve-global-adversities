@@ -1,0 +1,951 @@
+{
+  "root": "results/sweep_val",
+  "seeds": [
+    0,
+    1
+  ],
+  "steps": 4000,
+  "cutoffs": [
+    2005,
+    2007,
+    2009
+  ],
+  "horizon": 6,
+  "mature": [
+    "United Kingdom",
+    "Hungary",
+    "Belgium",
+    "Denmark",
+    "Finland",
+    "Greece",
+    "United States",
+    "Italy",
+    "Sweden",
+    "France",
+    "Germany",
+    "Japan"
+  ],
+  "observed": {
+    "2005": {
+      "realised_pct_per_year": -2.464945473070721,
+      "pre_cutoff_10y_pct_per_year": -2.4100191004745235
+    },
+    "2007": {
+      "realised_pct_per_year": -1.830490494221134,
+      "pre_cutoff_10y_pct_per_year": -2.8324396847758018
+    },
+    "2009": {
+      "realised_pct_per_year": -2.1154672818223528,
+      "pre_cutoff_10y_pct_per_year": -2.6598058158493743
+    }
+  },
+  "configs": {
+    "damped": {
+      "time_features": true,
+      "score": 18.699403898784215,
+      "country_mape": 0.13158112919628545,
+      "agg_abs_err_mean": 0.055412909791556685,
+      "score_by_seed": {
+        "0": 20.627680164796836,
+        "1": 19.376669620262703
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.4301756295880315,
+            "1": 0.8484015014525189
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.14684538699499353,
+            "1": 0.35467625875235004
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.1764886620583116,
+            "1": 0.3192427942507107
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.5560552112242878,
+            "1": -2.86967767138146
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.19613192207067956,
+            "1": 0.06274067870177967
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.34102144507422005,
+            "1": 0.21801526826406642
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.1960875012773198,
+            "1": -2.505930160855316
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.23408251198376584,
+            "1": 0.06448791376295147
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.29472212549207494,
+            "1": 0.10954430968297336
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -1.4515874454789828
+    },
+    "ema": {
+      "time_features": true,
+      "score": 17.198280232654582,
+      "country_mape": 0.12888299336647954,
+      "agg_abs_err_mean": 0.0430998089600663,
+      "score_by_seed": {
+        "0": 18.15690585883231,
+        "1": 19.29862487594663
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.8900795452172245,
+            "1": -0.8035292268484292
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.15907563196843313,
+            "1": 0.25265419060636035
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.2716338008650554,
+            "1": 0.32365031546633394
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.3268393220232286,
+            "1": -0.49014096751628994
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.15252399746244974,
+            "1": 0.2511295801612669
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.25240714360760114,
+            "1": 0.3579774675079588
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -2.2943465037534416,
+            "1": -2.7171823384168654
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.19464283268008578,
+            "1": 0.022517517613436594
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.4792347991229002,
+            "1": 0.09289663127163646
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -1.5870196506292464
+    },
+    "ms": {
+      "time_features": true,
+      "score": 12.322592503651371,
+      "country_mape": 0.09222754657715809,
+      "agg_abs_err_mean": 0.03099837845935563,
+      "score_by_seed": {
+        "0": 12.605252695947442,
+        "1": 13.850979633710203
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.5504231631480527,
+            "1": -1.1738012528198034
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.09143691078562081,
+            "1": 0.1707967750586726
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.24917225824027273,
+            "1": 0.3535802343980634
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -2.4211835747529564,
+            "1": -1.8149857296871363
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.024579320788905328,
+            "1": 0.13250740707507527
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.3297805341960591,
+            "1": 0.41718130173422935
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -3.1356572479838465,
+            "1": -2.8300915730647427
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": -0.011584555647381737,
+            "1": 0.030670583373382392
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.4314599806093189,
+            "1": 0.44497285007172693
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -2.1543570902427565
+    },
+    "ms_damped": {
+      "time_features": true,
+      "score": 14.111031795135032,
+      "country_mape": 0.09800623378781122,
+      "agg_abs_err_mean": 0.043104084163539086,
+      "score_by_seed": {
+        "0": 14.692301059445365,
+        "1": 14.92690784166312
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.3340366904527112,
+            "1": -1.5145172520949934
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.14718069922812763,
+            "1": 0.12790868526261998
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.38964529851413443,
+            "1": 0.3384267902739644
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.2571285129886698,
+            "1": -1.6816008689062696
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.1484356034387817,
+            "1": 0.10138875226251332
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.41358897692562413,
+            "1": 0.4562072801373009
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -2.666549803524025,
+            "1": -3.9986394713352427
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.0008520038486412215,
+            "1": -0.11379159526934035
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.28572176715437325,
+            "1": 0.41482142860821863
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -2.0754120998836516
+    },
+    "ms_ema": {
+      "time_features": true,
+      "score": 12.324028167945993,
+      "country_mape": 0.09317545830596335,
+      "agg_abs_err_mean": 0.030064823373496582,
+      "score_by_seed": {
+        "0": 12.371165938263768,
+        "1": 14.897999140491839
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.932128847400542,
+            "1": -1.5843869959459116
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.1132419150990258,
+            "1": 0.11347642673697127
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.3351710677942849,
+            "1": 0.16321175359804338
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.3912676492781668,
+            "1": -1.8243553263498826
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.1253768330764853,
+            "1": 0.04751217193008783
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.4453774477854787,
+            "1": 0.3665925546033732
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -3.6841680778891375,
+            "1": -3.819597935473832
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": -0.05565237220180643,
+            "1": -0.08683394720470887
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 1.2979847091397145,
+            "1": 0.4732382896467925
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -2.3726508053895787
+    },
+    "ms_full": {
+      "time_features": false,
+      "score": 11.383207386618702,
+      "country_mape": 0.09410354358584888,
+      "agg_abs_err_mean": 0.019728530280338143,
+      "score_by_seed": {
+        "0": 11.58141998070657,
+        "1": 12.738793868702123
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.7567992739494095,
+            "1": -0.4636182176022599
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.15405601566720448,
+            "1": 0.16690844824728615
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.8519802893808515,
+            "1": 0.6900832322252187
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.5260020351137041,
+            "1": 0.590368966394545
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.1563045658375607,
+            "1": 0.29563901515959895
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.8862381904618761,
+            "1": 0.62954124303626
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.7513070524018258,
+            "1": -0.6253082820855127
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.16182547540698972,
+            "1": 0.19034688770121044
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.7555301731383569,
+            "1": 1.2640358554815487
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -0.4221109824596945
+    },
+    "ms_full_shootonly": {
+      "time_features": false,
+      "score": 11.288992821594777,
+      "country_mape": 0.09346094689235744,
+      "agg_abs_err_mean": 0.019428981323590316,
+      "score_by_seed": {
+        "0": 12.68841947756263,
+        "1": 11.360813802970867
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.6431930394676637,
+            "1": -1.0788576492612703
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.17855426207725178,
+            "1": 0.17607608009286702
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.49152924140357757,
+            "1": 1.1699567367488004
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.36668295271713947,
+            "1": -0.18542900570038945
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.19697821156747097,
+            "1": 0.2141147791099355
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.5601263134054695,
+            "1": 0.6904268311732024
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.9212226791260658,
+            "1": -0.21319888338450593
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.14013854464149908,
+            "1": 0.2280931341684875
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.8627850613318164,
+            "1": 1.0578149143998146
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -0.5680973682761724
+    },
+    "ms_notime": {
+      "time_features": false,
+      "score": 12.85523003497738,
+      "country_mape": 0.09533877214607199,
+      "agg_abs_err_mean": 0.03321352820370182,
+      "score_by_seed": {
+        "0": 12.449397729878129,
+        "1": 14.295431949689286
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.7865885492158495,
+            "1": -1.1636447668246284
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.1976988001848797,
+            "1": 0.17313297024905192
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 1.2078715407917948,
+            "1": 0.5039589874482064
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.7081563197035716,
+            "1": -0.2014163330265421
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.19547140853676673,
+            "1": 0.21541276703695364
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.4368502330728374,
+            "1": 0.5429473274733446
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -2.1871535311868486,
+            "1": -1.1283369864767163
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.1226603006994611,
+            "1": 0.17378550659662548
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 1.0283069149935424,
+            "1": 0.6942105097741326
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -1.0292160810723594
+    },
+    "ms_notime_percap": {
+      "time_features": false,
+      "score": 12.063334217923808,
+      "country_mape": 0.09341864251669714,
+      "agg_abs_err_mean": 0.027214699662540944,
+      "score_by_seed": {
+        "0": 13.621616220575044,
+        "1": 12.821482747868485
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.8151030493848823,
+            "1": -1.374102027048791
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.22278577388477674,
+            "1": 0.1494326568660939
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.6923926270813475,
+            "1": 0.4207646268794926
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.35857683273489277,
+            "1": -0.9743722169846574
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.20127125585095815,
+            "1": 0.19081230199410362
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.5824185931131276,
+            "1": 0.5325579788185273
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.3152887832344906,
+            "1": -1.71238289071992
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.16544388443651067,
+            "1": 0.1511681767468133
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.7969525703208082,
+            "1": 2.531488041701967
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -1.0916376333512723
+    },
+    "ms_notime_percap_ema": {
+      "time_features": false,
+      "score": 13.152385141275838,
+      "country_mape": 0.09902496006675994,
+      "agg_abs_err_mean": 0.03249889134599843,
+      "score_by_seed": {
+        "0": 15.059411170884724,
+        "1": 12.95374442368183
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.7998656765556087,
+            "1": -0.6860948991979015
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.16859264646560132,
+            "1": 0.16755436747030525
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.6158843959682568,
+            "1": 0.7270919898746044
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": 0.10215668088445636,
+            "1": -0.19223723923822433
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.25630256659098666,
+            "1": 0.23372985274549232
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.664795098013802,
+            "1": 0.73619657817071
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.21724158783484387,
+            "1": -0.7047519940807423
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.2189227531709895,
+            "1": 0.19436289340930493
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.6486402351566298,
+            "1": 0.8894192600082254
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -0.4163391193371441
+    },
+    "ms_percap": {
+      "time_features": true,
+      "score": 10.96267466957023,
+      "country_mape": 0.08368382812698222,
+      "agg_abs_err_mean": 0.02594291856872008,
+      "score_by_seed": {
+        "0": 11.734951315454326,
+        "1": 12.518910922797968
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.6043083869134995,
+            "1": -1.8218018870158688
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.16509227420177874,
+            "1": 0.10869171606729817
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.47462546915582515,
+            "1": 0.43363989549870485
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -2.6634856011943797,
+            "1": -2.0965525872031354
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.06673630727471293,
+            "1": 0.07363231779244826
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.4191688451193226,
+            "1": 0.42545533750132414
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -2.61829646951355,
+            "1": -2.8452312909654482
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.07252623335697224,
+            "1": 0.0017072089349784343
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": null,
+            "1": null
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -2.2749460371343138
+    },
+    "ms_percap_damped": {
+      "time_features": true,
+      "score": 10.79170605202187,
+      "country_mape": 0.09219318154677751,
+      "agg_abs_err_mean": 0.015723878973441196,
+      "score_by_seed": {
+        "0": 11.408823391393831,
+        "1": 12.07295035719489
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.7360210311382673,
+            "1": -1.679584928794596
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.15192830060425103,
+            "1": 0.12496694632303758
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.2860056224103962,
+            "1": 0.4073355927857617
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.0300769523798636,
+            "1": -1.1351112025770276
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.17600396107296493,
+            "1": 0.14454644259200702
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.690043498147563,
+            "1": 0.42061524357711033
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -3.015041026547295,
+            "1": -2.163195764449692
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": -0.016138315168528938,
+            "1": 0.057900338152521824
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.3377135278825734,
+            "1": 0.40366554861823745
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -1.7931718176477904
+    },
+    "notime": {
+      "time_features": false,
+      "score": 21.841854573368714,
+      "country_mape": 0.14339250111428345,
+      "agg_abs_err_mean": 0.07502604461940367,
+      "score_by_seed": {
+        "0": 24.170626112236697,
+        "1": 20.99633760998017
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": 0.057331261089979185,
+            "1": -0.3915102977227104
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.284982331573301,
+            "1": 0.20723490855859641
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.3106266788156034,
+            "1": 0.21762744954935231
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": 0.7896049451718895,
+            "1": -0.9660273925712757
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.31670298427660254,
+            "1": 0.19553237338424015
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.4871346682956819,
+            "1": 0.37315115291652046
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": 0.25042170640805006,
+            "1": -1.4486629200228736
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.29739226012550374,
+            "1": 0.16691313218149226
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.37008899342544144,
+            "1": 0.19896417088932117
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -0.2848071162744901
+    },
+    "notime_percap_damped": {
+      "time_features": false,
+      "score": 18.93312215744646,
+      "country_mape": 0.14193066268968602,
+      "agg_abs_err_mean": 0.04740055888477856,
+      "score_by_seed": {
+        "0": 19.878636558862027,
+        "1": 19.691293059029462
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.9311945647284177,
+            "1": -0.5212892640222746
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.15432595868273577,
+            "1": 0.18744086252326464
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.2230389503480213,
+            "1": 0.2953268121584274
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": 0.22137103151280957,
+            "1": 0.3389171777532901
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.21867623939325212,
+            "1": 0.25392066238829664
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.3121922180361802,
+            "1": 0.3297300675426571
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -0.26756903883673955,
+            "1": -0.11388432450552485
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.24928232670151415,
+            "1": 0.25570917774777335
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.25281755205946144,
+            "1": 0.2414001497432073
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -0.21227483047114282
+    },
+    "orig": {
+      "time_features": true,
+      "score": 19.990317634874224,
+      "country_mape": 0.12216413268581115,
+      "agg_abs_err_mean": 0.07773904366293106,
+      "score_by_seed": {
+        "0": 21.94028074021065,
+        "1": 19.642593813639973
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.039425893555906,
+            "1": -1.8715201537373372
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.23662349532579072,
+            "1": 0.17594388087806404
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.2856162260114584,
+            "1": 0.3273015185234936
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.601304530771403,
+            "1": -2.1604012713467124
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.11184902467563806,
+            "1": 0.1635213379216219
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.3529628199204087,
+            "1": 0.30683827065342417
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -2.165253583912868,
+            "1": -2.0040459835980786
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.15237761584531992,
+            "1": 0.09807958023325854
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.34616175288245515,
+            "1": 0.2508908153406931
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -1.8069919028203845
+    },
+    "percap": {
+      "time_features": true,
+      "score": 18.85142203223754,
+      "country_mape": 0.12123425143236873,
+      "agg_abs_err_mean": 0.0672799688900067,
+      "score_by_seed": {
+        "0": 20.49734196016525,
+        "1": 19.396122896895175
+      },
+      "by_cutoff": {
+        "2005": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -1.812813251628177,
+            "1": -2.8224342068069728
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.1359456644968234,
+            "1": 0.032754349677947915
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.11902921181294504,
+            "1": 0.09388544190039043
+          }
+        },
+        "2007": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -2.2080028712794686,
+            "1": -2.40665291132591
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": 0.054264214037157005,
+            "1": 0.0507648062549402
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.20860284896868656,
+            "1": 0.20291152674490592
+          }
+        },
+        "2009": {
+          "mature_trend_pct_per_year_by_seed": {
+            "0": -4.000051425428349,
+            "1": -2.960528049771982
+          },
+          "mature_final_year_co2_error_by_seed": {
+            "0": -0.015476320708361524,
+            "1": 0.06348756857063524
+          },
+          "mature_share_of_gap_to_trend_kaya_by_seed": {
+            "0": 0.09180859716273888,
+            "1": 0.31075417389607873
+          }
+        }
+      },
+      "mature_trend_pct_per_year": -2.701747119373477
+    }
+  },
+  "realised_pct_per_year": -2.136967749704736,
+  "time_feature_pairs": [
+    {
+      "with": "ms",
+      "without": "ms_notime",
+      "mature_trend_change_pct_per_year": 1.125141009170397,
+      "score_change": 0.5326375313260083
+    },
+    {
+      "with": "ms_percap",
+      "without": "ms_notime_percap",
+      "mature_trend_change_pct_per_year": 1.1833084037830415,
+      "score_change": 1.100659548353578
+    },
+    {
+      "with": "ms_percap_damped",
+      "without": "ms_full",
+      "mature_trend_change_pct_per_year": 1.371060835188096,
+      "score_change": 0.5915013345968312
+    },
+    {
+      "with": "orig",
+      "without": "notime",
+      "mature_trend_change_pct_per_year": 1.5221847865458944,
+      "score_change": 1.8515369384944904
+    }
+  ]
+}

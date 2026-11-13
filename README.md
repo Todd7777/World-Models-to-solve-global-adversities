@@ -468,6 +468,7 @@ python scripts/04_plan.py            # BAU / max effort / frontier / robust plan
 python scripts/seed_sensitivity.py   # retrain with seeds 0-3: stability and spread
 python scripts/control_response.py  # why the seeds disagree on maximum effort
 python scripts/transfer_diagnostics.py  # where transfer error comes from (validation period)
+python scripts/stall_by_config.py    # which configurations stall mature economies' efficiency
 pytest -q                            # 76 tests
 ```
 
@@ -502,7 +503,9 @@ other than the one the script runs it under. The processed panel
   they hold for every configuration by construction, and `ms_percap_damped`, best on
   score, failed only one of them (effort monotonicity, on one seed); its projections are
   as smooth as `ms_full`'s. With today's planner the tie-break would not have separated
-  the two. The selection has not been revisited.
+  the two. They differ only in the calendar-time inputs, and without them models trained
+  up to 2005–2009 stall mature economies' efficiency gains (below). The selection has
+  not been revisited.
 - **Training seeds disagree, and the ensemble covers only that.** The selected
   configuration trains without the loss spikes of the original one
   (`results/tables/seed_sensitivity.json`; the original's are in
@@ -554,8 +557,23 @@ other than the one the script runs it under. The processed panel
   100% means the other 48 together beat trend-Kaya. At the 2009 cutoff the damped
   momentum carries only about −1.1%/yr, and the network's correction adds +0.2 to
   +0.35%/yr where it subtracts for every other country
-  (`results/tables/transfer_diagnostics.json`). The bias fades with more data: the 2015
-  test-fold models forecast the 12 transfer countries, four of them mature economies,
+  (`results/tables/transfer_diagnostics.json`). The stall comes with dropping the
+  calendar-time inputs (`scripts/stall_by_config.py`, which reads the validation outputs
+  and fits nothing; `results/tables/stall_by_config.json`). All seven configurations
+  without them forecast these economies' trend at −0.2 to −1.1%/yr, and all nine with
+  them at −1.5 to −2.7%/yr, against −2.1%/yr realised (means over the three cutoffs and
+  two seeds). In each of the four pairs that differ only in that switch, dropping it
+  weakens the trend by 1.1–1.5%/yr and worsens the score by 0.5–1.9 points. One pair is
+  `ms_percap_damped`, best on score, against `ms_full`. Two more seeds were then fitted
+  for each, with the expected difference written down first, and it held on them at
+  every cutoff. Over the four seeds (`results/sweep_val_4seeds/report.json`,
+  `results/tables/stall_by_config_4seeds.json`) `ms_percap_damped` forecasts −1.9%/yr
+  against −0.6%/yr, and scores 10.70 against 11.54 (per-country MAPE 8.56% against
+  9.10%, mean aggregate error 2.14% against 2.44%), better on three of the four seeds;
+  that score gap is within seed noise. The time inputs remove most of the stall but not
+  all of it: at the 2005 and 2007 cutoffs `ms_percap_damped` still over-predicts these
+  economies' final-year emissions by 8–18% per seed. The bias fades with more data: the
+  2015 test-fold models forecast the 12 transfer countries, four of them mature economies,
   about as well as trend-Kaya (7.9% against 7.6%), and the planning ensemble's BAU keeps
   most of these economies' trend (−1.9%/yr for 2022–2032, against −2.2%/yr in
   2012–2022).

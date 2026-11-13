@@ -106,6 +106,7 @@ def main() -> None:
     # Model runs to 2100 vs the assumed post-2050 tail (scripts/12_to_2100.py).
     if os.path.exists(os.path.join(TAB, "to_2100.json")):
         save(F.fig_to_2100(load("to_2100.json")), "fig15_to_2100.png")
+        save(F.fig_cdr(load("to_2100.json")), "fig16_negative_emissions.png")
     print("[ok] figures:", sorted(os.listdir(FIG)))
 
 

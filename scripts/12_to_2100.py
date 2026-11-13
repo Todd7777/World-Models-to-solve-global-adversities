@@ -18,6 +18,12 @@ Rules fixed before running:
     plan/scenario.process_bound, -2.7%/yr) or along published technology roadmaps
     ('technology': plan/scenario.technology_process_floor; cement -20% by 2030 and near
     zero by 2050, routine flaring ended by 2030).
+Negative emissions (climate/cdr.py): maximum feasible NOVEL CDR (logistic scale-up from the
+measured 0.002 GtCO2/yr in 2025 at the measured 40%/yr, saturating at the scenario level of
+3.5 GtCO2/yr; ceilings of 1.75 and 7 as sensitivities) is subtracted from annual net CO2
+under both accountings (model to 2100; assumed linear tail to zero gross CO2 in 2070).
+With removals net CO2 can turn negative, so budgets are compared with PEAK cumulative CO2;
+if net CO2 is still positive in 2100 the peak is a lower bound.
 Beyond 2050 the runs are long extrapolations into states (fossil shares far below any
 observed) that the model has never seen; treat them as a check on the assumed tail, not
 as a projection.
@@ -31,6 +37,7 @@ import json
 import numpy as np
 
 from carbon_world_model.climate import budgets as B
+from carbon_world_model.climate import cdr as CDR
 from carbon_world_model.climate import tcre
 from carbon_world_model.config import FUELS, default_config
 from carbon_world_model.data.panel import Panel
@@ -69,6 +76,29 @@ def summarise_path(path_mt, years, k2050) -> dict:
             "first_year_below_10gt": below(10.0), "first_year_below_5gt": below(5.0)}
 
 
+def cdr_accounting(path_mt, years, k2050) -> dict:
+    """Peak cumulative CO2 (from 2023), whether it is reached by 2100, and the net-zero
+    year, for each CDR ceiling and each post-2050 accounting."""
+    yrs = np.asarray(years)[1:]
+    fossil = tcre.scale_to_global(np.asarray(path_mt)[1:] / 1000.0)
+    n50 = k2050                                          # 2023..2050 = first n50 entries
+    land = np.zeros_like(fossil)
+    land[:n50] = B.LAND_USE_CO2_2024 * np.linspace(1.0, 0.0, n50)
+    tail = fossil.copy()
+    after = yrs > 2050
+    tail[after] = fossil[n50 - 1] * np.clip(1.0 - (yrs[after] - 2050) / 20.0, 0.0, None)
+    out = {}
+    for ck in ("none", *CDR.CDR_CEILINGS):
+        rem = np.zeros_like(fossil) if ck == "none" else CDR.novel_cdr_path(yrs, CDR.CDR_CEILINGS[ck])
+        out[ck] = {}
+        for acc, gross in (("model", fossil), ("tail", tail)):
+            net = gross + land - rem
+            peak, reached = CDR.peak_cumulative(net)
+            out[ck][acc] = {"peak_gt": peak, "peak_reached": reached,
+                            "net_zero_year": CDR.net_zero_year(yrs, net)}
+    return out
+
+
 def main() -> None:
     panel = Panel.load(default_config())
     st = json.load(open("results/tables/structural.json"))
@@ -101,7 +131,12 @@ def main() -> None:
                     for d in ds:
                         p = path if d is None else correct_path(path, d["delta"], h_cap=H_CAP)
                         s = summarise_path(p, years, k2050)
-                        cases.append({"config": m["config"], "seed": m["seed"], "set": vname,
+                        acc = cdr_accounting(p, years, k2050)
+                        # without removals the peak is the total: must match the earlier accounting
+                        assert np.isclose(acc["none"]["model"]["peak_gt"], s["cum_2100_gt"] + land, rtol=1e-6)
+                        assert np.isclose(acc["none"]["tail"]["peak_gt"], B.total_until_net_zero(
+                            s["cum_2050_gt"], s["y2050_gt"], "linear_to_zero", 2070), rtol=1e-6)
+                        cases.append({"config": m["config"], "seed": m["seed"], "set": vname, "cdr": acc,
                                       "process": proc, "kind": kind,
                                       "fossil_share_2100": float(res[kind]["fossil_share"][-1]),
                                       **s,
@@ -124,6 +159,20 @@ def main() -> None:
                 out[f"{acc}|{t}"] = {"median": float(np.median(lik)),
                                      "q10_q90": [float(np.quantile(lik, .1)), float(np.quantile(lik, .9))],
                                      "share_ge_50": float(np.mean(lik >= 0.5))}
+        for ck in ("none", *CDR.CDR_CEILINGS):
+            for acc in ("model", "tail"):
+                peak = np.array([r["cdr"][ck][acc]["peak_gt"] for r in rows])
+                nz = [r["cdr"][ck][acc]["net_zero_year"] for r in rows]
+                key = f"cdr|{ck}|{acc}"
+                out[key] = {"peak_q10_q90": [float(np.quantile(peak, .1)), float(np.quantile(peak, .9))],
+                            "share_net_zero_by_2100": float(np.mean([y is not None for y in nz])),
+                            "median_net_zero_year": (float(np.median([y for y in nz if y is not None]))
+                                                     if any(y is not None for y in nz) else None)}
+                for t in TARGETS:
+                    lik = B.likelihood_below(t, peak)
+                    out[f"{key}|{t}"] = {"median": float(np.median(lik)),
+                                         "q10_q90": [float(np.quantile(lik, .1)), float(np.quantile(lik, .9))],
+                                         "share_ge_50": float(np.mean(lik >= 0.5))}
         out["n"] = len(rows)
         return out
 
@@ -153,6 +202,20 @@ def main() -> None:
                     print(f"  {kind:14s} 2100 level {q('y2100_gt')} Gt/yr | fossil share {q('fossil_share_2100')} | "
                           f"total to 2100 {q('total_model_to_2100')} vs tail-2070 {q('total_tail_2070')} | "
                           f"<5Gt by 2100: {100*s['share_reaching_5gt_by_2100']:3.0f}% | {lk}")
+    print("\n[negative emissions] max effort, paired errors; peak-cumulative likelihood of staying below; "
+          "share of cases reaching net zero by 2100 (median year)")
+    for proc in ("historical", "technology"):
+        for subset in ("all", "selected"):
+            for kind in ("max_fitted", "max_open_loop"):
+                s = summ[f"paired|{proc}|{subset}|{kind}"]
+                for acc in ("tail", "model"):
+                    cells = []
+                    for ck in ("none", *CDR.CDR_CEILINGS):
+                        k = f"cdr|{ck}|{acc}"
+                        nzy = s[k]["median_net_zero_year"]
+                        cells.append(f"{ck} 1.5C {100*s[k + '|1.5']['median']:2.0f}% 2C {100*s[k + '|2.0']['median']:2.0f}% "
+                                     f"NZ {100*s[k]['share_net_zero_by_2100']:3.0f}% ({'-' if nzy is None else int(nzy)})")
+                    print(f"  {proc:10s} {subset:8s} {kind:13s} {acc:5s} | " + " | ".join(cells))
     print("[ok] wrote results/tables/to_2100.json")
 
 

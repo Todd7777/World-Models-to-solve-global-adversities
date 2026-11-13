@@ -554,3 +554,51 @@ def fig_to_2100(t: dict) -> plt.Figure:
             title="2 °C at maximum effort: assumed tail vs model")
     ax2.legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.4, -0.22), ncol=2)
     return _finish(fig)
+
+
+def fig_cdr(t: dict) -> plt.Figure:
+    """Negative emissions (scripts/12_to_2100.py, climate/cdr.py): 2 C likelihood by CDR
+    ceiling, and the selected model's net CO2 with central removals."""
+    from ..climate import budgets as B
+    from ..climate import cdr as CDR
+    S = t["summary"]
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 4.8), gridspec_kw={"width_ratios": [1, 1.1]})
+    combos = [("max effort, fitted dynamics\npost-2050 tail assumed", "paired|historical|all|max_fitted", "tail"),
+              ("max effort, fitted dynamics\nmodel run to 2100", "paired|historical|all|max_fitted", "model"),
+              ("max effort, no learned reaction\npost-2050 tail assumed", "paired|historical|all|max_open_loop", "tail"),
+              ("max effort, no learned reaction\nmodel run to 2100", "paired|historical|all|max_open_loop", "model")]
+    cks = [("none", OI["grey"], "no removals"),
+           ("low", OI["sky"], f"novel CDR to {CDR.CDR_CEILINGS['low']} Gt/yr"),
+           ("central", OI["blue"], f"novel CDR to {CDR.CDR_CEILINGS['central']} Gt/yr (scenario level)"),
+           ("high", OI["purple"], f"novel CDR to {CDR.CDR_CEILINGS['high']} Gt/yr")]
+    y = np.arange(len(combos))
+    for j, (ck, col, lab) in enumerate(cks):
+        v = [100 * S[k][f"cdr|{ck}|{acc}|2.0"]["median"] for _, k, acc in combos]
+        ax1.barh(y + (j - 1.5) * 0.2, v, 0.19, color=col, label=lab)
+    ax1.axvline(50, color=OI["grey"], lw=1, ls=":")
+    ax1.set_yticks(y, [c[0] for c in combos], fontsize=8)
+    ax1.invert_yaxis()
+    ax1.set_xlim(0, 90)
+    ax1.set(xlabel="median likelihood of staying below 2 °C (%), all tied models,\n"
+                   "model + driver error, peak cumulative CO2",
+            title="2 °C at maximum effort, with negative emissions")
+    ax1.legend(fontsize=7.5, loc="upper center", bbox_to_anchor=(0.45, -0.25), ncol=2)
+
+    yrs = np.array(t["years"])[1:]
+    land = np.zeros(len(yrs))
+    n50 = int(np.sum(yrs <= 2050))
+    land[:n50] = B.LAND_USE_CO2_2024 * np.linspace(1.0, 0.0, n50)
+    rem = CDR.novel_cdr_path(yrs)
+    sel = [k for k in t["fitted_paths"] if k.startswith(t.get("selected", "ms_full_shootonly_stab100"))]
+    for kind, col, lab in (("max_fitted", OI["red"], "max effort, fitted dynamics"),
+                           ("max_open_loop", OI["blue"], "max effort, no learned reaction")):
+        for i, name in enumerate(sel):
+            g = np.array(t["fitted_paths"][name][kind]["global_mt"])[1:] / 1000 / 0.926
+            ax2.plot(yrs, g + land - rem, color=col, lw=1.5, label=f"{lab}: net" if i == 0 else None)
+            ax2.plot(yrs, g + land, color=col, lw=0.9, ls=":", label=f"{lab}: gross" if i == 0 else None)
+    ax2.plot(yrs, -rem, color=OI["purple"], lw=1.4, label="novel CDR (central)")
+    ax2.axhline(0, color=OI["black"], lw=0.8)
+    ax2.set(xlabel="year", ylabel="global CO2 incl. land use (Gt/yr)",
+            title="Selected model as fitted, SSP2: gross and net CO2 with removals")
+    ax2.legend(fontsize=7.5, loc="upper right")
+    return _finish(fig)

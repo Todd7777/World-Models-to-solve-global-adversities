@@ -168,7 +168,7 @@ the cutoff, beyond the range the model was trained on.
   stalls like `ms_full` and scores worse on the validation folds: 12.57 against
   `ms_full`'s 11.54 on seeds 0–3 (10.70 with calendar time running on).
 - In planning, its business as usual lets the mature economies' energy intensity fall by
-  only 0.6%/yr over 2022–2032 (observed 2012–2022: 2.2%/yr). It reaches 55.8 Gt in 2050,
+  only 0.5%/yr over 2022–2032 (observed 2012–2022: 2.2%/yr). It reaches 55.8 Gt in 2050,
   against 39.9 Gt for the selected configuration.
 
 Details: `scripts/time_inputs.py`, `results/tables/time_inputs.json`, Limitations.
@@ -593,7 +593,7 @@ other than the one the script runs it under. The processed panel
     `scripts/time_inputs.py`, `results/tables/time_inputs.json`, four-seed sweep outputs
     in `results/sweep_val_4seeds/`).
   - In planning, fitted on all the data, its business as usual lets energy intensity fall
-    by only 0.6%/yr in these economies and 0.7%/yr in the other 48 over 2022–2032. The
+    by only 0.5%/yr in these economies and 0.7%/yr in the other 48 over 2022–2032. The
     selected configuration: 2.0 and 1.1%/yr; observed 2012–2022: 2.2 and 1.3%/yr. Its
     business as usual reaches 55.8 Gt in 2050, against 39.9 Gt.
   - With calendar time running on to 2050, up to 1.875, the trend returns, but business

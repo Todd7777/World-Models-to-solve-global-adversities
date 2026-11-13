@@ -134,8 +134,8 @@ questions there:
     `forecast(tfrac_cap=...)`.
   - `scripts/time_inputs.py` (`results/tables/time_inputs.json`, seeds 0-3) holds calendar time at the cutoff;
     uncapped, its refits reproduce the sweep's outputs bit for bit. Held, `ms_percap_damped` stalls like
-    `ms_full` (-0.7 %/yr) and scores 12.57 against 11.54.
-  - In planning (full-data fits, heuristic drivers), its BAU intensity falls only 0.6 %/yr in the mature
+    `ms_full` (-0.7 against -0.6 %/yr) and scores 12.57 against 11.54.
+  - In planning (full-data fits, heuristic drivers), its BAU intensity falls only 0.5 %/yr in the mature
     economies and 0.7 elsewhere over 2022-2032 (`ms_full` 2.0 and 1.1; observed 2.2 and 1.3). Its BAU reaches
     55.8 Gt in 2050 against 39.9. With calendar time running on to 1.875, the trend returns but BAU falls to
     28.0 Gt.

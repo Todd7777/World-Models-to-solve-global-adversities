@@ -90,10 +90,11 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   `scripts/transfer_diagnostics.py` (validation period only, about 15 minutes with 4 workers; needs the val sweep
   outputs) finds only about 1 point there (12.6% transfer, 11.6% in-training, trend-Kaya 9.6%). Most of the
   validation gap is a bias of the cutoff-2005-2009 models: they stall 12 mature economies' efficiency trend
-  (forecast -0.8 to +0.6 %/yr against -1.8 to -2.5 realised), through weak damped momentum plus a network
-  correction that pushes their intensity up. Configurations with calendar-time inputs avoid it only by
-  extrapolating calendar time, so they do not fix it (`scripts/stall_by_config.py`, `scripts/time_inputs.py`; see
-  "Where the next steps are"). The deployed ensemble's BAU mostly keeps that trend (-1.9 against -2.2 %/yr).
+  (forecast -0.8 to +0.6 %/yr against -1.8 to -2.5 realised), through weak damped momentum plus single-step
+  swings in the network's correction (`scripts/stall_mechanism.py`). Configurations with calendar-time inputs
+  avoid it only by extrapolating calendar time, so they do not fix it (`scripts/stall_by_config.py`,
+  `scripts/time_inputs.py`; see "Where the next steps are"). The deployed ensemble's BAU mostly keeps that trend
+  (-1.9 against -2.2 %/yr).
   Choosing a new country's starting latent (random or the training mean) changed nothing beyond adaptation noise,
   which is about 1 point.
 - Sweep job outputs record their step count and full config; report entries record their step count. Scores
@@ -153,7 +154,22 @@ questions there:
   - The other time-input configs' validation scores carry the same caveat. `ms_percap` (10.96) has not been
     scored with calendar time held.
 
-  Three fixes within `ms_full` were probed on 2026-11-13 in scratch, not committed, on the validation folds:
+  The mechanism (`scripts/stall_mechanism.py`, `results/tables/stall_mechanism.json`): ms_full refits at
+  2005/2007/2009, seeds 0-1, each reproducing the sweep bit for bit.
+  - The network's correction for the mature economies is no steady push. It swings by +2.6 to +6.4 %/yr in a
+    single step:
+    - at 2008->2009 for the 2005 and 2007 models, driven mostly by GDP growth. They treat the recession as if
+      energy use were sticky; in fact it fell faster than GDP (-6.9 against -4.4%);
+    - at 2010->2011 for the 2009 models, driven by the share-momentum inputs (biofuel, other renewables).
+      Those inputs are divided by per-fuel scales that sit at the 1e-3 floor.
+  - Each swing enters the momentum, the model's only trend memory. It falls from -2.5 to -3.0 %/yr at the cutoff
+    to -0.2 to -1.2 six years later.
+  - The damping learned from little data is strong: phi_I 0.58 at 2005, 0.69-0.70 at 2007, 0.78 at 2009, against
+    0.86-0.89 on full data. It is data-driven: weight decay is negligible, and Adam could have moved it further.
+  - Holding the share-momentum inputs at their observed values recovers 37, 52 and 81% of the missing trend at
+    2005, 2007 and 2009.
+
+  Six fixes within `ms_full` were probed on 2026-11-13 and -14 in scratch, not committed, on the validation folds:
   - A longer momentum memory (`ema_decay` 0.9 or 0.95) worsened the score (12.70 and 14.12, against 11.38) and
     left the trend stalled.
   - Damping the intensity momentum toward each country's trailing 10-year trend (trend-Kaya's window) instead of
@@ -162,10 +178,29 @@ questions there:
   - Dropping the static features (seeds 0-3; rule written down first: more than 1 point better, at least half the
     missing trend restored, neither MAPE nor |agg| worse) scored 10.90 against 11.54 and restored 17% of the
     missing trend; MAPE worsened (9.26% against 9.10%), |agg| improved (1.64% against 2.44%). It fails.
+  - One common share-momentum input scale for all fuels (the pooled typical share change, about 0.013; seeds 0-3,
+    same rule) scored 10.97 and recovered none of the missing trend (-1%). MAPE worsened (9.48%), |agg|
+    improved (1.49%). The swings return through other inputs. It fails.
+  - Decoupled momentum fails: it scored 14.67, recovered 22%, and worsened both MAPE (10.52%) and |agg|
+    (4.15%). Both momenta were updated only from their own damped part, so network corrections could not enter
+    the trend memory. The momentum feedback carries real information.
+  - A slow-state network fails on the stall: it recovered 8% of the missing trend. Its network did not see
+    contemporaneous GDP growth or the share momenta (both zeroed in `_features`; seeds 0-3, same rule).
+    - In the trained models, holding those inputs had recovered 66/93/82% (growth alone 32/60/-4%). Retrained,
+      the network swings by +3 to +5 %/yr at 2009-2010 through the level inputs instead: energy and GDP per
+      capita, and intensity momentum.
+    - It still scored 10.42 against 11.54, better on all four seeds, with MAPE (8.84%) and |agg| (1.59%) both
+      better. It is the only variant to clear the 1-point bar without calendar-time inputs.
+    - Its full-data fits pass the planning checks on all four seeds (`seed_sensitivity.py`'s checks, patched in
+      scratch). In-sample MAPE is 3.8-3.9% against 3.2-3.3%. Heuristic BAU 2050 is 37.1-39.4 Gt against
+      38.6-42.1, and max effort 12.5-13.3 against 12.3-13.2. BAU changes direction 2-4 times.
 
-  None is adopted. Most of the stall comes from the network's correction (weak damped momentum, plus a correction
-  that pushes mature economies' intensity up), so a next candidate would act on that, within a config without
-  time inputs. It would need four seeds and a judgement rule written down before the runs.
+  None is adopted. The early-cutoff networks respond steeply to whichever input a shock moves (growth, levels or
+  share momenta), and removing inputs only reroutes the swing. Two options remain:
+  - limiting the network's sensitivity: stronger regularisation of its weights, or a tighter bound on its
+    correction than the 8 %/yr on total change;
+  - more data, since the stall fades with later cutoffs.
+  Each needs four seeds and a rule written down before the runs. Any adoption is a re-selection for the owner.
 - Training seeds of the selected config disagreed on the achievable cut (26-59%) under the old closed-loop
   planner; at the frontier it is 61-70%, and a plan robust to every SSP and seed costs +62% effort. The
   frontier's assumptions are worth a lot (`scripts/plan_sensitivity.py`): moderate rebound and crowding out (25%
@@ -176,4 +211,7 @@ questions there:
 - Whether to revisit the selection now that the tie-break no longer separates `ms_full` from `ms_percap_damped`
   is the owner's decision; the test folds are spent. The two differ only in the calendar-time inputs, and
   `ms_percap_damped`'s lead on score needs calendar time fed past the cutoff. Held at the cutoff, as planning holds
-  it, the config scores 12.57 against 11.54, and its planning BAU stalls (above).
+  it, the config scores 12.57 against 11.54, and its planning BAU stalls (above). The slow-state network (above)
+  scores 10.42 without calendar-time inputs and passes the planning checks. But it failed its own rule, and the
+  validation folds have now served many probes. It is not a registered config: adding a `ModelConfig` field
+  changes every recorded config, which the provenance guards compare.

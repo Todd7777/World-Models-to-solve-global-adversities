@@ -545,6 +545,7 @@ python scripts/control_response.py  # why the seeds disagree on maximum effort
 python scripts/transfer_diagnostics.py  # where transfer error comes from (validation)
 python scripts/stall_by_config.py    # which configurations stall the efficiency trend
 python scripts/time_inputs.py        # time inputs in backtests and in planning (~15 min)
+python scripts/stall_mechanism.py    # why early-cutoff models stall it (~5 min)
 python scripts/plan_sensitivity.py   # maximum effort with the frontier's assumptions relaxed
                                      # (--costs: frontier and robust plans too, ~45 min)
 pytest -q                            # 82 tests
@@ -645,9 +646,23 @@ other than the one the script runs it under. The processed panel
   100% means the other 48 together beat trend-Kaya. At the 2009 cutoff the damped
   momentum carries only about −1.1%/yr, and the network's correction adds +0.2 to
   +0.35%/yr where it subtracts for every other country
-  (`results/tables/transfer_diagnostics.json`). Configurations with calendar-time inputs
-  avoid the stall in these backtests, but only by extrapolating calendar time, so they do
-  not fix it.
+  (`results/tables/transfer_diagnostics.json`).
+  - Step by step, that correction is a few single-year swings of +2.6 to +6.4%/yr
+    (`scripts/stall_mechanism.py`, `results/tables/stall_mechanism.json`).
+  - The 2005 and 2007 models swing at 2008–2009. They treat the recession as if energy
+    use were sticky, when in fact it fell faster than GDP.
+  - The 2009 models swing at 2010–2011, through the fuel-share momentum inputs.
+  - Each swing enters the momentum, the model's only trend memory. The damping learned
+    from so few years (0.58–0.78, against 0.87 on full data) cannot rebuild it within six
+    years.
+  - Three fixes aimed at this failed their rules written down beforehand (`CLAUDE.md`):
+    - one common input scale for all fuels' momenta;
+    - momentum that network corrections cannot enter;
+    - a network blind to same-year GDP growth and the share momenta, whose swings move to
+      the level inputs instead.
+
+  Configurations with calendar-time inputs avoid the stall in these backtests, but only
+  by extrapolating calendar time, so they do not fix it.
   - In the backtests, all seven configurations without the inputs forecast these
     economies' trend at −0.2 to −1.1%/yr, and all nine with them at −1.5 to −2.7%/yr,
     against −2.1%/yr realised (`scripts/stall_by_config.py`, which reads the validation

@@ -166,6 +166,23 @@ budget moves with each setting, since `04_plan.py`'s rule places it between what
 effort reaches and business as usual, so these prices compare hedging at comparable
 difficulty, not at one budget.
 
+**What the evidence says about these assumptions.** A review of economy-wide rebound
+finds that it "may erode more than half of the expected energy savings" from efficiency
+gains ([Brockway et al. 2021](https://doi.org/10.1016/j.rser.2021.110781)); at 50%
+rebound, maximum effort's cut falls from 67% to 58%. National wind and solar power have
+grown along S-curves, peaking at about 0.8% (onshore wind) and 0.6% (solar) of
+electricity supply per year, and countries that adopted them later have not grown faster
+([Cherp et al. 2021](https://doi.org/10.1038/s41560-021-00863-0)). Half of the scenarios
+compatible with 1.5 °C need coal to decline in Asia faster than in any of 43 historical
+cases in large systems ([Vinichenko et al.
+2021](https://doi.org/10.1016/j.oneear.2021.09.012)). Those rates are shares of
+electricity, not the planner's shares of primary energy, so they do not translate into a
+limit directly. But the planner's low-carbon limit is the 98th percentile of the
+countries' fastest decade-long gains, applied to all 60 countries at once for 28 years,
+so the stated limits are optimistic, and the rows with lower limits deserve at least as
+much weight. We found no economy-wide estimate of crowding out; its rows are
+illustrative.
+
 ---
 
 ## What changed on 2026-11-13
@@ -612,8 +629,9 @@ other than the one the script runs it under. The processed panel
   quarter of the efficiency gains taken back by rebound, to 60% with a quarter of the
   low-carbon gain crowded out, to 50% with the limits at three quarters, and to 40% with
   all three. They also raise the effort any carbon budget needs, put the tightest out of
-  reach, and raise the price of robustness from +62% to as much as +257% ("What changed
-  on 2026-11-14").
+  reach, and raise the price of robustness from +62% to as much as +257%. The literature
+  suggests rebound may exceed 50% and that the stated limits are optimistic ("What
+  changed on 2026-11-14").
 - **Short-horizon forecasting is not where this model wins.** Given the true drivers,
   the selected configuration is slightly ahead of trend-Kaya extrapolation on the test
   folds (score 8.33 against 9.49), but behind it on the validation folds (11.38 against

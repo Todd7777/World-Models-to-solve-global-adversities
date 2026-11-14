@@ -18,6 +18,7 @@ Usage:  python scripts/13_cdr_planning.py
 Writes results/tables/cdr_planning.json.
 """
 import json
+import os
 import time
 
 import numpy as np
@@ -36,6 +37,7 @@ BUDGETS = {"2.0C_50": (2.0, 0.50), "2.0C_67": (2.0, 0.67), "1.7C_50": (1.7, 0.50
 SPEND_GRID_TN = (0.0, 5.0, 10.0, 20.0, 40.0, float("inf"))
 DYNAMICS = ("fitted", "open_loop")
 OUT = "results/tables/cdr_planning.json"
+CACHE = "results/cache_cdr_planning"      # per-model results, so a stopped run resumes (git-ignored)
 
 
 def under_error(plan: P.CDRPlan, drifts, target: float) -> dict:
@@ -63,6 +65,14 @@ def main() -> None:
     t0 = time.time()
     for m in st["models"]:
         name = f"{m['config']}_s{m['seed']}"
+        cache = os.path.join(CACHE, f"{name}.json")
+        if os.path.exists(cache):
+            got = json.load(open(cache))
+            plans += got["plans"]
+            check += got["check"]
+            print(f"  {name}: {len(got['plans'])} plans from cache", flush=True)
+            continue
+        n0, c0 = len(plans), len(check)
         cfg, wm, params = load_trained(panel, f"results/model/structural/{name}.pkl")
         scen = build_scenario(panel, cfg, end_year=END, ssp="SSP2")
         drifts = backtest_drifts(panel, m["config"], seeds=SEEDS)
@@ -96,6 +106,9 @@ def main() -> None:
                               "effort_seed0": a.effort, "effort_seed1": b.effort,
                               "spend_seed0": a.spend_tn, "spend_seed1": b.spend_tn,
                               "peak_seed0": a.peak_gt, "peak_seed1": b.peak_gt})
+        os.makedirs(CACHE, exist_ok=True)
+        with open(cache, "w") as fh:
+            json.dump({"plans": plans[n0:], "check": check[c0:]}, fh)
 
     summary = {}
     for dyn in DYNAMICS:

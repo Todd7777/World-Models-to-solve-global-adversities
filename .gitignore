@@ -27,3 +27,4 @@ results/sweep_*.log
 
 # Local Claude Code tooling state (e.g. agent worktrees); never part of the project
 .claude/
+results/cache_cdr_planning/

@@ -628,49 +628,50 @@ def fig_cdr(t: dict) -> plt.Figure:
 
 def fig_cdr_planning(t: dict) -> plt.Figure:
     """Removals chosen by the planner (scripts/13_cdr_planning.py, plan/cdr_planning.py):
-    abatement effort vs removal spending, robustness to backtest error, and one plan."""
-    S = t["summary"]
-    grid = ["inf" if s is None else f"{s:g}" for s in t["spend_grid_tn"]]
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(19, 5.2))
-    bcol = {"2.0C_50": OI["blue"], "2.0C_67": OI["green"], "1.7C_50": OI["red"]}
-    blab = {"2.0C_50": "2 °C, 50%", "2.0C_67": "2 °C, 67%", "1.7C_50": "1.7 °C, 50%"}
+    least abatement effort for each removal allowance, per model, and one plan."""
+    fig, axes = plt.subplots(1, 3, figsize=(19, 5.2))
+    mcol = {"ms_full_shootonly_stab100": OI["blue"], "ms_percap_damped_stab10": OI["red"]}
     dls = {"fitted": "-", "open_loop": "--"}
     dlab = {"fitted": "fitted dynamics", "open_loop": "no learned reaction"}
-    for dyn in ("fitted", "open_loop"):
-        for b in t["budgets"]:
-            rows = [S[f"{dyn}|{b}|{g}"] for g in grid]
-            x = [r["spend_median"] for r in rows]
-            y = [r["effort_median"] for r in rows]
-            ax1.plot(x, y, ls=dls[dyn], color=bcol[b], lw=1.4, label=f"{blab[b]}, {dlab[dyn]}")
-            for xi, yi, r in zip(x, y, rows):
-                ax1.plot(xi, yi, "o", ms=6, color=bcol[b],
-                         mfc=bcol[b] if r["share_met"] >= 0.5 else "white")
-            ax2.plot(range(len(grid)), [100 * r["share_met_under_error_median"] for r in rows],
-                     ls=dls[dyn], marker="o", color=bcol[b], lw=1.4)
-    ax1.axhline(1.0, color=OI["grey"], lw=0.8, ls=":")
-    ax1.set(xlabel="removal spending 2023-2100 (USD trillion, undiscounted), median of tied models",
-            ylabel="abatement effort (1 = maximum feasible effort)",
-            title="Least abatement effort for each removal allowance\n(filled: budget met in most models)")
-    ax1.legend(fontsize=7, loc="upper right")
-    ax2.set_xticks(range(len(grid)), ["none" if g == "0" else ("unlimited" if g == "inf" else g) for g in grid])
-    ax2.set(xlabel="removal spending allowance (USD trillion)", ylim=(-3, 103),
-            ylabel="% of backtest-error cases still meeting the budget",
-            title="Plans made as fitted, checked against the model's own errors\n(median over tied models)")
+    models = sorted({(p["config"], p["seed"]) for p in t["plans"]})
+    for ax, b, title in ((axes[0], "2.0C_50", "2 °C, 50% likelihood budget"),
+                         (axes[1], "2.0C_67", "2 °C, 67% likelihood budget")):
+        for dyn in ("fitted", "open_loop"):
+            for cfgname, seed in models:
+                rows = [p for p in t["plans"] if p["config"] == cfgname and p["seed"] == seed
+                        and p["dynamics"] == dyn and p["budget"] == b and p["spend_cap_tn"] != 0]
+                x = [p["spend_tn"] for p in rows]
+                y = [p["effort"] for p in rows]
+                col = mcol.get(cfgname, OI["grey"])
+                ax.plot(x, y, ls=dls[dyn], color=col, lw=1.2, alpha=0.9,
+                        label=f"{cfgname} s{seed}, {dlab[dyn]}")
+                for p in rows:
+                    ax.plot(p["spend_tn"], p["effort"], "o", ms=6, color=col,
+                            mfc=col if p["met"] else "white")
+        ax.axhline(1.0, color=OI["grey"], lw=0.8, ls=":")
+        ax.set(xlabel="removal spending 2023-2100 (USD trillion, undiscounted)",
+               ylabel="abatement effort (1 = maximum feasible effort)", ylim=(0.3, 1.05),
+               title=f"{title}\nfilled: budget met with net zero by 2100; hollow: missed")
+    axes[0].legend(fontsize=6.5, loc="lower left")
+    ax3 = axes[2]
     sel = [p for p in t["plans"] if p["config"] == t["selected"] and p["seed"] == 0
            and p["dynamics"] == "fitted" and p["budget"] == "2.0C_50"]
     yrs = np.arange(2023, 2023 + len(sel[0]["removals_gt"]))
-    cols = [OI["grey"], OI["orange"], OI["purple"]]
-    for p, col in zip([p for p in sel if p["spend_cap_tn"] in (0.0, 10.0, None)], cols):
-        lab = "none" if p["spend_cap_tn"] == 0 else ("unlimited" if p["spend_cap_tn"] is None
-                                                     else f"USD {p['spend_cap_tn']:g} tn")
+    cols = {0.0: OI["grey"], 20.0: OI["orange"], None: OI["purple"]}
+    for p in [p for p in sel if p["spend_cap_tn"] in cols]:
+        col = cols[p["spend_cap_tn"]]
+        lab = "no removals" if p["spend_cap_tn"] == 0 else ("unlimited" if p["spend_cap_tn"] is None
+                                                            else f"USD {p['spend_cap_tn']:g} tn")
         gross = np.array(p["global_mt"][1:]) / 1000 / 0.926
+        rem = np.array(p["removals_gt"])
         ax3.plot(yrs, gross, color=col, lw=1.0, ls=":")
-        ax3.plot(yrs, -np.array(p["removals_gt"]), color=col, lw=1.0, ls="--")
-        ax3.plot(yrs, gross - np.array(p["removals_gt"]), color=col, lw=1.6,
+        ax3.plot(yrs, -rem, color=col, lw=1.0, ls="--")
+        ax3.plot(yrs, gross - rem, color=col, lw=1.6,
                  label=f"{lab}: effort {p['effort']:.2f}, spend {p['spend_tn']:.0f} tn"
-                       f"{'' if p['met'] else ' (budget missed)'}")
+                       f"{'' if p['met'] else ' (missed)'}")
     ax3.axhline(0, color=OI["black"], lw=0.8)
-    ax3.set(xlabel="year", ylabel="global fossil CO2 (Gt/yr): gross dotted, removals dashed, net solid",
-            title=f"{t['selected']} s0, fitted dynamics, 2 °C 50% budget")
+    ax3.set(xlabel="year", ylabel="fossil+industry CO2 (Gt/yr)",
+            title=f"{t['selected']} s0, fitted dynamics, 2 °C 50%:\n"
+                  "gross dotted, removals dashed, net solid")
     ax3.legend(fontsize=7, loc="upper right")
     return _finish(fig)

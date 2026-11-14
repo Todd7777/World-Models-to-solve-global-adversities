@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-14: 82 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-14: 86 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
 ## State on 2026-11-14
@@ -111,6 +111,17 @@ python -m pytest -q   # 2026-11-14: 82 pass (python -m: a standalone `pytest` ma
   60/64/69%. USD 300 + 10% = USD 200 + 10% (energy binds). Open loop stays at the table max (83%) but its
   q10 falls 55 -> 33-52%; its post-2050 energy limit is an artefact (low-carbon energy collapses under the
   pinned -3%/yr efficiency push). 1.5C unchanged. Cases record lowcarbon_ej_2050/2100 and daccs_2050/2100.
+- Removals as a planning lever (`plan/cdr_planning.py`, `scripts/13_cdr_planning.py`, results/tables/
+  cdr_planning.json, fig17): the optimiser chooses a global novel-CDR path with g/h/p. AR6 supply in 40
+  price bins per method (land cap to cheapest biomass, no price cap), logistic scale-up, DACCS <= 10% of the
+  plan's own low-carbon energy; least effort (1 = max) for a spending allowance (0/5/10/20/40 tn, unlimited;
+  no effort-to-USD exchange rate exists), s.t. peak cum net CO2 <= budget and net <= 0 in 2100. Grid: 4
+  tied models x fitted/open loop x 2C50/2C67/1.7C50. Result: no budget met without removals; 2C50 fitted
+  met by selected config (USD 20 tn s0 / 71 tn s1), never by percap (even 158 tn); open loop USD 5 tn
+  suffices everywhere; 1.7C never. Met plans hold in 41-48% of backtest-error cases (they sit on the
+  budget). 32/40 met plans reach net zero only in 2100 via a final-year removal jump (terminal-rule
+  artefact). Per-model results cache in results/cache_cdr_planning/ (git-ignored); the run takes ~35 min,
+  so use a 2 h background timeout.
 - The clean-energy push now follows the CURRENT fossil mix (`dynamics.rollout` u_clean/clean_w/fossil_mask,
   `optimize._push`); the old 2022-mix split wasted the push once a fuel ran out. Effect through 2050: a few Gt.
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
@@ -124,10 +135,11 @@ respond to controls. Backtest error dominates the planning spread, but more cuto
 independent information (one China regime shift); genuinely new information would need other regions'
 shocks or a different validation design. Post-2050 behaviour is now the largest open question: the
 assumed tail and the model run to 2100 differ by 15-25 points for 2C. The model cannot represent
-near-zero-fossil states (out of distribution), treats negative emissions only as an accounting lever
-(land, cost and DACCS-energy limited, but spending, storage and the growth rate unbounded; the energy
+near-zero-fossil states (out of distribution), treats negative emissions outside the dynamics (as an
+accounting lever or a planner choice; land, cost and DACCS-energy limited, but spending, storage and the growth rate unbounded; the energy
 fraction f is a labelled choice, and in the open loop post-2050 low-carbon energy collapses, so its energy
-limit after 2050 is an artefact), and the
+limit after 2050 is an artefact). The removal planner needs a sustained-net-zero or ramp-rate rule
+(final-year jumps), and plans optimised against the error cases rather than as fitted. And the
 stability term only covers 30 years of the uncontrolled run. Process CO2 now has both a historical and a
 roadmap-based bound, and the choice barely matters (1-5 points). Driver errors are
 measured only from 1997-2022 naive projections and one SSP vintage. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.

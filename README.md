@@ -44,9 +44,13 @@ CWM couples three things that are usually kept apart:
 > maximum effort need USD 200/tCO₂ or more and direct air capture of about 8 GtCO₂/yr by
 > 2050. Limiting the energy of direct air capture to a share of each run's own low-carbon
 > energy (10% central) lowers the 2 °C median in the model run to 2100 from 64% to 50%
-> (5–20% limits: 42–62%; scenario-level removals: 27%). Spending (USD 2–5 trillion/yr)
-> and the growth rate of removals are still not bounded. See "Carbon-budget likelihoods",
-> "Running the model to 2100" and "Negative emissions".
+> (5–20% limits: 42–62%; scenario-level removals: 27%). When the planner itself may buy
+> removals at AR6 costs, 2 °C at 50% becomes attainable for the selected configuration
+> with USD 20–71 trillion of removals over 2023–2100 under its fitted dynamics, but not for
+> the other tied configuration even at USD 158 trillion. 1.7 °C stays out of reach in
+> every case, and plans that just meet a budget as fitted still meet it in under half of
+> the model's own backtest-error cases. See "Carbon-budget likelihoods", "Running the
+> model to 2100", "Negative emissions" and "Removals as a planning lever".
 
 ---
 
@@ -663,6 +667,93 @@ tied models, paired errors, historical process lever), share of runs reaching ne
   40%/yr growth rate. The energy fraction *f* is the decisive number in this subsection, and
   nothing in the data pins it down.
 
+### Removals as a planning lever
+
+Above, removals are added after the model has run. Here the planner chooses them
+([`plan/cdr_planning.py`](src/carbon_world_model/plan/cdr_planning.py),
+`scripts/13_cdr_planning.py`, `fig17_cdr_planning.png`): a global novel-CDR path,
+optimised together with the clean push, efficiency and process abatement.
+
+**Set-up.** The rules were written into the module before the grid ran.
+- **Supply:** the four AR6 Table 12.6 methods, each potential spread over its cost range
+  in 40 price bins. The 2.4 GtCO₂/yr land cap goes to the cheapest biomass bins first, and
+  there is no price cap. Capacity in each year follows the same logistic scale-up as above
+  (0.002 GtCO₂/yr in 2025, 40%/yr). Direct air capture is capped at 10% of the plan's own
+  low-carbon energy (7 EJ per GtCO₂), so a stronger clean push also unlocks it.
+- **Cost:** removals fill the cheapest bins first; spending is in USD, undiscounted,
+  2023–2100.
+- **Budget:** peak cumulative net CO₂ (fossil and industry, plus land use, minus removals)
+  must stay within the published budget, and net CO₂ must be at most zero in 2100, so the
+  peak falls within the run. A plan *meets* the budget if its peak is within 1% of it and
+  net CO₂ in 2100 is at most 0.1 GtCO₂/yr.
+- **Objective:** the least abatement effort (1 = maximum feasible effort for the same
+  model and dynamics) for a given removal spending allowance. Abatement effort has no
+  dollar value in this model, so no exchange rate is assumed. The allowances (none, USD 5,
+  10, 20 and 40 trillion, unlimited) trace the trade-off, and any exchange rate would pick
+  one point on it. With no allowance, the planner keeps buying removals until a further
+  trillion saves less than 0.01% of maximum effort.
+- **One change after a single trial run:** as a soft penalty the allowance leaked (USD 7
+  trillion was spent at an allowance of zero). Now zero switches removals off, and the
+  allowance is enforced ten times as hard as the budget.
+- **Grid:** the 4 tied models × fitted dynamics and no learned reaction × 3 budgets × 6
+  allowances = 144 plans, SSP2, as fitted. A second initialisation on two cells agrees
+  within 0.5% on effort and peak.
+
+Smallest allowance tested at which the budget is met (seeds 0 / 1):
+
+| budget (from 2023) | dynamics | `ms_full_shootonly_stab100` (selected) | `ms_percap_damped_stab10` |
+|---|---|---|---|
+| 2 °C, 50% (1132 Gt) | fitted | USD 20 tn / unlimited (71 tn spent) | not met, even at USD 125–158 tn |
+| | no learned reaction | USD 5 tn / 5 tn | USD 5 tn / 5 tn |
+| 2 °C, 67% (952 Gt) | fitted | unlimited (69 tn) / not met (peak 972 Gt at 88 tn) | not met |
+| | no learned reaction | USD 5 tn / 5 tn | USD 20 tn / 40 tn |
+| 1.7 °C, 50% (572 Gt) | fitted | not met (peak ≥ 886 Gt) | not met (≥ 1,541 Gt) |
+| | no learned reaction | not met (≥ 693 Gt) | not met (≥ 748 Gt) |
+
+What this shows:
+
+- **No budget can be met without removals.** Without them no model reaches net zero by
+  2100, so under until-net-zero accounting every plan with zero allowance fails.
+- **With removals, 2 °C (50%) becomes attainable for the selected configuration under its
+  fitted dynamics, at a price.** Seed 0 meets it with USD 20 trillion at 78% of maximum
+  effort, seed 1 only when spending is unlimited (USD 71 trillion, 67% of maximum effort,
+  7 GtCO₂/yr removed in 2050).
+- **The other tied configuration meets no budget with fitted dynamics,** even spending
+  USD 125–158 trillion on removals (9–10 GtCO₂/yr in 2050, 16–21 in 2100). Its fossil CO₂
+  stays near 2,400 Gt over the century. Which configuration is closer to reality is the
+  structure the data do not identify ("Planning").
+- **Without a learned reaction to the plan, USD 5 trillion of removals is enough for
+  2 °C (50%) in every model.**
+- **Removals replace abatement.** Without a learned reaction (2 °C, 50%), going from USD 5
+  trillion to the unconstrained choice (17–38 trillion) lowers effort from 0.53–0.87 to
+  0.44–0.63 of maximum. Fossil CO₂ 2023–2100 rises from about 1,180 to 1,270–1,420 Gt, and
+  the extra is removed later (225–356 GtCO₂ removed over the century). With fitted dynamics
+  (selected seed 0), going from USD 20 to 53 trillion lowers effort from 0.78 to 0.56 and
+  raises fossil CO₂ from 1,326 to 1,508 Gt.
+- **A plan that just meets a budget meets it only about half the time.** The planner stops
+  at the budget. Checked against the model's own long-backtest errors (44 per
+  configuration, removals held fixed, driver errors not included), every plan that meets
+  its budget as fitted still meets it in only 41–48% of error cases. Plans for the 67%
+  budget give a 55–64% likelihood of staying below 2 °C. A plan meant to hold under error
+  would have to be optimised against the error cases themselves; that is not done here.
+- **1.7 °C is out of reach in every model,** with or without a learned reaction, even with
+  unlimited spending: peaks stay at 693 Gt or more against a budget of 572 Gt.
+- **Net zero arrives at the last moment.** 32 of the 40 plans that meet a budget reach net
+  CO₂ ≤ 0 only in 2100. In most of them net CO₂ is still positive in 2099 (median 1.6
+  GtCO₂/yr, up to 3.3), and removals jump in the final year (median 1.5 GtCO₂/yr, up to
+  3.2) within the capacity then available. This
+  does not change the peak, but these plans' net-zero dates are set by the end of the run.
+  Requiring net zero to be held for several years, or limiting how fast removals can rise,
+  would fix it. Neither is applied, because the rules were fixed before the run.
+- **Maximum effort is not always the lowest-emission plan with fitted dynamics.** Without
+  removals, the planner's best attempt used 76–90% of maximum effort. For three of the four
+  models it peaked lower than maximum effort itself (selected seed 0: 1,348 against
+  1,388 Gt), consistent with the learned pushback. These no-removal plans are penalty
+  compromises, not certified minima, and for the fourth model the planner did worse than
+  maximum effort, so the maximum-effort results above stand.
+- **Scale:** USD 5–158 trillion over 2023–2100 averages 0.06–2 trillion a year,
+  undiscounted.
+
 ---
 
 ## Figures
@@ -687,6 +778,7 @@ All in [`results/figures/`](results/figures), regenerated by `scripts/05_make_fi
 | `fig14_budget_likelihoods.png` | Likelihood of staying below 1.5 / 1.7 / 2 °C with published budgets and full CO₂ accounting |
 | `fig15_to_2100.png` | Models run to 2100 against the assumed post-2050 tail; 2 °C likelihood under each |
 | `fig16_negative_emissions.png` | 2 °C likelihood with novel CDR under scenario-level, cost, land and DACCS-energy limits; gross and net CO₂ with removals; removals under the energy limit |
+| `fig17_cdr_planning.png` | Removals chosen by the planner: least abatement effort for each removal spending allowance (2 °C at 50% and 67%), per model; one plan's gross, removed and net CO₂ |
 
 ---
 
@@ -775,7 +867,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 82 tests
+python -m pytest -q                  # 86 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
@@ -803,6 +895,7 @@ python scripts/09_backtest_error.py  # planning ranges with backtest error carri
 python scripts/10_driver_error.py    # ... and with GDP/population driver error
 python scripts/11_budgets.py         # budget likelihoods with full CO2 accounting
 python scripts/12_to_2100.py         # models run to 2100 instead of an assumed tail
+python scripts/13_cdr_planning.py    # removals chosen by the planner (about 35 min)
 python scripts/05_make_figures.py
 ```
 
@@ -819,9 +912,12 @@ python scripts/05_make_figures.py
   which never reaches net zero and is a long extrapolation. They differ by 15–25 points in
   the 2 °C likelihood at maximum effort. Process CO₂ is bounded either by a weak historical
   proxy or by optimistic technology roadmaps, and the 2 °C verdict moves by only 1–5 points
-  between them. Negative emissions are an accounting lever, not part of the dynamics: a
-  logistic scale-up of novel CDR from the State of CDR report's measured level and growth
-  rate. Land and cost limits (AR6 Table 12.6) bound its ceiling. The energy of direct air
+  between them. Negative emissions are not part of the dynamics: they follow a logistic
+  scale-up of novel CDR from the State of CDR report's measured level and growth rate,
+  either subtracted after the run or chosen by the planner. The planner's plans are made
+  with the model as fitted, meet their budgets in under half of the model's own error
+  cases, mostly reach net zero only in the final year, and rest on no exchange rate
+  between abatement effort and dollars. Land and cost limits (AR6 Table 12.6) bound its ceiling. The energy of direct air
   capture is bounded only by an assumed share (5–20%) of each run's own low-carbon energy,
   and that share decides the result above about USD 200/tCO₂ (2 °C to 2100: 42–62% against
   64% unlimited). Storage, spending and the growth rate itself are not bounded.

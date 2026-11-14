@@ -42,7 +42,7 @@ import numpy as np
 from carbon_world_model.climate import budgets as B
 from carbon_world_model.climate import cdr as CDR
 from carbon_world_model.climate import tcre
-from carbon_world_model.config import FUELS, default_config
+from carbon_world_model.config import FUELS, LOW_CARBON_FUELS, default_config
 from carbon_world_model.data.panel import Panel
 from carbon_world_model.eval.configs import SELECTED
 from carbon_world_model.eval.propagate import (
@@ -56,6 +56,16 @@ END, H_CAP, SEEDS = 2100, 28, (0, 1, 2, 3)
 KINDS = ("bau", "max_fitted", "max_open_loop")
 TARGETS = (1.5, 1.7, 2.0)
 FOS = [FUELS.index(f) for f in ("coal", "oil", "gas")]
+LC = [FUELS.index(f) for f in LOW_CARBON_FUELS]
+TWH_PER_EJ = 277.78
+# Energy-limited removal variants: name -> (price cap, land cap key, energy fraction key)
+ENERGY_VARIANTS = {
+    "cost200_land_central_energy_low": (200.0, "central", "low"),
+    "cost200_land_central_energy_central": (200.0, "central", "central"),
+    "cost200_land_central_energy_high": (200.0, "central", "high"),
+    "cost300_land_central_energy_central": (300.0, "central", "central"),
+}
+ALL_CDR = ("none", *CDR.CDR_VARIANTS, *ENERGY_VARIANTS)
 
 
 def run(wm, params, scen) -> dict:
@@ -65,7 +75,9 @@ def run(wm, params, scen) -> dict:
         r = fn(wm, params, scen)
         E = r.shares * r.D[:, :, None]
         out[kind] = {"global_mt": r.global_co2,
-                     "fossil_share": E[:, :, FOS].sum((0, 2)) / E.sum((0, 2))}
+                     "fossil_share": E[:, :, FOS].sum((0, 2)) / E.sum((0, 2)),
+                     # low-carbon primary energy, scaled to global like CO2 (EJ/yr)
+                     "lowcarbon_ej": tcre.scale_to_global(E[:, :, LC].sum((0, 2)) / TWH_PER_EJ)}
     return out
 
 
@@ -79,7 +91,7 @@ def summarise_path(path_mt, years, k2050) -> dict:
             "first_year_below_10gt": below(10.0), "first_year_below_5gt": below(5.0)}
 
 
-def cdr_accounting(path_mt, years, k2050) -> dict:
+def cdr_accounting(path_mt, years, k2050, lowcarbon_ej) -> dict:
     """Peak cumulative CO2 (from 2023), whether it is reached by 2100, and the net-zero
     year, for each CDR ceiling and each post-2050 accounting."""
     yrs = np.asarray(years)[1:]
@@ -91,9 +103,21 @@ def cdr_accounting(path_mt, years, k2050) -> dict:
     after = yrs > 2050
     tail[after] = fossil[n50 - 1] * np.clip(1.0 - (yrs[after] - 2050) / 20.0, 0.0, None)
     out = {}
-    for ck in ("none", *CDR.CDR_VARIANTS):
-        rem = np.zeros_like(fossil) if ck == "none" else CDR.novel_cdr_path(yrs, CDR.CDR_VARIANTS[ck])
-        out[ck] = {}
+    lc = np.asarray(lowcarbon_ej, dtype=float)[1:]
+    for ck in ALL_CDR:
+        if ck == "none":
+            rem = np.zeros_like(fossil)
+        elif ck in ENERGY_VARIANTS:
+            price, land_key, frac_key = ENERGY_VARIANTS[ck]
+            rem, dac = CDR.energy_limited_cdr_path(yrs, price, CDR.LAND_CAPS[land_key], lc,
+                                                   CDR.ENERGY_FRACTIONS[frac_key])
+        else:
+            rem = CDR.novel_cdr_path(yrs, CDR.CDR_VARIANTS[ck])
+        out[ck] = {"removal_2050_gt": float(rem[yrs == 2050][0]),
+                   "removal_2100_gt": float(rem[-1])}
+        if ck in ENERGY_VARIANTS:
+            out[ck]["daccs_2050_gt"] = float(dac[yrs == 2050][0])
+            out[ck]["daccs_2100_gt"] = float(dac[-1])
         for acc, gross in (("model", fossil), ("tail", tail)):
             net = gross + land - rem
             peak, reached = CDR.peak_cumulative(net)
@@ -126,7 +150,8 @@ def main() -> None:
                 if vname == "as_fitted" and proc == "historical":
                     fitted_paths[f"{m['config']}_s{m['seed']}"] = {
                         k: {"global_mt": np.asarray(v["global_mt"]).tolist(),
-                            "fossil_share": np.asarray(v["fossil_share"]).tolist()}
+                            "fossil_share": np.asarray(v["fossil_share"]).tolist(),
+                            "lowcarbon_ej": np.asarray(v["lowcarbon_ej"]).tolist()}
                         for k, v in res.items()}
                 for kind in KINDS:
                     path = np.asarray(res[kind]["global_mt"])
@@ -134,7 +159,7 @@ def main() -> None:
                     for d in ds:
                         p = path if d is None else correct_path(path, d["delta"], h_cap=H_CAP)
                         s = summarise_path(p, years, k2050)
-                        acc = cdr_accounting(p, years, k2050)
+                        acc = cdr_accounting(p, years, k2050, res[kind]["lowcarbon_ej"])
                         # without removals the peak is the total: must match the earlier accounting
                         assert np.isclose(acc["none"]["model"]["peak_gt"], s["cum_2100_gt"] + land, rtol=1e-6)
                         assert np.isclose(acc["none"]["tail"]["peak_gt"], B.total_until_net_zero(
@@ -142,6 +167,8 @@ def main() -> None:
                         cases.append({"config": m["config"], "seed": m["seed"], "set": vname, "cdr": acc,
                                       "process": proc, "kind": kind,
                                       "fossil_share_2100": float(res[kind]["fossil_share"][-1]),
+                                      "lowcarbon_ej_2050": float(res[kind]["lowcarbon_ej"][k2050]),
+                                      "lowcarbon_ej_2100": float(res[kind]["lowcarbon_ej"][-1]),
                                       **s,
                                       "total_model_to_2100": float(s["cum_2100_gt"] + land),
                                       "total_tail_2070": float(B.total_until_net_zero(
@@ -150,7 +177,7 @@ def main() -> None:
     def summary(rows) -> dict:
         out = {}
         for key in ("cum_2100_gt", "y2100_gt", "y2050_gt", "fossil_share_2100",
-                    "total_model_to_2100", "total_tail_2070"):
+                    "total_model_to_2100", "total_tail_2070", "lowcarbon_ej_2050", "lowcarbon_ej_2100"):
             v = np.array([r[key] for r in rows])
             out[key] = {"q10_q90": [float(np.quantile(v, .1)), float(np.quantile(v, .9))],
                         "envelope": [float(v.min()), float(v.max())]}
@@ -162,7 +189,15 @@ def main() -> None:
                 out[f"{acc}|{t}"] = {"median": float(np.median(lik)),
                                      "q10_q90": [float(np.quantile(lik, .1)), float(np.quantile(lik, .9))],
                                      "share_ge_50": float(np.mean(lik >= 0.5))}
-        for ck in ("none", *CDR.CDR_VARIANTS):
+        for ck in ALL_CDR:
+            for yr in ("2050", "2100"):
+                v = np.array([r["cdr"][ck][f"removal_{yr}_gt"] for r in rows])
+                out[f"cdr|{ck}|removal_{yr}"] = [float(np.quantile(v, .1)), float(np.median(v)),
+                                                 float(np.quantile(v, .9))]
+                if ck in ENERGY_VARIANTS:
+                    v = np.array([r["cdr"][ck][f"daccs_{yr}_gt"] for r in rows])
+                    out[f"cdr|{ck}|daccs_{yr}"] = [float(np.quantile(v, .1)), float(np.median(v)),
+                                                   float(np.quantile(v, .9))]
             for acc in ("model", "tail"):
                 peak = np.array([r["cdr"][ck][acc]["peak_gt"] for r in rows])
                 nz = [r["cdr"][ck][acc]["net_zero_year"] for r in rows]
@@ -193,6 +228,11 @@ def main() -> None:
             price = float(k[4:7])
             land = CDR.LAND_CAPS[k.split("land_")[1]]
             cdr_info[k].update(price_cap=price, land_cap=land, **CDR.cdr_spending_and_energy(price, land))
+    for k, (price, land, frac) in ENERGY_VARIANTS.items():
+        cdr_info[k] = {"price_cap": price, "land_cap": CDR.LAND_CAPS[land],
+                       "energy_fraction": CDR.ENERGY_FRACTIONS[frac],
+                       "daccs_ej_per_gt": CDR.DACCS_EJ_PER_GT_CENTRAL,
+                       "ceiling_before_energy_limit_gt": CDR.cdr_ceiling(price, CDR.LAND_CAPS[land])}
     out = {"end_year": END, "h_cap": H_CAP, "years": [int(y) for y in years], "cdr_variants": cdr_info,
            "fitted_paths": fitted_paths, "summary": summ, "cases": cases}
     with open("results/tables/to_2100.json", "w") as fh:
@@ -219,8 +259,8 @@ def main() -> None:
                 s = summ[f"paired|{proc}|{subset}|{kind}"]
                 for acc in ("tail", "model"):
                     cells = []
-                    for ck in ("none", "central", "cost100_land_central", "cost100_land_low",
-                               "cost200_land_central", "cost300_land_central"):
+                    for ck in ("none", "central", "cost100_land_central", "cost200_land_central",
+                               *ENERGY_VARIANTS, "cost300_land_central"):
                         k = f"cdr|{ck}|{acc}"
                         nzy = s[k]["median_net_zero_year"]
                         cells.append(f"{ck} 1.5C {100*s[k + '|1.5']['median']:2.0f}% 2C {100*s[k + '|2.0']['median']:2.0f}% "

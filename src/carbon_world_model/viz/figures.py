@@ -6,7 +6,6 @@ scripts/05_make_figures.py.
 """
 from __future__ import annotations
 
-import json
 
 import matplotlib
 matplotlib.use("Agg")
@@ -558,21 +557,23 @@ def fig_to_2100(t: dict) -> plt.Figure:
 
 def fig_cdr(t: dict) -> plt.Figure:
     """Negative emissions (scripts/12_to_2100.py, climate/cdr.py): 2 C likelihood by CDR
-    ceiling, and the selected model's net CO2 with central removals."""
+    limits, the selected model's net CO2 with central removals, and removals under the
+    energy limit for direct air capture."""
     from ..climate import budgets as B
     from ..climate import cdr as CDR
     S = t["summary"]
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 4.8), gridspec_kw={"width_ratios": [1, 1.1]})
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(19, 5.2), gridspec_kw={"width_ratios": [1.1, 1, 1]})
     combos = [("max effort, fitted dynamics\npost-2050 tail assumed", "paired|historical|all|max_fitted", "tail"),
               ("max effort, fitted dynamics\nmodel run to 2100", "paired|historical|all|max_fitted", "model"),
               ("max effort, no learned reaction\npost-2050 tail assumed", "paired|historical|all|max_open_loop", "tail"),
               ("max effort, no learned reaction\nmodel run to 2100", "paired|historical|all|max_open_loop", "model")]
     cks = [("none", OI["grey"], "no removals"),
            ("central", OI["blue"], f"scenario level ({CDR.CDR_CEILINGS['central']} Gt/yr)"),
-           ("cost100_land_low", OI["yellow"], "USD 100/t, land cap 1.1 Gt/yr"),
            ("cost100_land_central", OI["orange"], "USD 100/t, land cap 2.4 Gt/yr"),
-           ("cost200_land_central", OI["red"], "USD 200/t, land cap 2.4 (energy, spending unlimited)"),
-           ("cost300_land_central", OI["purple"], "USD 300/t, land cap 2.4 (energy, spending unlimited)")]
+           ("cost200_land_central_energy_low", OI["yellow"], "USD 200/t, DAC energy <= 5% of low-carbon"),
+           ("cost200_land_central_energy_central", OI["green"], "USD 200/t, DAC energy <= 10% of low-carbon"),
+           ("cost200_land_central", OI["red"], "USD 200/t, DAC energy unlimited"),
+           ("cost300_land_central", OI["purple"], "USD 300/t, DAC energy unlimited")]
     y = np.arange(len(combos))
     w = 0.8 / len(cks)
     for j, (ck, col, lab) in enumerate(cks):
@@ -583,7 +584,7 @@ def fig_cdr(t: dict) -> plt.Figure:
     ax1.invert_yaxis()
     ax1.set_xlim(0, 90)
     ax1.set(xlabel="median likelihood of staying below 2 °C (%), all tied models,\n"
-                   "model + driver error, peak cumulative CO2",
+                   "model + driver error, peak cumulative CO2 (table maximum 83%)",
             title="2 °C at maximum effort, with negative emissions")
     ax1.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.45, -0.25), ncol=2)
 
@@ -604,4 +605,22 @@ def fig_cdr(t: dict) -> plt.Figure:
     ax2.set(xlabel="year", ylabel="global CO2 incl. land use (Gt/yr)",
             title="Selected model as fitted, SSP2: gross and net CO2 with removals")
     ax2.legend(fontsize=7.5, loc="upper right")
+
+    # removals under the DACCS energy limit, selected model (seed 0) as fitted, max effort
+    name = sel[0]
+    ax3.plot(yrs, CDR.novel_cdr_path(yrs, CDR.cdr_ceiling(200.0)), color=OI["red"], lw=1.6,
+             label="USD 200/t, energy unlimited")
+    for frac_key, col in (("high", OI["sky"]), ("central", OI["green"]), ("low", OI["yellow"])):
+        for kind, ls in (("max_fitted", "-"), ("max_open_loop", "--")):
+            lc = np.array(t["fitted_paths"][name][kind]["lowcarbon_ej"])[1:]
+            r, _ = CDR.energy_limited_cdr_path(yrs, 200.0, CDR.LAND_CAPS["central"], lc,
+                                               CDR.ENERGY_FRACTIONS[frac_key])
+            f = int(100 * CDR.ENERGY_FRACTIONS[frac_key])
+            ax3.plot(yrs, r, color=col, lw=1.4, ls=ls,
+                     label=f"DAC energy <= {f}% of low-carbon, {'fitted' if kind == 'max_fitted' else 'no reaction'}")
+    ax3.plot(yrs, rem, color=OI["purple"], lw=1.2, ls=":", label="scenario level (3.5 Gt/yr)")
+    ax3.set(xlabel="year", ylabel="novel CDR (GtCO2/yr)",
+            title=f"Removals under the DACCS energy limit\n({name}, max effort, "
+                  f"{CDR.DACCS_EJ_PER_GT_CENTRAL:g} EJ per Gt)")
+    ax3.legend(fontsize=7, loc="upper left")
     return _finish(fig)

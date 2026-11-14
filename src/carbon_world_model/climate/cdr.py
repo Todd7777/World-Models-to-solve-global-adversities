@@ -82,8 +82,8 @@ def net_zero_year(years, net_gt) -> int | None:
 #   * the land limit caps BECCS and biochar TOGETHER (both draw on biomass) at the C3
 #     BECCS level (central 2.4), with the C1 5th percentile (1.1) and median (5.3) as
 #     sensitivities;
-#   * enhanced weathering and DACCS have no land cap here; DACCS energy is reported,
-#     not limited.
+#   * enhanced weathering and DACCS have no land cap here; DACCS energy is reported by
+#     cdr_spending_and_energy and limited separately (energy_limited_cdr_path, below).
 CDR_METHODS = {  # name: (cost_lo, cost_hi USD/t, potential_lo, potential_hi Gt/yr, biomass)
     "daccs": (100.0, 300.0, 5.0, 40.0, False),
     "beccs": (15.0, 400.0, 0.5, 11.0, True),
@@ -131,3 +131,33 @@ CDR_VARIANTS = {
     "cost200_land_central": cdr_ceiling(200.0, LAND_CAPS["central"]),
     "cost300_land_central": cdr_ceiling(300.0, LAND_CAPS["central"]),
 }
+
+
+# ---------------------------------------------------------------------------
+# Energy limit for direct air capture
+# ---------------------------------------------------------------------------
+# DACCS needs 40-100 EJ/yr of energy at 10 GtCO2/yr (AR6 WGIII Ch12; ~80% heat, ~20%
+# electricity), i.e. 4-10 EJ per GtCO2; 7 is used here. It must run on low-carbon energy
+# or it emits much of what it removes. The limit ties DACCS to the modelled energy
+# system: in each year DACCS may use at most a fraction f of the case's own low-carbon
+# primary energy (f = 10% central, 5% and 20% as sensitivities; choices made here, not
+# sourced; for scale, AR6's 40-100 EJ for 10 GtCO2 is 7-17% of today's ~600 EJ primary
+# supply). Primary energy is the panel's substitution-method measure, so this is an
+# approximation of the heat and electricity DACCS would need. When the limit binds, only
+# the DACCS share of removals is cut; other methods are not scaled up to replace it.
+DACCS_EJ_PER_GT_CENTRAL = 7.0
+ENERGY_FRACTIONS = {"low": 0.05, "central": 0.10, "high": 0.20}
+
+
+def energy_limited_cdr_path(years, price_cap: float, land_cap: float, lowcarbon_ej,
+                            frac: float = ENERGY_FRACTIONS["central"],
+                            ej_per_gt: float = DACCS_EJ_PER_GT_CENTRAL) -> tuple[np.ndarray, np.ndarray]:
+    """(removals GtCO2/yr, DACCS removals GtCO2/yr) per year: the land- and cost-limited
+    logistic path, with DACCS capped at frac * low-carbon energy / ej_per_gt."""
+    supply = cdr_supply(price_cap, land_cap)
+    K = sum(supply.values())
+    x = novel_cdr_path(years, K)
+    dac = x * (supply["daccs"] / K if K > 0 else 0.0)
+    dac_cap = frac * np.asarray(lowcarbon_ej, dtype=float) / ej_per_gt
+    dac_ok = np.minimum(dac, dac_cap)
+    return x - (dac - dac_ok), dac_ok

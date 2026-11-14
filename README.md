@@ -41,9 +41,12 @@ CWM couples three things that are usually kept apart:
 > points for 2 °C and nothing for 1.5 °C, because removals scale up after cumulative
 > emissions have already passed the 1.5 °C budget. Land and cost limits from IPCC AR6
 > reproduce that scale at USD 100/tCO₂. Removals large enough to make 2 °C likely at
-> maximum effort need USD 200/tCO₂ or more, direct air capture at 10 GtCO₂/yr or more, and
-> energy and spending (45–225 EJ/yr, USD 2–5 trillion/yr) that nothing here bounds. See
-> "Carbon-budget likelihoods", "Running the model to 2100" and "Negative emissions".
+> maximum effort need USD 200/tCO₂ or more and direct air capture of about 8 GtCO₂/yr by
+> 2050. Limiting the energy of direct air capture to a share of each run's own low-carbon
+> energy (10% central) lowers the 2 °C median in the model run to 2100 from 64% to 50%
+> (5–20% limits: 42–62%; scenario-level removals: 27%). Spending (USD 2–5 trillion/yr)
+> and the growth rate of removals are still not bounded. See "Carbon-budget likelihoods",
+> "Running the model to 2100" and "Negative emissions".
 
 ---
 
@@ -573,8 +576,8 @@ The table's cost and potential ranges are:
   scenarios (`climate/cdr.py`).
 - **Not sourced:** the midpoints, the even spread over costs, and capping biochar together
   with BECCS are choices made here.
-- **Unchanged:** the growth path is still the measured 40%/yr. Energy and spending are
-  reported, not limited.
+- **Unchanged:** the growth path is still the measured 40%/yr. Spending is reported, not
+  limited. Energy is reported here and limited in the next subsection.
 
 | limits | ceiling (GtCO₂/yr) | of which DACCS | spending at full scale | DACCS energy | 2 °C at max effort, fitted dynamics: tail / to 2100 | no learned reaction: tail / to 2100 |
 |---|---|---|---|---|---|---|
@@ -600,10 +603,65 @@ The table's cost and potential ranges are:
   effort likely and brings net zero into the 2050s–2060s. But it implies DACCS energy of
   45–225 EJ/yr (AR6: 40–100 EJ/yr per 10 GtCO₂; today's primary energy supply is about
   600 EJ/yr) and spending of USD 2–5 trillion a year, sustained. Those limits, and the
-  growth rate itself, are what would actually decide the outcome, and none is bounded
-  here. Read these rows as "what cost and land alone would allow".
+  growth rate itself, are what would actually decide the outcome. Read these rows as "what
+  cost and land alone would allow"; the energy limit below bounds the first of them.
 - **1.5 °C is unaffected.** Even at USD 300/t no case rises above 17%: peak cumulative CO₂
   stays above about 530 GtCO₂ (10th percentile) against 402 GtCO₂ for a 17% chance.
+
+**Energy limit for direct air capture.** AR6 WGIII Chapter 12 puts the energy of DACCS at
+40–100 EJ/yr for 10 GtCO₂/yr (mostly heat, the rest electricity): 4–10 EJ per GtCO₂, of
+which 7 is used here. Direct air capture must run on low-carbon energy, or it re-emits much
+of what it removes. The limit ties it to the energy system each run itself projects: in
+every year, DACCS may use at most a fraction *f* of that run's low-carbon primary energy
+(nuclear, hydro, wind, solar and other renewables, scaled to global like CO₂). *f* is 10%
+in the central case, with 5% and 20% as sensitivities. These are choices made here, not
+sourced; for scale, AR6's 40–100 EJ for 10 GtCO₂ is 7–17% of today's primary energy
+(`climate/cdr.energy_limited_cdr_path`).
+
+- When the limit binds, only the DACCS share of removals is cut. The other methods follow
+  the same logistic path in proportion to their full-scale supply and are not scaled up to
+  replace it.
+- Primary energy (substitution method) only approximates the heat and electricity DACCS
+  would draw. Low-carbon energy is the model's own, without the backtest drift correction
+  that is applied to CO₂.
+- In the model, low-carbon primary energy is about 115 EJ/yr in 2023. At maximum effort with
+  fitted dynamics it reaches 260–770 EJ/yr in 2050 (q10–q90, all tied models and driver
+  errors). At USD 200/t without the limit, DACCS removes 8.2 GtCO₂/yr in 2050 and needs
+  57 EJ/yr.
+
+USD 200/tCO₂, land 2.4 GtCO₂/yr; median 2 °C likelihood at maximum effort (all stabilised
+tied models, paired errors, historical process lever), share of runs reaching net zero by
+2100 and median year in brackets; DACCS and total removals in 2050 are medians:
+
+| DACCS energy limit | DACCS 2050 (Gt/yr) | removals 2050 | fitted: tail | fitted: model to 2100 | no learned reaction: model to 2100 |
+|---|---|---|---|---|---|
+| none | 8.2 | 12.1 | 69% | 64% (62%, 2062) | 83% (100%, 2053) |
+| 20% of low-carbon energy | 8.2 | 12.1 | 69% | 62% (62%, 2067) | 83% (96%, 2056) |
+| **10%** | **6.2** | **10.1** | **64%** | **50%** (48%, 2076) | **83%** (89%, 2064) |
+| 5% | 3.1 | 7.0 | 60% | 42% (30%, 2086) | 83% (85%, 2068) |
+| *for comparison:* scenario level, no DACCS-specific limit | — | 3.2 | 52% | 27% (1%, 2099) | 73% (70%, 2084) |
+
+- **With fitted dynamics, the central energy limit takes back about two-fifths of what the
+  USD 200/t ceiling added over the scenario level in the run to 2100.** The 2 °C median goes
+  from 64% to 50%, against 27% at the scenario level, and the share of runs reaching net zero by 2100 from 62% to
+  48%. The 5% limit gives 42%; the 20% limit hardly binds (62%), because at maximum effort
+  the fitted dynamics expand low-carbon energy fast. For the selected configuration alone
+  the run to 2100 goes from 76% to 54/63/76% (5/10/20%).
+- **A higher price does not help once energy binds.** USD 300/t with the 10% limit gives
+  the same 50% as USD 200/t. The extra supply is mostly DACCS, which the energy limit already
+  caps, and because every method shares one growth curve, the other methods' share is
+  actually smaller in 2050.
+- **Without a learned reaction the median stays at the table maximum (83%), but the
+  low tail moves.** The 10th percentile of the run to 2100 falls from 55% to 33–52%, and
+  net zero comes 3–15 years later. This run's energy limit after 2050 is an artefact: total
+  energy keeps falling under 78 years of a −3%/yr efficiency push, and low-carbon energy
+  with it (about 165 EJ/yr in 2050 and 40 in 2100 for the selected model, seed 0), so its DACCS ceiling
+  shrinks for reasons that have nothing to do with energy supply.
+- **1.5 °C is unchanged.** No case rises above 17%. Peak cumulative CO₂ stays above about
+  540 GtCO₂ (10th percentile) against 402 GtCO₂ for a 17% chance.
+- **Still unbounded:** spending (USD 2–5 trillion/yr at full scale), CO₂ storage, and the
+  40%/yr growth rate. The energy fraction *f* is the decisive number in this subsection, and
+  nothing in the data pins it down.
 
 ---
 
@@ -628,7 +686,7 @@ All in [`results/figures/`](results/figures), regenerated by `scripts/05_make_fi
 | `fig13_planning_by_error_source.png` | Planning ranges by error source: model, GDP/population drivers, both |
 | `fig14_budget_likelihoods.png` | Likelihood of staying below 1.5 / 1.7 / 2 °C with published budgets and full CO₂ accounting |
 | `fig15_to_2100.png` | Models run to 2100 against the assumed post-2050 tail; 2 °C likelihood under each |
-| `fig16_negative_emissions.png` | 2 °C likelihood with novel CDR under scenario-level, cost and land limits; gross and net CO₂ with removals |
+| `fig16_negative_emissions.png` | 2 °C likelihood with novel CDR under scenario-level, cost, land and DACCS-energy limits; gross and net CO₂ with removals; removals under the energy limit |
 
 ---
 
@@ -717,7 +775,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 81 tests
+python -m pytest -q                  # 82 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
@@ -763,9 +821,10 @@ python scripts/05_make_figures.py
   proxy or by optimistic technology roadmaps, and the 2 °C verdict moves by only 1–5 points
   between them. Negative emissions are an accounting lever, not part of the dynamics: a
   logistic scale-up of novel CDR from the State of CDR report's measured level and growth
-  rate. Land and cost limits (AR6 Table 12.6) bound its ceiling, but energy, storage,
-  spending and the growth rate itself are not bounded. Above about USD 200/tCO₂ those
-  unbounded limits, not land or cost, decide the result.
+  rate. Land and cost limits (AR6 Table 12.6) bound its ceiling. The energy of direct air
+  capture is bounded only by an assumed share (5–20%) of each run's own low-carbon energy,
+  and that share decides the result above about USD 200/tCO₂ (2 °C to 2100: 42–62% against
+  64% unlimited). Storage, spending and the growth rate itself are not bounded.
 - **Planning results are uncertain in two ways the data cannot resolve.** First, structure:
   stabilised configurations tied on validation give 2050 BAU emissions from 39 to 48 Gt and
   max-effort cuts from 27% to 53% (fitted dynamics), and how strongly the dynamics push back

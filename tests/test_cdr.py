@@ -59,3 +59,20 @@ def test_spending_and_energy_are_consistent():
     s = r["supply_gt"]
     assert r["daccs_ej"][0] == 4.0 * s["daccs"] and r["daccs_ej"][1] == 10.0 * s["daccs"]
     assert 0 < r["avg_cost_usd_t"] <= 200.0
+
+
+def test_energy_limit_only_cuts_direct_air_capture():
+    years = np.arange(2023, 2101)
+    lc = np.full(len(years), 300.0)                     # EJ/yr of low-carbon energy
+    free = cdr.novel_cdr_path(years, cdr.cdr_ceiling(200.0))
+    big, dac_big = cdr.energy_limited_cdr_path(years, 200.0, 2.4, lc, frac=1e6)
+    np.testing.assert_allclose(big, free)               # no binding limit -> unchanged
+    zero, dac0 = cdr.energy_limited_cdr_path(years, 200.0, 2.4, lc, frac=0.0)
+    s = cdr.cdr_supply(200.0)
+    np.testing.assert_allclose(zero, free * (1 - s["daccs"] / sum(s.values())))
+    assert np.all(dac0 == 0.0)
+    mid, dac = cdr.energy_limited_cdr_path(years, 200.0, 2.4, lc, frac=0.10)
+    assert np.all(mid <= free + 1e-12) and np.all(mid >= zero - 1e-12)
+    assert np.all(dac * cdr.DACCS_EJ_PER_GT_CENTRAL <= 0.10 * lc + 1e-9)
+    same, _ = cdr.energy_limited_cdr_path(years, 100.0, 2.4, lc, frac=0.0)
+    np.testing.assert_allclose(same, cdr.novel_cdr_path(years, cdr.cdr_ceiling(100.0)))  # no DACCS at USD 100

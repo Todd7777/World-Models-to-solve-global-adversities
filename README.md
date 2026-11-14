@@ -102,7 +102,8 @@ brackets:
 - **Hedging against the model's own uncertainty costs 62% more effort.** A plan that
   meets a cumulative budget under every SSP *and* every seed takes 62% more effort than
   one tuned to SSP2 and the ten-seed mean, which overshoots the budget by up to 52 Gt
-  under SSP5 when the least favourable seed is right. The committed checkpoint (seed 0)
+  under SSP5 when the least favourable seed is right. With moderate rebound, crowding out
+  and limits at three quarters, hedging costs 257% more. The committed checkpoint (seed 0)
   gives a 67% cut alone.
 
 The raw numbers are in [`results/tables/`](results/tables) and the figures in
@@ -136,8 +137,34 @@ full effort. Ten-seed means, with the lowest and highest seed in brackets:
 The limits matter most. At three quarters of the record rates, maximum effort loses a
 quarter of its cut, and the seeds spread wider, because the room between their
 business-as-usual rates and the lower limits varies more. 1.5 °C stays out of reach
-under every setting and seed (remaining budget ≈578 Gt). The cost-of-abatement frontier
-and the robust plans still use the assumptions as stated.
+under every setting and seed (remaining budget ≈578 Gt).
+
+**What they are worth in effort.** `scripts/plan_sensitivity.py --costs`
+(`results/tables/plan_sensitivity_costs.json`, about 45 minutes) re-optimises
+`04_plan.py`'s SSP2 cost-of-abatement frontier at the same budgets, and its robust
+planning with the same budget rule, for five of the settings. Under the stated
+assumptions it reproduces `plan.json`. The budgets are cumulative emissions of the 60
+countries over 2023–2050, met on average over the ten seeds; the effort is in the
+planner's cost units; "—" marks a budget that even maximum effort misses:
+
+| effort to meet a budget (SSP2) | 709 Gt | 764 Gt | 819 Gt | 875 Gt | robust budget | price of robustness |
+|---|---|---|---|---|---|---|
+| as stated | 0.66 | 0.32 | 0.16 | 0.08 | 767 Gt | +62% |
+| rebound 25% | 1.13 | 0.42 | 0.20 | 0.09 | 792 Gt | +74% |
+| crowding out 25% | 1.54 | 0.54 | 0.26 | 0.12 | 800 Gt | +83% |
+| limits ×0.75 | — | 1.53 | 0.34 | 0.13 | 865 Gt | +147% |
+| all three moderate | — | — | 2.44 (maximum effort) | 0.31 | 914 Gt | +257% |
+
+Weaker policy raises the effort every budget needs, most steeply near what maximum
+effort can reach, and puts the tightest budgets out of reach: 654 Gt, which costs 2.39
+under the stated assumptions, is unreachable under every relaxation. With all three
+relaxed, 819 Gt is exactly what maximum effort reaches (0.05 Gt to spare), so meeting it
+takes maximum effort. Hedging gets dearer too. The members' maximum efforts spread
+further apart, so a plan that holds under the least favourable one costs more relative
+to one tuned to their mean, which overshoots by up to 74 Gt instead of 52. The robust
+budget moves with each setting, since `04_plan.py`'s rule places it between what maximum
+effort reaches and business as usual, so these prices compare hedging at comparable
+difficulty, not at one budget.
 
 ---
 
@@ -519,7 +546,8 @@ python scripts/transfer_diagnostics.py  # where transfer error comes from (valid
 python scripts/stall_by_config.py    # which configurations stall the efficiency trend
 python scripts/time_inputs.py        # time inputs in backtests and in planning (~15 min)
 python scripts/plan_sensitivity.py   # maximum effort with the frontier's assumptions relaxed
-pytest -q                            # 79 tests
+                                     # (--costs: frontier and robust plans too, ~45 min)
+pytest -q                            # 82 tests
 ```
 
 Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` scores
@@ -566,8 +594,9 @@ other than the one the script runs it under. The processed panel
   BAU 2050 spans 31.9–42.1 Gt and the maximum-effort cut 61–70% (26–59% with the
   closed-loop planner used until 2026-11-13). The planning numbers are therefore
   ten-seed means, and a plan robust to the seeds and the SSPs costs 62% more effort than
-  one tuned to their mean under SSP2. The ensemble captures the variation between
-  training runs of one configuration only. It does not capture the uncertainty between
+  one tuned to their mean under SSP2, and up to 257% more under relaxed assumptions
+  ("What changed on 2026-11-14"). The ensemble captures the variation between training
+  runs of one configuration only. It does not capture the uncertainty between
   configurations, in the model's structure, or in its feasibility bounds.
 - **Planned change is assumed to persist, and maximum effort is generous.** The planner
   keeps the network on business as usual and adds policy-driven change on top. It
@@ -581,7 +610,9 @@ other than the one the script runs it under. The processed panel
   Relaxing these (`scripts/plan_sensitivity.py`) lowers the 67% cut to 63% with a
   quarter of the efficiency gains taken back by rebound, to 60% with a quarter of the
   low-carbon gain crowded out, to 50% with the limits at three quarters, and to 40% with
-  all three ("What changed on 2026-11-14").
+  all three. They also raise the effort any carbon budget needs, put the tightest out of
+  reach, and raise the price of robustness from +62% to as much as +257% ("What changed
+  on 2026-11-14").
 - **Short-horizon forecasting is not where this model wins.** Given the true drivers,
   the selected configuration is slightly ahead of trend-Kaya extrapolation on the test
   folds (score 8.33 against 9.49), but behind it on the validation folds (11.38 against

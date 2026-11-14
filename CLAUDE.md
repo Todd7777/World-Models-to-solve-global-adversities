@@ -22,7 +22,7 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-14: 79 pass
+pytest             # 2026-11-14: 82 pass
 ```
 
 If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
@@ -30,7 +30,7 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## State on 2026-11-14
 
-- **All 79 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
+- **All 82 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
   `ms_full` (`SELECTED_CONFIG` in `config.py`). `scripts/02_train.py` reproduces it bit for bit (seed 0, about 2.5
   minutes on 4 cores). Seeds 0-3 all pass the planning tests (`results/tables/seed_sensitivity.json`).
 - **Planning uses a ten-seed ensemble** (`results/model/ensemble/`, `scripts/02b_train_ensemble.py`; seed 0 is a
@@ -57,7 +57,13 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   `scripts/plan_sensitivity.py` (`results/tables/plan_sensitivity.json`, checked against the ensemble and
   `plan.json` by `test_committed_plan_sensitivity_matches_the_ensemble_and_plan_json`) relaxes the assumptions for
   maximum effort: 67% falls to 63% with 25% rebound, 60% with 25% crowding out, 50% with the limits at x0.75, 40%
-  with all three, 31% with the limits at x0.5.
+  with all three, 31% with the limits at x0.5. Its `--costs` run (about 45 minutes;
+  `results/tables/plan_sensitivity_costs.json`) re-optimises 04_plan.py's SSP2 frontier at plan.json's budgets and
+  its robust planning, for five settings. As stated it reproduces plan.json
+  (`test_committed_costs_as_stated_reproduce_plan_json`). The 764 Gt budget costs 0.32 as stated, 0.42 with 25%
+  rebound, 0.54 with 25% crowding out, 1.53 with the limits at x0.75, and is out of reach with all three; the
+  price of robustness rises from +62% to +257% (`test_committed_costs_never_fall_as_policy_weakens` checks that
+  no relaxation makes a budget cheaper). Rerun both after 04_plan.py.
 - **Selection re-checked after a leak; it holds.** Every fit with a cutoff leaked post-cutoff drivers through the
   full-run loss's curvature term until `46cc5ce`; full-data fits (checkpoint, ensemble, tie-break checks) were never
   affected. The leak-free rerun in `results/sweep_val/report.json` (all 16 configs, 4000 steps, seeds 0-1; leaky
@@ -163,9 +169,10 @@ questions there:
 - Training seeds of the selected config disagreed on the achievable cut (26-59%) under the old closed-loop
   planner; at the frontier it is 61-70%, and a plan robust to every SSP and seed costs +62% effort. The
   frontier's assumptions are worth a lot (`scripts/plan_sensitivity.py`): moderate rebound and crowding out (25%
-  each) with the limits at three quarters lower the 67% cut to 40%, and the limits matter most. Not yet done: the
-  cost frontier and robust plans under relaxed assumptions, and evidence on what rebound, crowding out and
-  sustainable limits are.
+  each) with the limits at three quarters lower the 67% cut to 40%, and the limits matter most. They also raise
+  the effort for any budget (764 Gt: 0.32 as stated, 1.53 with the limits at three quarters, out of reach with all
+  three) and the price of robustness, to +257% with all three (`--costs`). Not yet done: evidence on what rebound,
+  crowding out and sustainable limits are.
 - Whether to revisit the selection now that the tie-break no longer separates `ms_full` from `ms_percap_damped`
   is the owner's decision; the test folds are spent. The two differ only in the calendar-time inputs, and
   `ms_percap_damped`'s lead on score needs calendar time fed past the cutoff. Held at the cutoff, as planning holds

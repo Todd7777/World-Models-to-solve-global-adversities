@@ -1,0 +1,1065 @@
+{
+  "config": "ms_full",
+  "seeds": [
+    0,
+    1
+  ],
+  "mature": [
+    "United Kingdom",
+    "Hungary",
+    "Belgium",
+    "Denmark",
+    "Finland",
+    "Greece",
+    "United States",
+    "Italy",
+    "Sweden",
+    "France",
+    "Germany",
+    "Japan"
+  ],
+  "root": "results/sweep_val",
+  "by_cutoff": {
+    "2005": {
+      "share_momentum_scale": {
+        "coal": 0.015618799543559646,
+        "oil": 0.024977882203399963,
+        "gas": 0.0233144977137514,
+        "nuclear": 0.006485499943186372,
+        "hydro": 0.013715137735086869,
+        "wind": 0.0010727532787222008,
+        "solar": 0.001,
+        "biofuel": 0.001,
+        "other_renewable": 0.0018517388558876933
+      },
+      "realised_pct_per_year": {
+        "mature": -2.464945473070721,
+        "others": -2.855227146828268
+      },
+      "by_seed": {
+        "0": {
+          "reproduces_sweep_output": true,
+          "trace_matches_production_forecast": true,
+          "phi_intensity": 0.5818519592285156,
+          "steps": [
+            {
+              "year": 2005,
+              "mature_momentum": -2.5087554454803467,
+              "mature_damped_momentum": -1.4597243070602417,
+              "mature_network_correction": -2.516817092895508,
+              "mature_change": -3.1919009685516357
+            },
+            {
+              "year": 2006,
+              "mature_momentum": -2.713698625564575,
+              "mature_damped_momentum": -1.578971028327942,
+              "mature_network_correction": -0.9322614669799805,
+              "mature_change": -2.079216718673706
+            },
+            {
+              "year": 2007,
+              "mature_momentum": -2.5233545303344727,
+              "mature_damped_momentum": -1.4682186841964722,
+              "mature_network_correction": 2.0478219985961914,
+              "mature_change": 0.5213386416435242
+            },
+            {
+              "year": 2008,
+              "mature_momentum": -1.609946370124817,
+              "mature_damped_momentum": -0.9367502927780151,
+              "mature_network_correction": 2.926877975463867,
+              "mature_change": 1.7385191917419434
+            },
+            {
+              "year": 2009,
+              "mature_momentum": -0.605406641960144,
+              "mature_damped_momentum": -0.35225698351860046,
+              "mature_network_correction": -0.2960561513900757,
+              "mature_change": -0.670499324798584
+            },
+            {
+              "year": 2010,
+              "mature_momentum": -0.6249343752861023,
+              "mature_damped_momentum": -0.363619327545166,
+              "mature_network_correction": -0.769372820854187,
+              "mature_change": -0.859024167060852
+            }
+          ],
+          "network_correction_drivers": [
+            {
+              "step": "2006-2007",
+              "change_pct_per_year": {
+                "shares": -0.07006153464317322,
+                "energy per capita": 0.0072235241532325745,
+                "GDP per capita": -0.2794781234115362,
+                "GDP growth": 0.24125045165419579,
+                "intensity": 0.4235437139868736,
+                "population": -0.005687307566404343,
+                "intensity momentum": 0.06242264062166214,
+                "share momentum: coal": 0.13865549117326736,
+                "share momentum: oil": 0.008115917444229126,
+                "share momentum: gas": -0.0182262621819973,
+                "share momentum: nuclear": 0.1740073785185814,
+                "share momentum: hydro": 0.2359100617468357,
+                "share momentum: wind": 0.18349634483456612,
+                "share momentum: solar": 0.1872754655778408,
+                "share momentum: biofuel": -0.6499799201264977,
+                "share momentum: other_renewable": 0.26223305612802505
+              }
+            },
+            {
+              "step": "2007-2008",
+              "change_pct_per_year": {
+                "shares": -0.007662177085876465,
+                "energy per capita": -0.10073147714138031,
+                "GDP per capita": -0.2777528017759323,
+                "GDP growth": 1.8619474954903126,
+                "intensity": 0.25785844773054123,
+                "population": -0.006734766066074371,
+                "intensity momentum": -0.15491433441638947,
+                "share momentum: coal": 0.19498877227306366,
+                "share momentum: oil": -0.020709633827209473,
+                "share momentum: gas": 0.04981569945812225,
+                "share momentum: nuclear": -0.3070015460252762,
+                "share momentum: hydro": 0.0499306246638298,
+                "share momentum: wind": -0.21060258150100708,
+                "share momentum: solar": -0.05370881408452988,
+                "share momentum: biofuel": 1.144049409776926,
+                "share momentum: other_renewable": 0.2904105931520462
+              }
+            },
+            {
+              "step": "2008-2009",
+              "change_pct_per_year": {
+                "shares": -0.10904893279075623,
+                "energy per capita": -0.04951395094394684,
+                "GDP per capita": -0.016204267740249634,
+                "GDP growth": 2.4614044930785894,
+                "intensity": -0.08085332810878754,
+                "population": -0.0054739415645599365,
+                "intensity momentum": -0.4261534661054611,
+                "share momentum: coal": 0.1896340399980545,
+                "share momentum: oil": -0.43938830494880676,
+                "share momentum: gas": 0.13493113219738007,
+                "share momentum: nuclear": 0.0751793384552002,
+                "share momentum: hydro": -0.018576160073280334,
+                "share momentum: wind": -0.23922957479953766,
+                "share momentum: solar": -0.1403260976076126,
+                "share momentum: biofuel": -0.866495817899704,
+                "share momentum: other_renewable": -0.33068880438804626
+              }
+            },
+            {
+              "step": "2009-2010",
+              "change_pct_per_year": {
+                "shares": -0.1559691852889955,
+                "energy per capita": 0.4211691441014409,
+                "GDP per capita": 0.5002296762540936,
+                "GDP growth": -4.407699289731681,
+                "intensity": -0.16754036769270897,
+                "population": -0.006327033042907715,
+                "intensity momentum": -0.64748281147331,
+                "share momentum: coal": 0.0001514330506324768,
+                "share momentum: oil": 0.26797617319971323,
+                "share momentum: gas": 0.030673295259475708,
+                "share momentum: nuclear": -0.12322308029979467,
+                "share momentum: hydro": -0.1144121284596622,
+                "share momentum: wind": -0.6778954295441508,
+                "share momentum: solar": -0.4253283841535449,
+                "share momentum: biofuel": 0.7512472802773118,
+                "share momentum: other_renewable": 0.6811996223405004
+              }
+            },
+            {
+              "step": "2010-2011",
+              "change_pct_per_year": {
+                "shares": 0.019407086074352264,
+                "energy per capita": -0.05738763138651848,
+                "GDP per capita": -0.1239121425896883,
+                "GDP growth": 0.8325213566422462,
+                "intensity": 0.12345844879746437,
+                "population": -0.0052325427532196045,
+                "intensity momentum": 0.07149446755647659,
+                "share momentum: coal": -0.30043069273233414,
+                "share momentum: oil": 0.037263333797454834,
+                "share momentum: gas": -0.02104346640408039,
+                "share momentum: nuclear": 0.14095492660999298,
+                "share momentum: hydro": -0.022517004981637,
+                "share momentum: wind": -0.04322943277657032,
+                "share momentum: solar": 0.6928944960236549,
+                "share momentum: biofuel": 0.2687373198568821,
+                "share momentum: other_renewable": -0.394422747194767
+              }
+            }
+          ],
+          "forecast_trend_pct_per_year": {
+            "mature": -0.756798850165473,
+            "others": -2.36266122923957
+          },
+          "share_momenta_frozen_trend_pct_per_year": {
+            "mature": -1.6998291015625004,
+            "others": -1.6596370273166232
+          }
+        },
+        "1": {
+          "reproduces_sweep_output": true,
+          "trace_matches_production_forecast": true,
+          "phi_intensity": 0.5777803063392639,
+          "steps": [
+            {
+              "year": 2005,
+              "mature_momentum": -2.5087554454803467,
+              "mature_damped_momentum": -1.4495093822479248,
+              "mature_network_correction": -1.6397446393966675,
+              "mature_change": -2.448607921600342
+            },
+            {
+              "year": 2006,
+              "mature_momentum": -2.490710973739624,
+              "mature_damped_momentum": -1.4390836954116821,
+              "mature_network_correction": -0.9980245232582092,
+              "mature_change": -1.9537510871887207
+            },
+            {
+              "year": 2007,
+              "mature_momentum": -2.329623222351074,
+              "mature_damped_momentum": -1.3460102081298828,
+              "mature_network_correction": 1.899780511856079,
+              "mature_change": 0.5543839931488037
+            },
+            {
+              "year": 2008,
+              "mature_momentum": -1.4644207954406738,
+              "mature_damped_momentum": -0.8461134433746338,
+              "mature_network_correction": 4.626543045043945,
+              "mature_change": 3.4229648113250732
+            },
+            {
+              "year": 2009,
+              "mature_momentum": 0.0017948837485164404,
+              "mature_damped_momentum": 0.001037039328366518,
+              "mature_network_correction": -0.8747891783714294,
+              "mature_change": -0.7647629976272583
+            },
+            {
+              "year": 2010,
+              "mature_momentum": -0.22817249596118927,
+              "mature_damped_momentum": -0.13183358311653137,
+              "mature_network_correction": -1.7394933700561523,
+              "mature_change": -1.591902256011963
+            }
+          ],
+          "network_correction_drivers": [
+            {
+              "step": "2006-2007",
+              "change_pct_per_year": {
+                "shares": -0.025488436222076416,
+                "energy per capita": -0.1233457587659359,
+                "GDP per capita": -0.305335596203804,
+                "GDP growth": 0.6617550738155842,
+                "intensity": 0.30431225895881653,
+                "population": -0.005344022065401077,
+                "intensity momentum": -0.16680248081684113,
+                "share momentum: coal": 0.3243899904191494,
+                "share momentum: oil": -0.058031175285577774,
+                "share momentum: gas": -0.03481842577457428,
+                "share momentum: nuclear": 0.1203843392431736,
+                "share momentum: hydro": 0.22797994315624237,
+                "share momentum: wind": 0.21964460611343384,
+                "share momentum: solar": -1.2338898843154311,
+                "share momentum: biofuel": 0.256869662553072,
+                "share momentum: other_renewable": -0.19205575808882713
+              }
+            },
+            {
+              "step": "2007-2008",
+              "change_pct_per_year": {
+                "shares": 0.05757175385951996,
+                "energy per capita": -0.06416738033294678,
+                "GDP per capita": -0.23797471076250076,
+                "GDP growth": 2.3452886380255222,
+                "intensity": 0.35497602075338364,
+                "population": -0.004912540316581726,
+                "intensity momentum": -0.31355153769254684,
+                "share momentum: coal": 0.5657575093209743,
+                "share momentum: oil": -0.219760462641716,
+                "share momentum: gas": 0.09020157158374786,
+                "share momentum: nuclear": 0.020424649119377136,
+                "share momentum: hydro": -0.014481134712696075,
+                "share momentum: wind": -0.6392721086740494,
+                "share momentum: solar": 1.2459371704608202,
+                "share momentum: biofuel": -0.3136085346341133,
+                "share momentum: other_renewable": -0.3534127026796341
+              }
+            },
+            {
+              "step": "2008-2009",
+              "change_pct_per_year": {
+                "shares": -0.0021297484636306763,
+                "energy per capita": 0.007109344005584717,
+                "GDP per capita": 0.015657395124435425,
+                "GDP growth": 3.3652395009994507,
+                "intensity": -0.037128105759620667,
+                "population": -0.004568696022033691,
+                "intensity momentum": -0.49495548009872437,
+                "share momentum: coal": -0.021713227033615112,
+                "share momentum: oil": 0.1267891377210617,
+                "share momentum: gas": -0.06722696125507355,
+                "share momentum: nuclear": 0.10253451764583588,
+                "share momentum: hydro": -0.08614212274551392,
+                "share momentum: wind": 0.05397796630859375,
+                "share momentum: solar": 0.19949600100517273,
+                "share momentum: biofuel": -0.15037097036838531,
+                "share momentum: other_renewable": -0.11709481477737427
+              }
+            },
+            {
+              "step": "2009-2010",
+              "change_pct_per_year": {
+                "shares": -0.10844673961400986,
+                "energy per capita": 0.1456202007830143,
+                "GDP per capita": 0.43251803144812584,
+                "GDP growth": -4.511597473174334,
+                "intensity": -0.5829895148053765,
+                "population": -0.005745608359575272,
+                "intensity momentum": -1.3773285783827305,
+                "share momentum: coal": 0.5935934372246265,
+                "share momentum: oil": -0.0332527793943882,
+                "share momentum: gas": 0.07665576413273811,
+                "share momentum: nuclear": 0.19047614187002182,
+                "share momentum: hydro": -0.05313558503985405,
+                "share momentum: wind": 0.5672124214470387,
+                "share momentum: solar": -0.20996592938899994,
+                "share momentum: biofuel": 0.5562780424952507,
+                "share momentum: other_renewable": -0.657170731574297
+              }
+            },
+            {
+              "step": "2010-2011",
+              "change_pct_per_year": {
+                "shares": 0.14271028339862823,
+                "energy per capita": -0.0700097531080246,
+                "GDP per capita": -0.22006193175911903,
+                "GDP growth": 1.290830597281456,
+                "intensity": 0.22374670952558517,
+                "population": -0.005684606730937958,
+                "intensity momentum": 0.5064437165856361,
+                "share momentum: coal": -0.3523141145706177,
+                "share momentum: oil": -0.13946201652288437,
+                "share momentum: gas": 0.14047659933567047,
+                "share momentum: nuclear": -0.33484669402241707,
+                "share momentum: hydro": -0.2125883474946022,
+                "share momentum: wind": -0.6633427925407887,
+                "share momentum: solar": -1.5257610473781824,
+                "share momentum: biofuel": -0.2839071676135063,
+                "share momentum: other_renewable": -1.4763440238311887
+              }
+            }
+          ],
+          "forecast_trend_pct_per_year": {
+            "mature": -0.463618172539605,
+            "others": -2.2219730748070607
+          },
+          "share_momenta_frozen_trend_pct_per_year": {
+            "mature": -0.8977095286051432,
+            "others": -1.9844068421257866
+          }
+        }
+      }
+    },
+    "2007": {
+      "share_momentum_scale": {
+        "coal": 0.015971031199531322,
+        "oil": 0.024483735121665084,
+        "gas": 0.02285155513598712,
+        "nuclear": 0.006482964921859659,
+        "hydro": 0.013455908254089486,
+        "wind": 0.001300871815547625,
+        "solar": 0.001,
+        "biofuel": 0.001,
+        "other_renewable": 0.0019137070513904637
+      },
+      "realised_pct_per_year": {
+        "mature": -1.830490494221134,
+        "others": -1.8941164450314893
+      },
+      "by_seed": {
+        "0": {
+          "reproduces_sweep_output": true,
+          "trace_matches_production_forecast": true,
+          "phi_intensity": 0.695763885974884,
+          "steps": [
+            {
+              "year": 2007,
+              "mature_momentum": -3.0333526134490967,
+              "mature_damped_momentum": -2.11049747467041,
+              "mature_network_correction": 0.5246626138687134,
+              "mature_change": -1.2575416564941406
+            },
+            {
+              "year": 2008,
+              "mature_momentum": -2.5006093978881836,
+              "mature_damped_momentum": -1.7398337125778198,
+              "mature_network_correction": 2.613189697265625,
+              "mature_change": 0.8547379374504089
+            },
+            {
+              "year": 2009,
+              "mature_momentum": -1.4940053224563599,
+              "mature_damped_momentum": -1.0394748449325562,
+              "mature_network_correction": 2.2551369667053223,
+              "mature_change": 1.0322861671447754
+            },
+            {
+              "year": 2010,
+              "mature_momentum": -0.7361178398132324,
+              "mature_damped_momentum": -0.5121641755104065,
+              "mature_network_correction": -2.755484104156494,
+              "mature_change": -2.7683823108673096
+            },
+            {
+              "year": 2011,
+              "mature_momentum": -1.3457971811294556,
+              "mature_damped_momentum": -0.9363571405410767,
+              "mature_network_correction": 0.35464799404144287,
+              "mature_change": -0.6979548931121826
+            },
+            {
+              "year": 2012,
+              "mature_momentum": -1.1514445543289185,
+              "mature_damped_momentum": -0.8011335730552673,
+              "mature_network_correction": 0.39482152462005615,
+              "mature_change": -0.3191547393798828
+            }
+          ],
+          "network_correction_drivers": [
+            {
+              "step": "2008-2009",
+              "change_pct_per_year": {
+                "shares": -0.14193132519721985,
+                "energy per capita": 0.046362727880477905,
+                "GDP per capita": 0.014782324433326721,
+                "GDP growth": 1.7103737220168114,
+                "intensity": -0.04976373165845871,
+                "population": -0.009988062083721161,
+                "intensity momentum": -0.5671445280313492,
+                "share momentum: coal": 0.11307243257761002,
+                "share momentum: oil": -0.17634090036153793,
+                "share momentum: gas": -0.2066727727651596,
+                "share momentum: nuclear": 0.44105686247348785,
+                "share momentum: hydro": 0.1325055956840515,
+                "share momentum: wind": -1.004805788397789,
+                "share momentum: solar": 0.13493113219738007,
+                "share momentum: biofuel": 1.126969326287508,
+                "share momentum: other_renewable": -0.12257583439350128
+              }
+            },
+            {
+              "step": "2009-2010",
+              "change_pct_per_year": {
+                "shares": -0.0439302995800972,
+                "energy per capita": 0.33315476030111313,
+                "GDP per capita": 0.48656295984983444,
+                "GDP growth": -2.469429187476635,
+                "intensity": -0.2176014706492424,
+                "population": -0.010598264634609222,
+                "intensity momentum": -0.8017538115382195,
+                "share momentum: coal": 0.4285478964447975,
+                "share momentum: oil": 0.09464491158723831,
+                "share momentum: gas": -0.058731622993946075,
+                "share momentum: nuclear": -0.2098293974995613,
+                "share momentum: hydro": 0.4719909280538559,
+                "share momentum: wind": 0.020945630967617035,
+                "share momentum: solar": -0.021613389253616333,
+                "share momentum: biofuel": -0.42028799653053284,
+                "share momentum: other_renewable": 2.0010762149468064
+              }
+            },
+            {
+              "step": "2010-2011",
+              "change_pct_per_year": {
+                "shares": -0.05649793893098831,
+                "energy per capita": -0.22129826247692108,
+                "GDP per capita": -0.1863379031419754,
+                "GDP growth": 0.5550205707550049,
+                "intensity": -0.026905164122581482,
+                "population": -0.008525699377059937,
+                "intensity momentum": -0.47469083219766617,
+                "share momentum: coal": 0.1116923987865448,
+                "share momentum: oil": -0.18479172140359879,
+                "share momentum: gas": -0.07225610315799713,
+                "share momentum: nuclear": -0.08519105613231659,
+                "share momentum: hydro": -0.37939418107271194,
+                "share momentum: wind": -0.9749514982104301,
+                "share momentum: solar": -0.009538978338241577,
+                "share momentum: biofuel": 0.08903574198484421,
+                "share momentum: other_renewable": -2.073591109365225
+              }
+            },
+            {
+              "step": "2011-2012",
+              "change_pct_per_year": {
+                "shares": 0.22497134050354362,
+                "energy per capita": 0.17317526508122683,
+                "GDP per capita": -0.09605134837329388,
+                "GDP growth": 0.7308022119104862,
+                "intensity": 0.2697505056858063,
+                "population": -0.008289702236652374,
+                "intensity momentum": 0.5194217897951603,
+                "share momentum: coal": -0.16111424192786217,
+                "share momentum: oil": -0.05632773973047733,
+                "share momentum: gas": 0.018149102106690407,
+                "share momentum: nuclear": 0.568024511449039,
+                "share momentum: hydro": -0.8104052394628525,
+                "share momentum: wind": 1.3667135499417782,
+                "share momentum: solar": -0.02227050717920065,
+                "share momentum: biofuel": -1.0173468850553036,
+                "share momentum: other_renewable": 0.4082928702700883
+              }
+            },
+            {
+              "step": "2012-2013",
+              "change_pct_per_year": {
+                "shares": -0.08248891681432724,
+                "energy per capita": 0.14365697279572487,
+                "GDP per capita": 0.056261313147842884,
+                "GDP growth": -0.2670280635356903,
+                "intensity": 0.04771884996443987,
+                "population": -0.006982078775763512,
+                "intensity momentum": -0.17739953473210335,
+                "share momentum: coal": 0.08769570849835873,
+                "share momentum: oil": 0.03474934492260218,
+                "share momentum: gas": -0.06751585751771927,
+                "share momentum: nuclear": -0.25287619791924953,
+                "share momentum: hydro": 0.31064593931660056,
+                "share momentum: wind": -0.23543904535472393,
+                "share momentum: solar": 0.037387898191809654,
+                "share momentum: biofuel": 1.263163611292839,
+                "share momentum: other_renewable": -0.8083323948085308
+              }
+            }
+          ],
+          "forecast_trend_pct_per_year": {
+            "mature": -0.5260017183091905,
+            "others": -2.4682905938890247
+          },
+          "share_momenta_frozen_trend_pct_per_year": {
+            "mature": -1.0612620247734919,
+            "others": -2.0296103424496117
+          }
+        },
+        "1": {
+          "reproduces_sweep_output": true,
+          "trace_matches_production_forecast": true,
+          "phi_intensity": 0.6866911053657532,
+          "steps": [
+            {
+              "year": 2007,
+              "mature_momentum": -3.0333526134490967,
+              "mature_damped_momentum": -2.0829763412475586,
+              "mature_network_correction": 0.4649522304534912,
+              "mature_change": -1.0330653190612793
+            },
+            {
+              "year": 2008,
+              "mature_momentum": -2.4332664012908936,
+              "mature_damped_momentum": -1.6709026098251343,
+              "mature_network_correction": 6.377072811126709,
+              "mature_change": 4.119596481323242
+            },
+            {
+              "year": 2009,
+              "mature_momentum": -0.4674076437950134,
+              "mature_damped_momentum": -0.3209646940231323,
+              "mature_network_correction": 2.0819215774536133,
+              "mature_change": 1.3928550481796265
+            },
+            {
+              "year": 2010,
+              "mature_momentum": 0.0906710997223854,
+              "mature_damped_momentum": 0.06226301193237305,
+              "mature_network_correction": -1.615197777748108,
+              "mature_change": -1.4976533651351929
+            },
+            {
+              "year": 2011,
+              "mature_momentum": -0.3858262300491333,
+              "mature_damped_momentum": -0.264943391084671,
+              "mature_network_correction": -0.5645341873168945,
+              "mature_change": -0.8437620401382446
+            },
+            {
+              "year": 2012,
+              "mature_momentum": -0.5232070684432983,
+              "mature_damped_momentum": -0.3592815399169922,
+              "mature_network_correction": 2.1188509464263916,
+              "mature_change": 1.4042623043060303
+            }
+          ],
+          "network_correction_drivers": [
+            {
+              "step": "2008-2009",
+              "change_pct_per_year": {
+                "shares": -0.029361248016357422,
+                "energy per capita": 0.05514472723007202,
+                "GDP per capita": 0.017451494932174683,
+                "GDP growth": 2.4040821939706802,
+                "intensity": 0.02980157732963562,
+                "population": -0.003916025161743164,
+                "intensity momentum": -0.17777904868125916,
+                "share momentum: coal": 0.10454505681991577,
+                "share momentum: oil": -0.0002548098564147949,
+                "share momentum: gas": -0.014269351959228516,
+                "share momentum: nuclear": 0.260346382856369,
+                "share momentum: hydro": -0.021477043628692627,
+                "share momentum: wind": -0.10385140776634216,
+                "share momentum: solar": 0.037676841020584106,
+                "share momentum: biofuel": 0.28903335332870483,
+                "share momentum: other_renewable": 0.32629966735839844
+              }
+            },
+            {
+              "step": "2009-2010",
+              "change_pct_per_year": {
+                "shares": -0.15015136450529099,
+                "energy per capita": 0.06210673600435257,
+                "GDP per capita": 0.4268838092684746,
+                "GDP growth": -3.5576924681663513,
+                "intensity": -0.2951737493276596,
+                "population": -0.00876113772392273,
+                "intensity momentum": -1.2482192367315292,
+                "share momentum: coal": 0.4114234820008278,
+                "share momentum: oil": 0.09973738342523575,
+                "share momentum: gas": -0.0699041411280632,
+                "share momentum: nuclear": -0.2800082787871361,
+                "share momentum: hydro": -0.12101642787456512,
+                "share momentum: wind": 1.0300783440470695,
+                "share momentum: solar": -0.028626620769500732,
+                "share momentum: biofuel": -0.0558752566576004,
+                "share momentum: other_renewable": 0.9468087926506996
+              }
+            },
+            {
+              "step": "2010-2011",
+              "change_pct_per_year": {
+                "shares": 0.11690761893987656,
+                "energy per capita": -0.38090944290161133,
+                "GDP per capita": -0.3667706623673439,
+                "GDP growth": 1.0493448004126549,
+                "intensity": -0.09452085942029953,
+                "population": -0.010114721953868866,
+                "intensity momentum": -0.24758530780673027,
+                "share momentum: coal": 0.05726143717765808,
+                "share momentum: oil": 0.03429744392633438,
+                "share momentum: gas": -0.13600466772913933,
+                "share momentum: nuclear": 0.06665308028459549,
+                "share momentum: hydro": 0.350395031273365,
+                "share momentum: wind": 0.2117834985256195,
+                "share momentum: solar": -0.019024871289730072,
+                "share momentum: biofuel": -0.129014253616333,
+                "share momentum: other_renewable": -2.8426595963537693
+              }
+            },
+            {
+              "step": "2011-2012",
+              "change_pct_per_year": {
+                "shares": 0.04159947857260704,
+                "energy per capita": 0.10673040524125099,
+                "GDP per capita": -0.1657173503190279,
+                "GDP growth": 1.3338159769773483,
+                "intensity": 0.21454272791743279,
+                "population": -0.010104849934577942,
+                "intensity momentum": 0.5253603681921959,
+                "share momentum: coal": -0.5494648823514581,
+                "share momentum: oil": -0.018237391486763954,
+                "share momentum: gas": -0.04727714695036411,
+                "share momentum: nuclear": 0.19005443900823593,
+                "share momentum: hydro": -0.15109512023627758,
+                "share momentum: wind": -0.3587322309613228,
+                "share momentum: solar": -0.01093028113245964,
+                "share momentum: biofuel": -0.041573215276002884,
+                "share momentum: other_renewable": -0.027924636378884315
+              }
+            },
+            {
+              "step": "2012-2013",
+              "change_pct_per_year": {
+                "shares": -0.0890091061592102,
+                "energy per capita": 0.11466424912214279,
+                "GDP per capita": 0.09042434394359589,
+                "GDP growth": -0.8436622098088264,
+                "intensity": -0.050460733473300934,
+                "population": -0.007094442844390869,
+                "intensity momentum": -0.15070363879203796,
+                "share momentum: coal": 0.18272418528795242,
+                "share momentum: oil": 0.048767589032649994,
+                "share momentum: gas": -0.061707571148872375,
+                "share momentum: nuclear": 0.25721993297338486,
+                "share momentum: hydro": -0.16254037618637085,
+                "share momentum: wind": 0.8278665132820606,
+                "share momentum: solar": -0.010188110172748566,
+                "share momentum: biofuel": -0.06342194974422455,
+                "share momentum: other_renewable": 2.986095380038023
+              }
+            }
+          ],
+          "forecast_trend_pct_per_year": {
+            "mature": 0.5903720855712892,
+            "others": -1.9567939970228407
+          },
+          "share_momenta_frozen_trend_pct_per_year": {
+            "mature": -0.8297204971313479,
+            "others": -1.675985919104682
+          }
+        }
+      }
+    },
+    "2009": {
+      "share_momentum_scale": {
+        "coal": 0.015978404326446517,
+        "oil": 0.02377701265733062,
+        "gas": 0.022266884501671632,
+        "nuclear": 0.0064610442350774705,
+        "hydro": 0.013083886827981929,
+        "wind": 0.0014979609502185586,
+        "solar": 0.001,
+        "biofuel": 0.001,
+        "other_renewable": 0.0019785421896598683
+      },
+      "realised_pct_per_year": {
+        "mature": -2.1154672818223528,
+        "others": -1.5982123888934423
+      },
+      "by_seed": {
+        "0": {
+          "reproduces_sweep_output": true,
+          "trace_matches_production_forecast": true,
+          "phi_intensity": 0.781792402267456,
+          "steps": [
+            {
+              "year": 2009,
+              "mature_momentum": -2.5984292030334473,
+              "mature_damped_momentum": -2.0314323902130127,
+              "mature_network_correction": -0.6828281283378601,
+              "mature_change": -1.9690371751785278
+            },
+            {
+              "year": 2010,
+              "mature_momentum": -2.409611701965332,
+              "mature_damped_momentum": -1.8838160037994385,
+              "mature_network_correction": 3.626551389694214,
+              "mature_change": 1.787947177886963
+            },
+            {
+              "year": 2011,
+              "mature_momentum": -1.150343894958496,
+              "mature_damped_momentum": -0.8993301391601562,
+              "mature_network_correction": 1.475509762763977,
+              "mature_change": 0.5162593126296997
+            },
+            {
+              "year": 2012,
+              "mature_momentum": -0.6503629684448242,
+              "mature_damped_momentum": -0.5084488391876221,
+              "mature_network_correction": -0.5280199646949768,
+              "mature_change": -1.0936256647109985
+            },
+            {
+              "year": 2013,
+              "mature_momentum": -0.7833418250083923,
+              "mature_damped_momentum": -0.6124106645584106,
+              "mature_network_correction": -1.366256594657898,
+              "mature_change": -1.7807904481887817
+            },
+            {
+              "year": 2014,
+              "mature_momentum": -1.0825763940811157,
+              "mature_damped_momentum": -0.8463500142097473,
+              "mature_network_correction": -1.4325437545776367,
+              "mature_change": -1.9685648679733276
+            }
+          ],
+          "network_correction_drivers": [
+            {
+              "step": "2010-2011",
+              "change_pct_per_year": {
+                "shares": -0.0430818647146225,
+                "energy per capita": -0.043304264545440674,
+                "GDP per capita": -0.16142725944519043,
+                "GDP growth": 0.18578916788101196,
+                "intensity": 0.11894740164279938,
+                "population": -0.00755898654460907,
+                "intensity momentum": -0.15404149889945984,
+                "share momentum: coal": -0.09345337748527527,
+                "share momentum: oil": -0.10758824646472931,
+                "share momentum: gas": -0.0728953629732132,
+                "share momentum: nuclear": 0.00012814998626708984,
+                "share momentum: hydro": -0.05784854292869568,
+                "share momentum: wind": 0.3164626657962799,
+                "share momentum: solar": 0.48182085156440735,
+                "share momentum: biofuel": 3.881086641922593,
+                "share momentum: other_renewable": 1.8442444503307343
+              }
+            },
+            {
+              "step": "2011-2012",
+              "change_pct_per_year": {
+                "shares": -0.22563934326171875,
+                "energy per capita": -0.34284722059965134,
+                "GDP per capita": -0.15353094786405563,
+                "GDP growth": 0.3424539230763912,
+                "intensity": -0.18403548747301102,
+                "population": -0.009683147072792053,
+                "intensity momentum": -1.0777590796351433,
+                "share momentum: coal": 0.3173130564391613,
+                "share momentum: oil": -0.02187909558415413,
+                "share momentum: gas": 0.15793703496456146,
+                "share momentum: nuclear": -0.2669116482138634,
+                "share momentum: hydro": -0.1398710533976555,
+                "share momentum: wind": -0.1393236219882965,
+                "share momentum: solar": -1.4044636860489845,
+                "share momentum: biofuel": 0.6464475765824318,
+                "share momentum: other_renewable": -0.1928308978676796
+              }
+            },
+            {
+              "step": "2012-2013",
+              "change_pct_per_year": {
+                "shares": 0.05216761492192745,
+                "energy per capita": 0.09453948587179184,
+                "GDP per capita": 0.10033990256488323,
+                "GDP growth": -0.22502343636006117,
+                "intensity": 0.025097234174609184,
+                "population": -0.008234614506363869,
+                "intensity momentum": -0.2146353479474783,
+                "share momentum: coal": 0.09729773737490177,
+                "share momentum: oil": -0.06094365380704403,
+                "share momentum: gas": 0.0032018404453992844,
+                "share momentum: nuclear": 0.09820829145610332,
+                "share momentum: hydro": -0.10573174804449081,
+                "share momentum: wind": -0.5577525764238089,
+                "share momentum: solar": -0.27179536409676075,
+                "share momentum: biofuel": -0.366604165174067,
+                "share momentum: other_renewable": -1.9109560642391443
+              }
+            },
+            {
+              "step": "2013-2014",
+              "change_pct_per_year": {
+                "shares": -0.053441524505615234,
+                "energy per capita": 0.0890444964170456,
+                "GDP per capita": -0.004911608994007111,
+                "GDP growth": -0.17746621742844582,
+                "intensity": 0.06949435919523239,
+                "population": -0.004936195909976959,
+                "intensity momentum": 0.16599446535110474,
+                "share momentum: coal": -0.022991374135017395,
+                "share momentum: oil": 0.046259909868240356,
+                "share momentum: gas": -0.0786077231168747,
+                "share momentum: nuclear": -0.1386255957186222,
+                "share momentum: hydro": -0.002279132604598999,
+                "share momentum: wind": -1.7079087905585766,
+                "share momentum: solar": -0.5494525656104088,
+                "share momentum: biofuel": -0.15290286391973495,
+                "share momentum: other_renewable": 0.3131536766886711
+              }
+            },
+            {
+              "step": "2014-2015",
+              "change_pct_per_year": {
+                "shares": 0.0652112066745758,
+                "energy per capita": -0.06632450968027115,
+                "GDP per capita": -0.1985279843211174,
+                "GDP growth": 0.0003565102815628052,
+                "intensity": 0.08721724152565002,
+                "population": -0.005429983139038086,
+                "intensity momentum": 0.16776397824287415,
+                "share momentum: coal": -0.1657821238040924,
+                "share momentum: oil": 0.011908728629350662,
+                "share momentum: gas": -0.20808037370443344,
+                "share momentum: nuclear": -0.04081781953573227,
+                "share momentum: hydro": -0.13544242829084396,
+                "share momentum: wind": -0.14214329421520233,
+                "share momentum: solar": -0.8005043491721153,
+                "share momentum: biofuel": -0.20238738507032394,
+                "share momentum: other_renewable": 0.10762978345155716
+              }
+            }
+          ],
+          "forecast_trend_pct_per_year": {
+            "mature": -0.7513099246554905,
+            "others": -1.9467989603678386
+          },
+          "share_momenta_frozen_trend_pct_per_year": {
+            "mature": -1.930785179138184,
+            "others": -2.580524153179592
+          }
+        },
+        "1": {
+          "reproduces_sweep_output": true,
+          "trace_matches_production_forecast": true,
+          "phi_intensity": 0.7818087935447693,
+          "steps": [
+            {
+              "year": 2009,
+              "mature_momentum": -2.5984292030334473,
+              "mature_damped_momentum": -2.0314748287200928,
+              "mature_network_correction": -0.4500122666358948,
+              "mature_change": -1.9170982837677002
+            },
+            {
+              "year": 2010,
+              "mature_momentum": -2.3940300941467285,
+              "mature_damped_momentum": -1.871673822402954,
+              "mature_network_correction": 3.7761597633361816,
+              "mature_change": 1.764116644859314
+            },
+            {
+              "year": 2011,
+              "mature_momentum": -1.1465860605239868,
+              "mature_damped_momentum": -0.8964110016822815,
+              "mature_network_correction": 1.8524329662322998,
+              "mature_change": 0.8621008992195129
+            },
+            {
+              "year": 2012,
+              "mature_momentum": -0.5439798831939697,
+              "mature_damped_momentum": -0.42528825998306274,
+              "mature_network_correction": -1.771340012550354,
+              "mature_change": -1.8961787223815918
+            },
+            {
+              "year": 2013,
+              "mature_momentum": -0.9496394395828247,
+              "mature_damped_momentum": -0.7424364686012268,
+              "mature_network_correction": -0.20203043520450592,
+              "mature_change": -0.9166260957717896
+            },
+            {
+              "year": 2014,
+              "mature_momentum": -0.939735472202301,
+              "mature_damped_momentum": -0.7346934676170349,
+              "mature_network_correction": -1.0789237022399902,
+              "mature_change": -1.6481153964996338
+            }
+          ],
+          "network_correction_drivers": [
+            {
+              "step": "2010-2011",
+              "change_pct_per_year": {
+                "shares": 0.09897686541080475,
+                "energy per capita": -0.0026222318410873413,
+                "GDP per capita": -0.27739182114601135,
+                "GDP growth": 0.42767226696014404,
+                "intensity": 0.14805644750595093,
+                "population": -0.011294335126876831,
+                "intensity momentum": -0.06978549063205719,
+                "share momentum: coal": 0.1480642706155777,
+                "share momentum: oil": 0.1036323606967926,
+                "share momentum: gas": -0.029404833912849426,
+                "share momentum: nuclear": 0.36247968673706055,
+                "share momentum: hydro": 0.09169280529022217,
+                "share momentum: wind": 1.1001499369740486,
+                "share momentum: solar": 0.66048763692379,
+                "share momentum: biofuel": 1.1048898100852966,
+                "share momentum: other_renewable": 1.290026307106018
+              }
+            },
+            {
+              "step": "2011-2012",
+              "change_pct_per_year": {
+                "shares": -0.2168666571378708,
+                "energy per capita": -0.25933608412742615,
+                "GDP per capita": -0.09974204003810883,
+                "GDP growth": -0.08911639451980591,
+                "intensity": -0.12473762035369873,
+                "population": -0.010269135236740112,
+                "intensity momentum": -0.8297234773635864,
+                "share momentum: coal": 0.8348373696208,
+                "share momentum: oil": 0.06910078227519989,
+                "share momentum: gas": -0.06936509162187576,
+                "share momentum: nuclear": -0.7997553795576096,
+                "share momentum: hydro": -0.3184819594025612,
+                "share momentum: wind": -0.17915666103363037,
+                "share momentum: solar": -0.14337338507175446,
+                "share momentum: biofuel": 1.2598603032529354,
+                "share momentum: other_renewable": -0.41896719485521317
+              }
+            },
+            {
+              "step": "2012-2013",
+              "change_pct_per_year": {
+                "shares": 0.05678236484527588,
+                "energy per capita": 0.07506553083658218,
+                "GDP per capita": 0.14009829610586166,
+                "GDP growth": -0.21770037710666656,
+                "intensity": -0.04601683467626572,
+                "population": -0.006758235394954681,
+                "intensity momentum": -0.32977499067783356,
+                "share momentum: coal": -0.08649732917547226,
+                "share momentum: oil": -0.10953489691019058,
+                "share momentum: gas": -0.19918028265237808,
+                "share momentum: nuclear": 0.33499952405691147,
+                "share momentum: hydro": 0.00872146338224411,
+                "share momentum: wind": 0.1301875337958336,
+                "share momentum: solar": -0.03088284283876419,
+                "share momentum: biofuel": -1.5975705464370549,
+                "share momentum: other_renewable": -0.46780258417129517
+              }
+            },
+            {
+              "step": "2013-2014",
+              "change_pct_per_year": {
+                "shares": 0.05014943890273571,
+                "energy per capita": 0.3161665750667453,
+                "GDP per capita": -0.06070616655051708,
+                "GDP growth": -0.11908744927495718,
+                "intensity": 0.23671214003115892,
+                "population": -0.00888630747795105,
+                "intensity momentum": 0.4978554556146264,
+                "share momentum: coal": -0.6749761523678899,
+                "share momentum: oil": 0.13208272866904736,
+                "share momentum: gas": 0.29643357265740633,
+                "share momentum: nuclear": 0.2989143831655383,
+                "share momentum: hydro": 0.012229615822434425,
+                "share momentum: wind": -0.5739208310842514,
+                "share momentum: solar": -0.05569718778133392,
+                "share momentum: biofuel": 1.5220629749819636,
+                "share momentum: other_renewable": 0.7681417046114802
+              }
+            },
+            {
+              "step": "2014-2015",
+              "change_pct_per_year": {
+                "shares": 0.04302123561501503,
+                "energy per capita": -0.06702002137899399,
+                "GDP per capita": -0.1919046975672245,
+                "GDP growth": -0.02569509670138359,
+                "intensity": 0.08379928767681122,
+                "population": -0.008790567517280579,
+                "intensity momentum": -0.11161519214510918,
+                "share momentum: coal": 0.25818198919296265,
+                "share momentum: oil": -0.12109056115150452,
+                "share momentum: gas": 0.047938618808984756,
+                "share momentum: nuclear": 0.06577158346772194,
+                "share momentum: hydro": -0.002192240208387375,
+                "share momentum: wind": 0.3611195832490921,
+                "share momentum: solar": -0.2953082323074341,
+                "share momentum: biofuel": -0.995402573607862,
+                "share momentum: other_renewable": -0.031566619873046875
+              }
+            }
+          ],
+          "forecast_trend_pct_per_year": {
+            "mature": -0.6253110037909615,
+            "others": -2.257081535127428
+          },
+          "share_momenta_frozen_trend_pct_per_year": {
+            "mature": -1.756861474778917,
+            "others": -2.2722522417704267
+          }
+        }
+      }
+    }
+  }
+}

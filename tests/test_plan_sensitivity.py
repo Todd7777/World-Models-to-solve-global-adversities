@@ -2,8 +2,9 @@
 scripts/plan_sensitivity.py.
 
 Rebound and crowding out must take back exactly their share of what a plan achieves,
-charge the same effort, and only ever raise emissions. The committed table must come
-from the committed ensemble and, under the stated assumptions, agree with plan.json.
+charge the same effort, and only ever raise emissions. The committed tables must come
+from the committed ensemble and, under the stated assumptions, agree with plan.json;
+weaker policy must never make a carbon budget cheaper.
 """
 import importlib.util
 import json
@@ -11,10 +12,11 @@ import json
 import numpy as np
 import pytest
 
+from carbon_world_model.climate import tcre
 from carbon_world_model.config import default_config
 from carbon_world_model.plan import optimize as O
 from carbon_world_model.plan.ensemble import ENSEMBLE_DIR, load_ensemble, stack_members
-from carbon_world_model.plan.scenario import build_scenario
+from carbon_world_model.plan.scenario import build_scenario, ssp_ensemble
 
 
 def _rates(run, scen):
@@ -90,3 +92,64 @@ def test_committed_plan_sensitivity_matches_the_ensemble_and_plan_json(panel, wm
         np.testing.assert_allclose(stated["cut_2050_pct"], planned["cut_2050_pct"], atol=0.05)
         np.testing.assert_allclose(stated["by_seed"]["max_2050_mt"],
                                    planned["by_seed"]["max_2050_mt"], rtol=1e-4)
+
+
+def test_cost_helpers_follow_04_plan_on_a_small_problem(panel, cfg, wm):
+    """frontier_costs and robust_price on two untrained members and a short horizon: their
+    bookkeeping, not their numbers (the committed table checks those)."""
+    mod = _script()
+    stacked = stack_members([wm.init_params(seed=0), wm.init_params(seed=1)])
+    ssp2 = build_scenario(panel, cfg, end_year=2030)
+    W = O.make_worlds(wm, stacked, [ssp2])
+    floor = float(mod._cum(O.evaluate_worlds(W, *O.max_plan(W))).mean())
+    bau = float(mod._cum(O.evaluate_worlds(W)).mean())
+    fr = mod.frontier_costs(wm, stacked, ssp2, [floor - 1.0, 0.5 * (floor + bau), bau + 1.0],
+                            0.0, 0.0, 1.0, steps=30)
+    assert fr["max_effort_cum_gt"] == pytest.approx(floor)
+    infeasible, tight, loose = fr["points"]
+    assert not infeasible["feasible"] and infeasible["cost"] is None
+    assert tight["feasible"] and loose["feasible"] and 0 <= loose["cost"] < tight["cost"]
+
+    rb = mod.robust_price(wm, stacked, ssp_ensemble(panel, cfg, end_year=2030), 0.25, 0.25, 0.75,
+                          steps=30)
+    assert rb["budget_gt"] >= rb["worst_max_effort_cum_gt"]
+    assert rb["price_of_robustness_pct"] == pytest.approx(
+        100 * (rb["robust_cost"] / rb["tailored_cost"] - 1))
+
+
+def _committed(name):
+    with open(f"results/tables/{name}.json") as fh:
+        return json.load(fh)
+
+
+def test_committed_costs_as_stated_reproduce_plan_json():
+    """Under the stated assumptions the cost run is 04_plan.py's own frontier and robust
+    planning: rerun scripts/plan_sensitivity.py --costs whenever 04_plan.py is rerun."""
+    costs, plan = _committed("plan_sensitivity_costs"), _committed("plan")
+    assert costs["frontier_budgets_gt"] == [p["budget_gt"] for p in plan["frontier_ssp2"]]
+    stated = costs["settings"]["as stated"]
+    for mine, planned in zip(stated["frontier_ssp2"]["points"], plan["frontier_ssp2"]):
+        assert mine["feasible"]
+        np.testing.assert_allclose(mine["cost"], planned["cost"], rtol=2e-3, atol=1e-4)
+    rb, planned = stated["robust"], plan["robust"]
+    np.testing.assert_allclose(rb["budget_gt"], planned["budget_gt"], rtol=1e-5)
+    np.testing.assert_allclose([rb["tailored_cost"], rb["robust_cost"]],
+                               [planned["tailored_cost"], planned["robust_cost"]], rtol=2e-3)
+
+
+def test_committed_costs_never_fall_as_policy_weakens():
+    """A relaxed assumption never makes a budget cheaper or reachable when it was not;
+    budgets at or below maximum effort are infeasible; and maximum effort agrees with
+    plan_sensitivity.json."""
+    costs, maxes = _committed("plan_sensitivity_costs"), _committed("plan_sensitivity")
+    base = costs["settings"]["as stated"]["frontier_ssp2"]["points"]
+    for name, rec in costs["settings"].items():
+        fr = rec["frontier_ssp2"]
+        np.testing.assert_allclose(
+            tcre.scale_to_global(fr["max_effort_cum_gt"]),
+            maxes["settings"][name]["scenarios"]["SSP2 (v3.2)"]["global_cum_max_gt"], rtol=1e-4)
+        for p, b in zip(fr["points"], base):
+            assert p["feasible"] == (p["budget_gt"] > fr["max_effort_cum_gt"]), (name, p)
+            if p["feasible"]:
+                assert p["cost"] >= b["cost"] * (1 - 2e-3), (name, p["budget_gt"])
+                assert p["cum_gt"] <= p["budget_gt"] + 0.5, (name, p["budget_gt"])

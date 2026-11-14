@@ -1,0 +1,362 @@
+{
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9
+ ],
+ "steps": 20000,
+ "frontier_budgets_gt": [
+  653.6165342773438,
+  708.8778064453126,
+  764.1390786132813,
+  819.4003507812499,
+  874.6616229492188,
+  929.9228951171874,
+  985.1841672851561,
+  1040.445439453125
+ ],
+ "settings": {
+  "as stated": {
+   "rebound": 0.0,
+   "crowd_out": 0.0,
+   "limit_scale": 1.0,
+   "frontier_ssp2": {
+    "max_effort_cum_gt": 648.6165342773438,
+    "points": [
+     {
+      "budget_gt": 653.6165342773438,
+      "feasible": true,
+      "cost": 2.3945393562316895,
+      "cum_gt": 653.6472632812499
+     },
+     {
+      "budget_gt": 708.8778064453126,
+      "feasible": true,
+      "cost": 0.6642991304397583,
+      "cum_gt": 708.8803069335938
+     },
+     {
+      "budget_gt": 764.1390786132813,
+      "feasible": true,
+      "cost": 0.3165198266506195,
+      "cum_gt": 764.14001484375
+     },
+     {
+      "budget_gt": 819.4003507812499,
+      "feasible": true,
+      "cost": 0.16222110390663147,
+      "cum_gt": 819.400804296875
+     },
+     {
+      "budget_gt": 874.6616229492188,
+      "feasible": true,
+      "cost": 0.07858433574438095,
+      "cum_gt": 874.6618361328126
+     },
+     {
+      "budget_gt": 929.9228951171874,
+      "feasible": true,
+      "cost": 0.03169785439968109,
+      "cum_gt": 929.9230054687499
+     },
+     {
+      "budget_gt": 985.1841672851561,
+      "feasible": true,
+      "cost": 0.007820588536560535,
+      "cum_gt": 985.184106640625
+     },
+     {
+      "budget_gt": 1040.445439453125,
+      "feasible": true,
+      "cost": 5.0546419515740126e-05,
+      "cum_gt": 1040.4453279296874
+     }
+    ]
+   },
+   "robust": {
+    "budget_gt": 767.4350993652344,
+    "worst_max_effort_cum_gt": 702.3307783203124,
+    "tailored_cost": 0.30396729707717896,
+    "robust_cost": 0.4934766888618469,
+    "price_of_robustness_pct": 62.34532254190177,
+    "tailored_worst_overshoot_gt": 52.27682250976568,
+    "robust_worst_cum_gt": 766.658390625
+   }
+  },
+  "rebound 25%": {
+   "rebound": 0.25,
+   "crowd_out": 0.0,
+   "limit_scale": 1.0,
+   "frontier_ssp2": {
+    "max_effort_cum_gt": 682.0852068359375,
+    "points": [
+     {
+      "budget_gt": 653.6165342773438,
+      "feasible": false,
+      "cost": null,
+      "cum_gt": null
+     },
+     {
+      "budget_gt": 708.8778064453126,
+      "feasible": true,
+      "cost": 1.129610300064087,
+      "cum_gt": 708.884802734375
+     },
+     {
+      "budget_gt": 764.1390786132813,
+      "feasible": true,
+      "cost": 0.42215800285339355,
+      "cum_gt": 764.1405939453125
+     },
+     {
+      "budget_gt": 819.4003507812499,
+      "feasible": true,
+      "cost": 0.19730721414089203,
+      "cum_gt": 819.4009212890626
+     },
+     {
+      "budget_gt": 874.6616229492188,
+      "feasible": true,
+      "cost": 0.0918588936328888,
+      "cum_gt": 874.6620142578125
+     },
+     {
+      "budget_gt": 929.9228951171874,
+      "feasible": true,
+      "cost": 0.03642670437693596,
+      "cum_gt": 929.9229910156249
+     },
+     {
+      "budget_gt": 985.1841672851561,
+      "feasible": true,
+      "cost": 0.008941776119172573,
+      "cum_gt": 985.184187109375
+     },
+     {
+      "budget_gt": 1040.445439453125,
+      "feasible": true,
+      "cost": 5.826772394357249e-05,
+      "cum_gt": 1040.4454228515626
+     }
+    ]
+   },
+   "robust": {
+    "budget_gt": 791.89430078125,
+    "worst_max_effort_cum_gt": 734.943046875,
+    "tailored_cost": 0.2848612666130066,
+    "robust_cost": 0.49600210785865784,
+    "price_of_robustness_pct": 74.12058640197405,
+    "tailored_worst_overshoot_gt": 53.984662109374995,
+    "robust_worst_cum_gt": 791.22616015625
+   }
+  },
+  "crowding out 25%": {
+   "rebound": 0.0,
+   "crowd_out": 0.25,
+   "limit_scale": 1.0,
+   "frontier_ssp2": {
+    "max_effort_cum_gt": 690.8928064453124,
+    "points": [
+     {
+      "budget_gt": 653.6165342773438,
+      "feasible": false,
+      "cost": null,
+      "cum_gt": null
+     },
+     {
+      "budget_gt": 708.8778064453126,
+      "feasible": true,
+      "cost": 1.5436677932739258,
+      "cum_gt": 708.8885276367188
+     },
+     {
+      "budget_gt": 764.1390786132813,
+      "feasible": true,
+      "cost": 0.5424466729164124,
+      "cum_gt": 764.1410818359376
+     },
+     {
+      "budget_gt": 819.4003507812499,
+      "feasible": true,
+      "cost": 0.2567388415336609,
+      "cum_gt": 819.4010789062501
+     },
+     {
+      "budget_gt": 874.6616229492188,
+      "feasible": true,
+      "cost": 0.12032883614301682,
+      "cum_gt": 874.6619892578126
+     },
+     {
+      "budget_gt": 929.9228951171874,
+      "feasible": true,
+      "cost": 0.04742987081408501,
+      "cum_gt": 929.9230935546875
+     },
+     {
+      "budget_gt": 985.1841672851561,
+      "feasible": true,
+      "cost": 0.011490345001220703,
+      "cum_gt": 985.1841384765625
+     },
+     {
+      "budget_gt": 1040.445439453125,
+      "feasible": true,
+      "cost": 7.273940718732774e-05,
+      "cum_gt": 1040.445289453125
+     }
+    ]
+   },
+   "robust": {
+    "budget_gt": 800.30923046875,
+    "worst_max_effort_cum_gt": 746.162953125,
+    "tailored_cost": 0.33004820346832275,
+    "robust_cost": 0.6031059622764587,
+    "price_of_robustness_pct": 82.73269053995726,
+    "tailored_worst_overshoot_gt": 53.183986328125,
+    "robust_worst_cum_gt": 799.62353515625
+   }
+  },
+  "limits x0.75": {
+   "rebound": 0.0,
+   "crowd_out": 0.0,
+   "limit_scale": 0.75,
+   "frontier_ssp2": {
+    "max_effort_cum_gt": 757.7042962890625,
+    "points": [
+     {
+      "budget_gt": 653.6165342773438,
+      "feasible": false,
+      "cost": null,
+      "cum_gt": null
+     },
+     {
+      "budget_gt": 708.8778064453126,
+      "feasible": false,
+      "cost": null,
+      "cum_gt": null
+     },
+     {
+      "budget_gt": 764.1390786132813,
+      "feasible": true,
+      "cost": 1.526120901107788,
+      "cum_gt": 764.1585691406251
+     },
+     {
+      "budget_gt": 819.4003507812499,
+      "feasible": true,
+      "cost": 0.34346893429756165,
+      "cum_gt": 819.4018982421874
+     },
+     {
+      "budget_gt": 874.6616229492188,
+      "feasible": true,
+      "cost": 0.12718111276626587,
+      "cum_gt": 874.662043359375
+     },
+     {
+      "budget_gt": 929.9228951171874,
+      "feasible": true,
+      "cost": 0.04490036144852638,
+      "cum_gt": 929.9230591796875
+     },
+     {
+      "budget_gt": 985.1841672851561,
+      "feasible": true,
+      "cost": 0.010233188979327679,
+      "cum_gt": 985.184177734375
+     },
+     {
+      "budget_gt": 1040.445439453125,
+      "feasible": true,
+      "cost": 6.062276952434331e-05,
+      "cum_gt": 1040.4454261718752
+     }
+    ]
+   },
+   "robust": {
+    "budget_gt": 865.0491074218751,
+    "worst_max_effort_cum_gt": 832.4827890625,
+    "tailored_cost": 0.15037667751312256,
+    "robust_cost": 0.3717101216316223,
+    "price_of_robustness_pct": 147.1860183233435,
+    "tailored_worst_overshoot_gt": 65.25239453124993,
+    "robust_worst_cum_gt": 864.449109375
+   }
+  },
+  "all three moderate": {
+   "rebound": 0.25,
+   "crowd_out": 0.25,
+   "limit_scale": 0.75,
+   "frontier_ssp2": {
+    "max_effort_cum_gt": 819.3529005859375,
+    "points": [
+     {
+      "budget_gt": 653.6165342773438,
+      "feasible": false,
+      "cost": null,
+      "cum_gt": null
+     },
+     {
+      "budget_gt": 708.8778064453126,
+      "feasible": false,
+      "cost": null,
+      "cum_gt": null
+     },
+     {
+      "budget_gt": 764.1390786132813,
+      "feasible": false,
+      "cost": null,
+      "cum_gt": null
+     },
+     {
+      "budget_gt": 819.4003507812499,
+      "feasible": true,
+      "cost": 2.439913511276245,
+      "cum_gt": 819.5667341796876
+     },
+     {
+      "budget_gt": 874.6616229492188,
+      "feasible": true,
+      "cost": 0.3117523789405823,
+      "cum_gt": 874.6633609375
+     },
+     {
+      "budget_gt": 929.9228951171874,
+      "feasible": true,
+      "cost": 0.09000657498836517,
+      "cum_gt": 929.9232849609376
+     },
+     {
+      "budget_gt": 985.1841672851561,
+      "feasible": true,
+      "cost": 0.01895446889102459,
+      "cum_gt": 985.1842865234375
+     },
+     {
+      "budget_gt": 1040.445439453125,
+      "feasible": true,
+      "cost": 0.00010814343113452196,
+      "cum_gt": 1040.4453515625
+     }
+    ]
+   },
+   "robust": {
+    "budget_gt": 913.9425390624999,
+    "worst_max_effort_cum_gt": 897.67403125,
+    "tailored_cost": 0.12932033836841583,
+    "robust_cost": 0.4615176320075989,
+    "price_of_robustness_pct": 256.87938790633126,
+    "tailored_worst_overshoot_gt": 73.67203125000003,
+    "robust_worst_cum_gt": 913.4265703125
+   }
+  }
+ }
+}

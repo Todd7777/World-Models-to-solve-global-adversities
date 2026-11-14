@@ -60,3 +60,74 @@ def net_zero_year(years, net_gt) -> int | None:
     net = np.asarray(net_gt, dtype=float)
     idx = np.where(net <= 0.0)[0]
     return int(np.asarray(years)[idx[0]]) if idx.size else None
+
+
+# ---------------------------------------------------------------------------
+# Land and cost limits (bottom-up supply ceiling)
+# ---------------------------------------------------------------------------
+# Source (read 2026-11-14): IPCC AR6 WGIII, Chapter 12 (Cross-sectoral perspectives),
+# Table 12.6, author-judgement ranges for novel, durable CDR methods:
+#   DACCS              TRL 6    USD 100-300/tCO2 (full 84-386)   5-40 GtCO2/yr
+#   BECCS              TRL 5-6  USD 15-400                       0.5-11
+#   biochar            TRL 6-7  USD 10-345                       0.3-6.6
+#   enhanced weathering TRL 3-4 USD 50-200 (24-578)              2-4 (<1-95)
+# Ocean alkalinity enhancement and ocean fertilisation (TRL 1-2) are left out here.
+# The same chapter: biomass for BECCS in 2050 corresponds to 5.3 GtCO2/yr (1.1-18,
+# 5-95th pct) in 1.5C scenarios (C1) and 2.4 GtCO2/yr (0-8.3) in 2C scenarios (C3);
+# DACCS needs 40-100 EJ/yr of energy at 10 GtCO2/yr, and its land needs "are not
+# large enough to be of concern".
+# Choices made here, not sourced:
+#   * each method's potential is the midpoint of its range, and is spread evenly over
+#     its cost range, so a price cap admits the share of potential that costs less;
+#   * the land limit caps BECCS and biochar TOGETHER (both draw on biomass) at the C3
+#     BECCS level (central 2.4), with the C1 5th percentile (1.1) and median (5.3) as
+#     sensitivities;
+#   * enhanced weathering and DACCS have no land cap here; DACCS energy is reported,
+#     not limited.
+CDR_METHODS = {  # name: (cost_lo, cost_hi USD/t, potential_lo, potential_hi Gt/yr, biomass)
+    "daccs": (100.0, 300.0, 5.0, 40.0, False),
+    "beccs": (15.0, 400.0, 0.5, 11.0, True),
+    "biochar": (10.0, 345.0, 0.3, 6.6, True),
+    "enhanced_weathering": (50.0, 200.0, 2.0, 4.0, False),
+}
+LAND_CAPS = {"low": 1.1, "central": 2.4, "high": 5.3}       # GtCO2/yr, biomass-based CDR
+DACCS_EJ_PER_GT = (4.0, 10.0)                              # 40-100 EJ/yr at 10 GtCO2/yr
+
+
+def cdr_supply(price_cap: float, land_cap: float = LAND_CAPS["central"]) -> dict:
+    """Supply of each method at full scale (GtCO2/yr) under a price cap and a land cap."""
+    out = {}
+    for name, (clo, chi, plo, phi, _) in CDR_METHODS.items():
+        out[name] = 0.5 * (plo + phi) * float(np.clip((price_cap - clo) / (chi - clo), 0.0, 1.0))
+    bio = sum(v for k, v in out.items() if CDR_METHODS[k][4])
+    if bio > land_cap:
+        for k in out:
+            if CDR_METHODS[k][4]:
+                out[k] *= land_cap / bio
+    return out
+
+
+def cdr_ceiling(price_cap: float, land_cap: float = LAND_CAPS["central"]) -> float:
+    return float(sum(cdr_supply(price_cap, land_cap).values()))
+
+
+def cdr_spending_and_energy(price_cap: float, land_cap: float = LAND_CAPS["central"]) -> dict:
+    """At full scale: average cost (USD/t), annual spending (USD trillion/yr), and DACCS
+    energy demand (EJ/yr, low-high). Uniform costs within each range, as in cdr_supply."""
+    s = cdr_supply(price_cap, land_cap)
+    spend = sum(v * 0.5 * (CDR_METHODS[k][0] + min(price_cap, CDR_METHODS[k][1]))
+                for k, v in s.items())          # Gt x USD/t = USD bn; /1000 -> tn
+    total = sum(s.values())
+    return {"avg_cost_usd_t": spend / total if total else 0.0, "spend_usd_tn": spend / 1000.0,
+            "daccs_ej": [s["daccs"] * e for e in DACCS_EJ_PER_GT], "supply_gt": s}
+
+
+# Variants used in planning runs (scripts/12_to_2100.py): name -> ceiling (GtCO2/yr).
+CDR_VARIANTS = {
+    **{k: v for k, v in CDR_CEILINGS.items()},                       # scenario-level ceilings
+    "cost100_land_central": cdr_ceiling(100.0, LAND_CAPS["central"]),
+    "cost100_land_low": cdr_ceiling(100.0, LAND_CAPS["low"]),
+    "cost100_land_high": cdr_ceiling(100.0, LAND_CAPS["high"]),
+    "cost200_land_central": cdr_ceiling(200.0, LAND_CAPS["central"]),
+    "cost300_land_central": cdr_ceiling(300.0, LAND_CAPS["central"]),
+}

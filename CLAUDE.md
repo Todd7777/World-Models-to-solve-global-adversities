@@ -22,10 +22,10 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-python -m pytest -q   # 2026-11-13: 78 pass (python -m: a standalone `pytest` may use another interpreter)
+python -m pytest -q   # 2026-11-14: 81 pass (python -m: a standalone `pytest` may use another interpreter)
 ```
 
-## State on 2026-11-13
+## State on 2026-11-14
 
 - All tests pass. The checkpoint `results/model/params_full.pkl` is the selected config
   `ms_full_shootonly_stab100` (`eval/configs.SELECTED`, chosen on validation folds only, by a rule written
@@ -97,6 +97,13 @@ python -m pytest -q   # 2026-11-13: 78 pass (python -m: a standalone `pytest` ma
   Central CDR adds 6-17 points for 2C at max effort (fitted 46->52% tail, 21->27% to 2100; open loop 73->80%,
   56->73%, 70% of runs reach net zero, median 2084) and nothing for 1.5C (peak >= ~550 Gt vs 402 Gt for 17%):
   removals arrive after the 1.5C budget is spent.
+- Land and cost limits on removals (`climate/cdr.py`: `cdr_supply`, `cdr_ceiling`, `CDR_VARIANTS`): bottom-up
+  ceiling from AR6 WGIII Ch12 Table 12.6 (DACCS, BECCS, biochar, enhanced weathering; potential midpoints spread
+  evenly over cost ranges), a price cap (USD 100/200/300 per t) and a biomass land cap on BECCS+biochar (2.4
+  Gt/yr = AR6 C3 BECCS 2050; 1.1/5.3 sensitivities). USD 100/t + 2.4 gives 3.2 Gt/yr and reproduces the
+  scenario-level results within 1-2 points; the land cap matters only at low prices (2-5 points). At USD
+  200/300 DACCS dominates (ceiling 17/28 Gt/yr), 2C at max effort becomes likely, but implies 45-225 EJ/yr and
+  USD 2-5 tn/yr, which are reported, not limited. 1.5C stays <=17% in every case.
 - The clean-energy push now follows the CURRENT fossil mix (`dynamics.rollout` u_clean/clean_w/fossil_mask,
   `optimize._push`); the old 2022-mix split wasted the push once a fuel ran out. Effect through 2050: a few Gt.
 - Sweep caches (`results/sweep_*/*/*.npz`) are git-ignored; only `report.json` files are committed.
@@ -111,7 +118,8 @@ independent information (one China regime shift); genuinely new information woul
 shocks or a different validation design. Post-2050 behaviour is now the largest open question: the
 assumed tail and the model run to 2100 differ by 15-25 points for 2C. The model cannot represent
 near-zero-fossil states (out of distribution), treats negative emissions only as an accounting lever
-(no land/energy/cost limits), and the
+(land and cost limited, but energy, spending and growth rate unbounded; an energy limit for DACCS is the
+obvious next step), and the
 stability term only covers 30 years of the uncontrolled run. Process CO2 now has both a historical and a
 roadmap-based bound, and the choice barely matters (1-5 points). Driver errors are
 measured only from 1997-2022 naive projections and one SSP vintage. Untried: tuning w_stab beyond {10, 100}, and why shoot-only training transfers worse.

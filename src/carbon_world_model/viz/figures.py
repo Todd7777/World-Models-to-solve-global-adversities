@@ -568,13 +568,16 @@ def fig_cdr(t: dict) -> plt.Figure:
               ("max effort, no learned reaction\npost-2050 tail assumed", "paired|historical|all|max_open_loop", "tail"),
               ("max effort, no learned reaction\nmodel run to 2100", "paired|historical|all|max_open_loop", "model")]
     cks = [("none", OI["grey"], "no removals"),
-           ("low", OI["sky"], f"novel CDR to {CDR.CDR_CEILINGS['low']} Gt/yr"),
-           ("central", OI["blue"], f"novel CDR to {CDR.CDR_CEILINGS['central']} Gt/yr (scenario level)"),
-           ("high", OI["purple"], f"novel CDR to {CDR.CDR_CEILINGS['high']} Gt/yr")]
+           ("central", OI["blue"], f"scenario level ({CDR.CDR_CEILINGS['central']} Gt/yr)"),
+           ("cost100_land_low", OI["yellow"], "USD 100/t, land cap 1.1 Gt/yr"),
+           ("cost100_land_central", OI["orange"], "USD 100/t, land cap 2.4 Gt/yr"),
+           ("cost200_land_central", OI["red"], "USD 200/t, land cap 2.4 (energy, spending unlimited)"),
+           ("cost300_land_central", OI["purple"], "USD 300/t, land cap 2.4 (energy, spending unlimited)")]
     y = np.arange(len(combos))
+    w = 0.8 / len(cks)
     for j, (ck, col, lab) in enumerate(cks):
         v = [100 * S[k][f"cdr|{ck}|{acc}|2.0"]["median"] for _, k, acc in combos]
-        ax1.barh(y + (j - 1.5) * 0.2, v, 0.19, color=col, label=lab)
+        ax1.barh(y + (j - (len(cks) - 1) / 2) * w, v, w * 0.95, color=col, label=lab)
     ax1.axvline(50, color=OI["grey"], lw=1, ls=":")
     ax1.set_yticks(y, [c[0] for c in combos], fontsize=8)
     ax1.invert_yaxis()
@@ -582,7 +585,7 @@ def fig_cdr(t: dict) -> plt.Figure:
     ax1.set(xlabel="median likelihood of staying below 2 °C (%), all tied models,\n"
                    "model + driver error, peak cumulative CO2",
             title="2 °C at maximum effort, with negative emissions")
-    ax1.legend(fontsize=7.5, loc="upper center", bbox_to_anchor=(0.45, -0.25), ncol=2)
+    ax1.legend(fontsize=7, loc="upper center", bbox_to_anchor=(0.45, -0.25), ncol=2)
 
     yrs = np.array(t["years"])[1:]
     land = np.zeros(len(yrs))

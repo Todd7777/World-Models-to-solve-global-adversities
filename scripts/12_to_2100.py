@@ -19,8 +19,11 @@ Rules fixed before running:
     ('technology': plan/scenario.technology_process_floor; cement -20% by 2030 and near
     zero by 2050, routine flaring ended by 2030).
 Negative emissions (climate/cdr.py): maximum feasible NOVEL CDR (logistic scale-up from the
-measured 0.002 GtCO2/yr in 2025 at the measured 40%/yr, saturating at the scenario level of
-3.5 GtCO2/yr; ceilings of 1.75 and 7 as sensitivities) is subtracted from annual net CO2
+measured 0.002 GtCO2/yr in 2025 at the measured 40%/yr, saturating at a ceiling) is
+subtracted from annual net CO2. Ceilings: the scenario level of 3.5 GtCO2/yr (1.75 and 7 as
+sensitivities), or a bottom-up supply under land and cost limits (AR6 WGIII Table 12.6
+costs and potentials; price caps of USD 100/200/300 per t; biomass-based CDR capped at
+1.1/2.4/5.3 GtCO2/yr). Each is subtracted
 under both accountings (model to 2100; assumed linear tail to zero gross CO2 in 2070).
 With removals net CO2 can turn negative, so budgets are compared with PEAK cumulative CO2;
 if net CO2 is still positive in 2100 the peak is a lower bound.
@@ -88,8 +91,8 @@ def cdr_accounting(path_mt, years, k2050) -> dict:
     after = yrs > 2050
     tail[after] = fossil[n50 - 1] * np.clip(1.0 - (yrs[after] - 2050) / 20.0, 0.0, None)
     out = {}
-    for ck in ("none", *CDR.CDR_CEILINGS):
-        rem = np.zeros_like(fossil) if ck == "none" else CDR.novel_cdr_path(yrs, CDR.CDR_CEILINGS[ck])
+    for ck in ("none", *CDR.CDR_VARIANTS):
+        rem = np.zeros_like(fossil) if ck == "none" else CDR.novel_cdr_path(yrs, CDR.CDR_VARIANTS[ck])
         out[ck] = {}
         for acc, gross in (("model", fossil), ("tail", tail)):
             net = gross + land - rem
@@ -159,7 +162,7 @@ def main() -> None:
                 out[f"{acc}|{t}"] = {"median": float(np.median(lik)),
                                      "q10_q90": [float(np.quantile(lik, .1)), float(np.quantile(lik, .9))],
                                      "share_ge_50": float(np.mean(lik >= 0.5))}
-        for ck in ("none", *CDR.CDR_CEILINGS):
+        for ck in ("none", *CDR.CDR_VARIANTS):
             for acc in ("model", "tail"):
                 peak = np.array([r["cdr"][ck][acc]["peak_gt"] for r in rows])
                 nz = [r["cdr"][ck][acc]["net_zero_year"] for r in rows]
@@ -184,7 +187,13 @@ def main() -> None:
                     rows = [c for c in cases if c["set"] == vname and c["process"] == proc
                             and c["kind"] == kind and (subset == "all" or c["config"] == SELECTED)]
                     summ[f"{vname}|{proc}|{subset}|{kind}"] = summary(rows)
-    out = {"end_year": END, "h_cap": H_CAP, "years": [int(y) for y in years],
+    cdr_info = {k: {"ceiling_gt": v} for k, v in CDR.CDR_VARIANTS.items()}
+    for k in cdr_info:
+        if k.startswith("cost"):
+            price = float(k[4:7])
+            land = CDR.LAND_CAPS[k.split("land_")[1]]
+            cdr_info[k].update(price_cap=price, land_cap=land, **CDR.cdr_spending_and_energy(price, land))
+    out = {"end_year": END, "h_cap": H_CAP, "years": [int(y) for y in years], "cdr_variants": cdr_info,
            "fitted_paths": fitted_paths, "summary": summ, "cases": cases}
     with open("results/tables/to_2100.json", "w") as fh:
         json.dump(out, fh, indent=2)
@@ -210,7 +219,8 @@ def main() -> None:
                 s = summ[f"paired|{proc}|{subset}|{kind}"]
                 for acc in ("tail", "model"):
                     cells = []
-                    for ck in ("none", *CDR.CDR_CEILINGS):
+                    for ck in ("none", "central", "cost100_land_central", "cost100_land_low",
+                               "cost200_land_central", "cost300_land_central"):
                         k = f"cdr|{ck}|{acc}"
                         nzy = s[k]["median_net_zero_year"]
                         cells.append(f"{ck} 1.5C {100*s[k + '|1.5']['median']:2.0f}% 2C {100*s[k + '|2.0']['median']:2.0f}% "

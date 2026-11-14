@@ -39,8 +39,11 @@ CWM couples three things that are usually kept apart:
 > and 56%. Under business-as-usual 2 °C is unlikely either way. Adding negative emissions
 > at the scale Paris-compatible scenarios assume (novel CDR to 3.5 GtCO₂/yr) adds 6–17
 > points for 2 °C and nothing for 1.5 °C, because removals scale up after cumulative
-> emissions have already passed the 1.5 °C budget. See "Carbon-budget likelihoods",
-> "Running the model to 2100" and "Negative emissions".
+> emissions have already passed the 1.5 °C budget. Land and cost limits from IPCC AR6
+> reproduce that scale at USD 100/tCO₂. Removals large enough to make 2 °C likely at
+> maximum effort need USD 200/tCO₂ or more, direct air capture at 10 GtCO₂/yr or more, and
+> energy and spending (45–225 EJ/yr, USD 2–5 trillion/yr) that nothing here bounds. See
+> "Carbon-budget likelihoods", "Running the model to 2100" and "Negative emissions".
 
 ---
 
@@ -546,11 +549,61 @@ What this shows:
   above about 550 GtCO₂ (10th percentile) against 402 GtCO₂ for even a 17% chance. Removals
   scale up in the 2040s, after cumulative emissions have passed the 1.5 °C budget; they
   lower the end total much more than the peak.
-- **The removal bound is generous on growth and conventional on scale.** It assumes the
-  recent 40%/yr growth continues until the curve nears its ceiling, from a base of
-  2 MtCO₂/yr. It ignores the land, energy, storage and cost limits that decide how much
-  removal is actually available, and it leaves out conventional removals beyond what the
-  land-use assumption already nets.
+- **The removal bound is generous on growth.** It assumes the recent 40%/yr growth
+  continues until the curve nears its ceiling, from a base of 2 MtCO₂/yr. Conventional
+  removals beyond what the land-use assumption already nets are left out.
+
+**Land and cost limits.** The scenario-level ceiling can be replaced by a bottom-up supply
+of the four novel, durable methods in IPCC AR6 WGIII, Chapter 12, Table 12.6: DACCS, BECCS,
+biochar and enhanced weathering (ocean methods, at readiness levels 1–2, are left out).
+The table's cost and potential ranges are:
+
+| method | cost (USD/tCO₂) | potential (GtCO₂/yr) |
+|---|---|---|
+| DACCS | 100–300 | 5–40 |
+| BECCS | 15–400 | 0.5–11 |
+| biochar | 10–345 | 0.3–6.6 |
+| enhanced weathering | 50–200 | 2–4 |
+
+- **Cost limit:** a price cap per tonne. Each method's potential (the midpoint of its range)
+  is spread evenly over its cost range, so the cap admits the share that is cheaper.
+- **Land limit:** BECCS and biochar both draw on biomass, so together they are capped at
+  2.4 GtCO₂/yr. AR6 gives this as the BECCS biomass in 2 °C scenarios in 2050 (0–8.3).
+  The sensitivities are 1.1 and 5.3 GtCO₂/yr, the 5th percentile and median for 1.5 °C
+  scenarios (`climate/cdr.py`).
+- **Not sourced:** the midpoints, the even spread over costs, and capping biochar together
+  with BECCS are choices made here.
+- **Unchanged:** the growth path is still the measured 40%/yr. Energy and spending are
+  reported, not limited.
+
+| limits | ceiling (GtCO₂/yr) | of which DACCS | spending at full scale | DACCS energy | 2 °C at max effort, fitted dynamics: tail / to 2100 | no learned reaction: tail / to 2100 |
+|---|---|---|---|---|---|---|
+| none (no removals) | — | — | — | — | 46% / 21% | 73% / 56% |
+| scenario level | 3.5 | — | — | — | 52% / 27% | 80% / 73% |
+| USD 100/t, land 1.1 | 2.1 | 0 | USD 0.14 tn/yr | 0 | 49% / 25% | 78% / 67% |
+| **USD 100/t, land 2.4** | **3.2** | 0 | USD 0.2 tn/yr | 0 | **51% / 27%** | **80% / 72%** |
+| USD 200/t, land 2.4 | 16.7 | 11.3 | USD 2.3 tn/yr | 45–113 EJ/yr | 69% / 64% | 83% / 83% |
+| USD 300/t, land 2.4 | 27.9 | 22.5 | USD 5.3 tn/yr | 90–225 EJ/yr | 73% / 73% | 83% / 83% |
+
+(Median likelihoods, all stabilised tied models, paired errors, historical process lever;
+"83%" is the top of the published table.)
+
+- **At USD 100/tCO₂ the land and cost limits reproduce the scenario level.** That gives
+  3.2 GtCO₂/yr against 3.5, and the same 2 °C likelihoods within one or two points. It is
+  an independent check on the central case. Direct air capture is not used: it costs at
+  least USD 100/t.
+- **The land limit only matters at low prices.** At USD 100/t the tightest cap (1.1 GtCO₂/yr)
+  costs 2–5 points. At USD 200/t and above, direct air capture, which needs little land,
+  supplies most removals and the land cap hardly binds.
+- **Above USD 200/t the limits stop being land and cost.** The ceiling jumps to 17–28
+  GtCO₂/yr. With 40%/yr growth that is 12–17 GtCO₂/yr by 2050, which makes 2 °C at maximum
+  effort likely and brings net zero into the 2050s–2060s. But it implies DACCS energy of
+  45–225 EJ/yr (AR6: 40–100 EJ/yr per 10 GtCO₂; today's primary energy supply is about
+  600 EJ/yr) and spending of USD 2–5 trillion a year, sustained. Those limits, and the
+  growth rate itself, are what would actually decide the outcome, and none is bounded
+  here. Read these rows as "what cost and land alone would allow".
+- **1.5 °C is unaffected.** Even at USD 300/t no case rises above 17%: peak cumulative CO₂
+  stays above about 530 GtCO₂ (10th percentile) against 402 GtCO₂ for a 17% chance.
 
 ---
 
@@ -575,7 +628,7 @@ All in [`results/figures/`](results/figures), regenerated by `scripts/05_make_fi
 | `fig13_planning_by_error_source.png` | Planning ranges by error source: model, GDP/population drivers, both |
 | `fig14_budget_likelihoods.png` | Likelihood of staying below 1.5 / 1.7 / 2 °C with published budgets and full CO₂ accounting |
 | `fig15_to_2100.png` | Models run to 2100 against the assumed post-2050 tail; 2 °C likelihood under each |
-| `fig16_negative_emissions.png` | 2 °C likelihood with novel CDR at three ceilings; gross and net CO₂ with removals |
+| `fig16_negative_emissions.png` | 2 °C likelihood with novel CDR under scenario-level, cost and land limits; gross and net CO₂ with removals |
 
 ---
 
@@ -664,7 +717,7 @@ TCRE relationship (IPCC AR6 central value 0.45 °C per 1000 GtCO₂, likely rang
 
 ```bash
 pip install -e ".[dev]"              # numpy, pandas, jax, optax, scipy, matplotlib
-python -m pytest -q                  # 78 tests
+python -m pytest -q                  # 81 tests
 ```
 
 The processed panel, SSP series, checkpoints and validation report are committed, so the
@@ -710,7 +763,9 @@ python scripts/05_make_figures.py
   proxy or by optimistic technology roadmaps, and the 2 °C verdict moves by only 1–5 points
   between them. Negative emissions are an accounting lever, not part of the dynamics: a
   logistic scale-up of novel CDR from the State of CDR report's measured level and growth
-  rate to its scenario level, without land, energy, storage or cost limits.
+  rate. Land and cost limits (AR6 Table 12.6) bound its ceiling, but energy, storage,
+  spending and the growth rate itself are not bounded. Above about USD 200/tCO₂ those
+  unbounded limits, not land or cost, decide the result.
 - **Planning results are uncertain in two ways the data cannot resolve.** First, structure:
   stabilised configurations tied on validation give 2050 BAU emissions from 39 to 48 Gt and
   max-effort cuts from 27% to 53% (fitted dynamics), and how strongly the dynamics push back

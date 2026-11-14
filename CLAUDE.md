@@ -132,7 +132,11 @@ questions there:
 - Transfer to unseen countries is worse than trend extrapolation (11.9% against 7.6% over five seeds). Transfer
   itself costs about 4 points on the test period and 1 on the validation period, on top of the model's general
   forecast error, and single transfer seeds differ by up to 6.4 points. A fresh holdout year from a newer OWID
-  release (the panel ends in 2022) would give a check that no decision has touched.
+  release (the panel ends in 2022) would give a check that no decision has touched. Coverage checked on 2026-11-14
+  (no forecast scored): the current OWID files have energy by fuel through 2024 and CO2 through 2025 for all 60
+  countries, population through 2024-25, but GDP only through 2022 (Maddison). A 2023-2024 holdout therefore needs
+  GDP from another source, and the new release revises earlier years. It is single-use, like the test folds:
+  spending it is the owner's decision, best after the selection question is settled.
 - The cutoff-2005-2009 models stall mature economies' efficiency trend. Calendar-time inputs do not fix it, though
   in backtests they seem to. The first item reads existing outputs. Every prediction tested on new runs (seeds 2-3,
   calendar time held in backtests, planning BAU) was written down before the runs, and all held.
@@ -206,8 +210,12 @@ questions there:
   frontier's assumptions are worth a lot (`scripts/plan_sensitivity.py`): moderate rebound and crowding out (25%
   each) with the limits at three quarters lower the 67% cut to 40%, and the limits matter most. They also raise
   the effort for any budget (764 Gt: 0.32 as stated, 1.53 with the limits at three quarters, out of reach with all
-  three) and the price of robustness, to +257% with all three (`--costs`). Not yet done: evidence on what rebound,
-  crowding out and sustainable limits are.
+  three) and the price of robustness, to +257% with all three (`--costs`). Evidence (README, 2026-11-14): economy-
+  wide rebound "may erode more than half" of efficiency savings (Brockway et al. 2021, RSER 141:110781); national
+  wind and solar growth peaked at about 0.8 and 0.6% of electricity supply per year, later adopters no faster
+  (Cherp et al. 2021, Nature Energy 6:742); half of 1.5 C scenarios need Asian coal to fall faster than any of 43
+  historical cases (Vinichenko et al. 2021, One Earth 4:1477). So rebound may exceed the 50% row, and the stated
+  limits (98th-percentile low-carbon gain, everywhere for 28 years) are optimistic. No crowding-out estimate found.
 - Whether to revisit the selection now that the tie-break no longer separates `ms_full` from `ms_percap_damped`
   is the owner's decision; the test folds are spent. The two differ only in the calendar-time inputs, and
   `ms_percap_damped`'s lead on score needs calendar time fed past the cutoff. Held at the cutoff, as planning holds

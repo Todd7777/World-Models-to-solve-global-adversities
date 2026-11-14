@@ -546,6 +546,7 @@ python scripts/transfer_diagnostics.py  # where transfer error comes from (valid
 python scripts/stall_by_config.py    # which configurations stall the efficiency trend
 python scripts/time_inputs.py        # time inputs in backtests and in planning (~15 min)
 python scripts/stall_mechanism.py    # why early-cutoff models stall it (~5 min)
+python scripts/combination.py        # the model averaged with trend-Kaya (validation)
 python scripts/plan_sensitivity.py   # maximum effort with the frontier's assumptions relaxed
                                      # (--costs: frontier and robust plans too, ~45 min)
 pytest -q                            # 82 tests
@@ -618,9 +619,19 @@ other than the one the script runs it under. The processed panel
   the selected configuration is slightly ahead of trend-Kaya extrapolation on the test
   folds (score 8.33 against 9.49), but behind it on the validation folds (11.38 against
   9.85): level, within seed noise. Given the drivers that were available at the time,
-  baselines that ignore drivers beat both (test score 11.15 against 13.68). CWM's value
-  is being a *structural, differentiable* simulator that supports counterfactual and
-  planning queries no extrapolative baseline can perform — not point forecasting.
+  baselines that ignore drivers beat both (test score 11.15 against 13.68). Still, its
+  forecasts carry information that trend extrapolation lacks.
+  - An equal-weight average of its forecast and trend-Kaya's scores 9.42 on the
+    validation folds (seeds 0–3; `scripts/combination.py`,
+    `results/tables/combination.json`). The weights were fixed in advance, not fitted.
+  - The average removes the model's whole gap to trend-Kaya on every seed, but edges
+    ahead of it only with the four-seed ensemble (single seeds 9.23–10.17).
+  - That is a forecasting device: the planner does not use it, and the spent test folds
+    cannot check it.
+
+  CWM's value is being a *structural, differentiable* simulator that supports
+  counterfactual and planning queries no extrapolative baseline can perform — not point
+  forecasting.
 - **Transfer to unseen countries is worse than trend extrapolation.** Fitted on 48
   countries up to 2015 and adapted to 12 held-out ones from their own data up to 2015, the
   model forecasts their 2016–2022 emissions with 11.9% error averaged over five seeds
@@ -655,11 +666,12 @@ other than the one the script runs it under. The processed panel
   - Each swing enters the momentum, the model's only trend memory. The damping learned
     from so few years (0.58–0.78, against 0.87 on full data) cannot rebuild it within six
     years.
-  - Three fixes aimed at this failed their rules written down beforehand (`CLAUDE.md`):
+  - Four fixes aimed at this failed their rules written down beforehand (`CLAUDE.md`):
     - one common input scale for all fuels' momenta;
     - momentum that network corrections cannot enter;
     - a network blind to same-year GDP growth and the share momenta, whose swings move to
-      the level inputs instead.
+      the level inputs instead;
+    - weaker initial damping, which the data pull back to the same values.
 
   Configurations with calendar-time inputs avoid the stall in these backtests, but only
   by extrapolating calendar time, so they do not fix it.

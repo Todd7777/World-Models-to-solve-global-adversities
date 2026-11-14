@@ -128,7 +128,12 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 README "Limitations (read these)" and "What changed on" 2026-11-14, 2026-11-13 and 2026-11-12. The open
 questions there:
 - Forecasts are only level with trend-Kaya given the true drivers (ahead on the test folds, behind on the
-  validation folds) and behind driver-free baselines ex ante.
+  validation folds) and behind driver-free baselines ex ante. Averaging the model with trend-Kaya (equal weights,
+  fixed before computing) scores 9.42 on the validation folds, against 9.85 and 11.54 (seeds 0-3, realised
+  drivers; `scripts/combination.py`, `results/tables/combination.json`). It removes the model's whole gap on every
+  seed, but beats trend-Kaya only with the four-seed ensemble (single seeds 9.23-10.17). The model's forecasts
+  carry information trend extrapolation lacks; the spent test folds cannot check it. Planning does not use the
+  combination.
 - Transfer to unseen countries is worse than trend extrapolation (11.9% against 7.6% over five seeds). Transfer
   itself costs about 4 points on the test period and 1 on the validation period, on top of the model's general
   forecast error, and single transfer seeds differ by up to 6.4 points. A fresh holdout year from a newer OWID
@@ -169,7 +174,7 @@ questions there:
   - Holding the share-momentum inputs at their observed values recovers 37, 52 and 81% of the missing trend at
     2005, 2007 and 2009.
 
-  Six fixes within `ms_full` were probed on 2026-11-13 and -14 in scratch, not committed, on the validation folds:
+  Seven fixes within `ms_full` were probed on 2026-11-13 and -14 in scratch, not committed, on the validation folds:
   - A longer momentum memory (`ema_decay` 0.9 or 0.95) worsened the score (12.70 and 14.12, against 11.38) and
     left the trend stalled.
   - Damping the intensity momentum toward each country's trailing 10-year trend (trend-Kaya's window) instead of
@@ -194,12 +199,23 @@ questions there:
     - Its full-data fits pass the planning checks on all four seeds (`seed_sensitivity.py`'s checks, patched in
       scratch). In-sample MAPE is 3.8-3.9% against 3.2-3.3%. Heuristic BAU 2050 is 37.1-39.4 Gt against
       38.6-42.1, and max effort 12.5-13.3 against 12.3-13.2. BAU changes direction 2-4 times.
+  - Starting the damping at 0.9 instead of 0.6 fails (`phi_init`, an existing field; seeds 0-3, same rule). It
+    scored 11.03 and recovered 7% of the missing trend; MAPE worsened (9.37%), |agg| improved (1.66%).
+    - phi_I ends where it does from 0.6: 0.58-0.60 at 2005, 0.69-0.71 at 2007, 0.77-0.79 at 2009. The data, not
+      the starting value, set the strong damping.
+    - phi_s does follow its start (0.65-0.82 against about 0.45).
+  - Not probed: in the trained models, capping the network correction at 2 %/yr at forecast time recovers only
+    9/34/13%.
 
   None is adopted. The early-cutoff networks respond steeply to whichever input a shock moves (growth, levels or
-  share momenta), and removing inputs only reroutes the swing. Two options remain:
-  - limiting the network's sensitivity: stronger regularisation of its weights, or a tighter bound on its
-    correction than the 8 %/yr on total change;
-  - more data, since the stall fades with later cutoffs.
+  share momenta), and removing inputs only reroutes the swing. There is also a structural mismatch.
+  - In the data to 2005, the mature economies' 3-year intensity trends revert quickly (next-3y trend on
+    trailing-3y trend: slope 0.20, against 0.37 for the other 48).
+  - But they revert to a stable trend of about -2 %/yr, while the damped momentum reverts to zero. The drift
+    anchor targets exactly this, yet recovered only a fifth: the network's net-positive corrections still bias
+    it.
+  - What remains: an anchor to each country's own trend combined with a constrained network, or more data, since
+    the stall fades with later cutoffs.
   Each needs four seeds and a rule written down before the runs. Any adoption is a re-selection for the owner.
 - Training seeds of the selected config disagreed on the achievable cut (26-59%) under the old closed-loop
   planner; at the frontier it is 61-70%, and a plan robust to every SSP and seed costs +62% effort. The

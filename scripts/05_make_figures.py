@@ -107,6 +107,10 @@ def main() -> None:
     if os.path.exists(os.path.join(TAB, "to_2100.json")):
         save(F.fig_to_2100(load("to_2100.json")), "fig15_to_2100.png")
         save(F.fig_cdr(load("to_2100.json")), "fig16_negative_emissions.png")
+
+    # Removals chosen by the planner (scripts/13_cdr_planning.py).
+    if os.path.exists(os.path.join(TAB, "cdr_planning.json")):
+        save(F.fig_cdr_planning(load("cdr_planning.json")), "fig17_cdr_planning.png")
     print("[ok] figures:", sorted(os.listdir(FIG)))
 
 

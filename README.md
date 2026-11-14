@@ -624,9 +624,11 @@ other than the one the script runs it under. The processed panel
   - Each swing enters the momentum, the model's only trend memory. The damping learned
     from so few years (0.58–0.78, against 0.87 on full data) cannot rebuild it within six
     years.
-  - Two fixes aimed at this failed their rules written down beforehand (`CLAUDE.md`):
-    one common input scale for all fuels' momenta, and momentum that network corrections
-    cannot enter.
+  - Three fixes aimed at this failed their rules written down beforehand (`CLAUDE.md`):
+    - one common input scale for all fuels' momenta;
+    - momentum that network corrections cannot enter;
+    - a network blind to same-year GDP growth and the share momenta, whose swings move to
+      the level inputs instead.
 
   Configurations with calendar-time inputs avoid the stall in these backtests, but only
   by extrapolating calendar time, so they do not fix it.

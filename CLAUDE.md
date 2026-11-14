@@ -163,7 +163,7 @@ questions there:
   - Holding the share-momentum inputs at their observed values recovers 37, 52 and 81% of the missing trend at
     2005, 2007 and 2009.
 
-  Five fixes within `ms_full` were probed on 2026-11-13 and -14 in scratch, not committed, on the validation folds:
+  Six fixes within `ms_full` were probed on 2026-11-13 and -14 in scratch, not committed, on the validation folds:
   - A longer momentum memory (`ema_decay` 0.9 or 0.95) worsened the score (12.70 and 14.12, against 11.38) and
     left the trend stalled.
   - Damping the intensity momentum toward each country's trailing 10-year trend (trend-Kaya's window) instead of
@@ -178,12 +178,23 @@ questions there:
   - Decoupled momentum fails: it scored 14.67, recovered 22%, and worsened both MAPE (10.52%) and |agg|
     (4.15%). Both momenta were updated only from their own damped part, so network corrections could not enter
     the trend memory. The momentum feedback carries real information.
+  - A slow-state network fails on the stall: it recovered 8% of the missing trend. Its network did not see
+    contemporaneous GDP growth or the share momenta (both zeroed in `_features`; seeds 0-3, same rule).
+    - In the trained models, holding those inputs had recovered 66/93/82% (growth alone 32/60/-4%). Retrained,
+      the network swings by +3 to +5 %/yr at 2009-2010 through the level inputs instead: energy and GDP per
+      capita, and intensity momentum.
+    - It still scored 10.42 against 11.54, better on all four seeds, with MAPE (8.84%) and |agg| (1.59%) both
+      better. It is the only variant to clear the 1-point bar without calendar-time inputs.
+    - Its full-data fits pass the planning checks on all four seeds (`seed_sensitivity.py`'s checks, patched in
+      scratch). In-sample MAPE is 3.8-3.9% against 3.2-3.3%. Heuristic BAU 2050 is 37.1-39.4 Gt against
+      38.6-42.1, and max effort 12.5-13.3 against 12.3-13.2. BAU changes direction 2-4 times.
 
-  None is adopted. The stall combines strong damping learned from few years with single-step responses to two
-  events the models had not seen: the 2008-2009 recession, in which energy fell faster than GDP, and the post-2009
-  fuel-mix changes. A next candidate would target the recession response (the network's reaction to
-  contemporaneous GDP growth) in a config without time inputs. It would need four seeds and a judgement rule
-  written down before the runs.
+  None is adopted. The early-cutoff networks respond steeply to whichever input a shock moves (growth, levels or
+  share momenta), and removing inputs only reroutes the swing. Two options remain:
+  - limiting the network's sensitivity: stronger regularisation of its weights, or a tighter bound on its
+    correction than the 8 %/yr on total change;
+  - more data, since the stall fades with later cutoffs.
+  Each needs four seeds and a rule written down before the runs. Any adoption is a re-selection for the owner.
 - Training seeds of the selected config disagreed on the achievable cut (26-59%) under the old closed-loop
   planner; at the frontier it is 61-70%, and a plan robust to every SSP and seed costs +62% effort. The
   frontier's assumptions are worth a lot (`scripts/plan_sensitivity.py`): moderate rebound and crowding out (25%
@@ -193,4 +204,7 @@ questions there:
 - Whether to revisit the selection now that the tie-break no longer separates `ms_full` from `ms_percap_damped`
   is the owner's decision; the test folds are spent. The two differ only in the calendar-time inputs, and
   `ms_percap_damped`'s lead on score needs calendar time fed past the cutoff. Held at the cutoff, as planning holds
-  it, the config scores 12.57 against 11.54, and its planning BAU stalls (above).
+  it, the config scores 12.57 against 11.54, and its planning BAU stalls (above). The slow-state network (above)
+  scores 10.42 without calendar-time inputs and passes the planning checks. But it failed its own rule, and the
+  validation folds have now served many probes. It is not a registered config: adding a `ModelConfig` field
+  changes every recorded config, which the provenance guards compare.

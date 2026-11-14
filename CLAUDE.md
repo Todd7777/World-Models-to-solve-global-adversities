@@ -22,15 +22,15 @@ forecast and not policy advice.
 
 ```bash
 pip install -e ".[dev]"
-pytest             # 2026-11-13: 76 pass
+pytest             # 2026-11-14: 79 pass
 ```
 
 If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the project's interpreter; run
 `python -m pytest`.
 
-## State on 2026-11-13
+## State on 2026-11-14
 
-- **All 76 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
+- **All 79 tests pass** with `results/model/params_full.pkl`, retrained on 2026-11-10 with the selected config
   `ms_full` (`SELECTED_CONFIG` in `config.py`). `scripts/02_train.py` reproduces it bit for bit (seed 0, about 2.5
   minutes on 4 cores). Seeds 0-3 all pass the planning tests (`results/tables/seed_sensitivity.json`).
 - **Planning uses a ten-seed ensemble** (`results/model/ensemble/`, `scripts/02b_train_ensemble.py`; seed 0 is a
@@ -39,7 +39,7 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   maximum-effort cut is 61-70% (mean 67%, heuristic drivers); a plan robust to every SSP and seed costs +62%
   effort. After any retrain of the checkpoint, rerun `02b_train_ensemble.py`: until then `04_plan.py` and
   `test_committed_ensemble_contains_the_checkpoint` refuse the stale ensemble. Then rerun `04_plan.py` (about seven
-  minutes), `control_response.py`, `seed_sensitivity.py` and the planning figures.
+  minutes), `control_response.py`, `plan_sensitivity.py`, `seed_sensitivity.py` and the planning figures.
 - **The planner plans at the feasibility frontier (2026-11-13, owner's decision).** The network runs on business as
   usual only (`plan/optimize.py`: `make_worlds`, then `apply_plan`); a plan adds extra annual rates of intensity
   fall and low-carbon gain, capped per world (member x scenario) at the room below the limits, and the planned
@@ -52,7 +52,12 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
   the per-world caps, and the robust mode bounds a log-sum-exp (tau 0.5 Gt) because a penalty per world converges
   too slowly. The tie-break's planning checks now hold for any config by construction, so it no longer separates
   `ms_full` from `ms_percap_damped` (best on score; it failed only effort monotonicity, on one seed). Whether to
-  revisit the selection is the owner's decision.
+  revisit the selection is the owner's decision. `make_worlds(..., rebound=, crowd_out=)` takes back those shares
+  of what a plan achieves, still charging its full effort (default 0: planned change persists).
+  `scripts/plan_sensitivity.py` (`results/tables/plan_sensitivity.json`, checked against the ensemble and
+  `plan.json` by `test_committed_plan_sensitivity_matches_the_ensemble_and_plan_json`) relaxes the assumptions for
+  maximum effort: 67% falls to 63% with 25% rebound, 60% with 25% crowding out, 50% with the limits at x0.75, 40%
+  with all three, 31% with the limits at x0.5.
 - **Selection re-checked after a leak; it holds.** Every fit with a cutoff leaked post-cutoff drivers through the
   full-run loss's curvature term until `46cc5ce`; full-data fits (checkpoint, ensemble, tie-break checks) were never
   affected. The leak-free rerun in `results/sweep_val/report.json` (all 16 configs, 4000 steps, seeds 0-1; leaky
@@ -113,7 +118,7 @@ If `pytest` cannot import numpy, a standalone pytest on PATH is shadowing the pr
 
 ## Where the next steps are
 
-README "Limitations (read these)", "What changed on 2026-11-13" and "What changed on 2026-11-12". The open
+README "Limitations (read these)" and "What changed on" 2026-11-14, 2026-11-13 and 2026-11-12. The open
 questions there:
 - Forecasts are only level with trend-Kaya given the true drivers (ahead on the test folds, behind on the
   validation folds) and behind driver-free baselines ex ante.
@@ -156,9 +161,11 @@ questions there:
   that pushes mature economies' intensity up), so a next candidate would act on that, within a config without
   time inputs. It would need four seeds and a judgement rule written down before the runs.
 - Training seeds of the selected config disagreed on the achievable cut (26-59%) under the old closed-loop
-  planner; at the frontier it is 61-70%, and a plan robust to every SSP and seed costs +62% effort. Open there:
-  the frontier's assumptions (planned change persists; maximum effort runs every country at the limits for 28
-  years).
+  planner; at the frontier it is 61-70%, and a plan robust to every SSP and seed costs +62% effort. The
+  frontier's assumptions are worth a lot (`scripts/plan_sensitivity.py`): moderate rebound and crowding out (25%
+  each) with the limits at three quarters lower the 67% cut to 40%, and the limits matter most. Not yet done: the
+  cost frontier and robust plans under relaxed assumptions, and evidence on what rebound, crowding out and
+  sustainable limits are.
 - Whether to revisit the selection now that the tie-break no longer separates `ms_full` from `ms_percap_damped`
   is the owner's decision; the test folds are spent. The two differ only in the calendar-time inputs, and
   `ms_percap_damped`'s lead on score needs calendar time fed past the cutoff. Held at the cutoff, as planning holds

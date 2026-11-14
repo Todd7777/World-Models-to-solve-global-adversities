@@ -84,9 +84,12 @@ brackets:
   means for SSP1–5).
 - **Maximum feasible effort** bends that down to **12.6 Gt** (11.4–13.2; SSP2: 12.5 Gt),
   a **67% cut** versus BAU (61–70%) and 64% below 2022. It assumes that planned change
-  persists, with no rebound and no crowding out (see Limitations). Until 2026-11-13 the
-  planner let the network respond to the planned states, where it extrapolates, and
-  found 41% (26–59%); see "What changed on 2026-11-13".
+  persists, with no rebound and no crowding out, and that every country can run at the
+  limits for 28 years. If rebound takes back a quarter of the efficiency gains, a
+  quarter of the planned low-carbon energy displaces business as usual's own, and the
+  limits are three quarters as fast, the cut is 40% (32–46%; see "What changed on
+  2026-11-14"). Until 2026-11-13 the planner let the network respond to the planned
+  states, where it extrapolates, and found 41% (26–59%).
 - Scaled to global, cumulative 2023–2050 emissions are **≈706 GtCO₂ even under maximum
   ambition** (680–726; SSP2: ≈700), which **blows through the ≈578 Gt remaining 1.5 °C
   budget** under every seed. Within historically-achieved transition rates, **1.5 °C is
@@ -104,6 +107,37 @@ brackets:
 
 The raw numbers are in [`results/tables/`](results/tables) and the figures in
 [`results/figures/`](results/figures).
+
+---
+
+## What changed on 2026-11-14
+
+**What the frontier's assumptions are worth.** Maximum effort's 67% cut rests on three
+assumptions. Planned efficiency gains are not taken back by higher energy use (rebound).
+Planned low-carbon energy adds to business as usual's own growth instead of displacing
+it (crowding out). And every country can run at the feasibility limits for 28 years at
+once, though each limit is a rate that individual countries sustained for a decade.
+`scripts/plan_sensitivity.py` (`results/tables/plan_sensitivity.json`) relaxes them one
+at a time and together. The planner now takes rebound and crowding out as shares of what
+a plan achieves (`make_worlds(..., rebound=, crowd_out=)`), and still charges the plan's
+full effort. Ten-seed means, with the lowest and highest seed in brackets:
+
+| maximum effort, 2050 | cut vs BAU, heuristic drivers | cut vs BAU, SSP2 | global cumulative 2023–2050, heuristic |
+|---|---|---|---|
+| as stated | 67% (61–70%) | 66% (61–69%) | ≈706 Gt (680–726) |
+| rebound 25% | 63% (57–66%) | 62% (56–65%) | ≈744 Gt (720–764) |
+| rebound 50% | 58% (52–62%) | 58% (52–61%) | ≈785 Gt (763–810) |
+| crowding out 25% | 60% (55–64%) | 59% (54–62%) | ≈752 Gt (726–769) |
+| crowding out 50% | 53% (49–57%) | 52% (48–56%) | ≈798 Gt (772–815) |
+| limits ×0.75 | 50% (40–56%) | 49% (40–54%) | ≈827 Gt (783–861) |
+| limits ×0.5 | 31% (21–40%) | 30% (21–37%) | ≈947 Gt (879–996) |
+| all three moderate (25%, 25%, ×0.75) | 40% (32–46%) | 39% (32–44%) | ≈896 Gt (857–930) |
+
+The limits matter most. At three quarters of the record rates, maximum effort loses a
+quarter of its cut, and the seeds spread wider, because the room between their
+business-as-usual rates and the lower limits varies more. 1.5 °C stays out of reach
+under every setting and seed (remaining budget ≈578 Gt). The cost-of-abatement frontier
+and the robust plans still use the assumptions as stated.
 
 ---
 
@@ -484,7 +518,8 @@ python scripts/control_response.py  # why the seeds disagree on maximum effort
 python scripts/transfer_diagnostics.py  # where transfer error comes from (validation)
 python scripts/stall_by_config.py    # which configurations stall the efficiency trend
 python scripts/time_inputs.py        # time inputs in backtests and in planning (~15 min)
-pytest -q                            # 76 tests
+python scripts/plan_sensitivity.py   # maximum effort with the frontier's assumptions relaxed
+pytest -q                            # 79 tests
 ```
 
 Model selection and out-of-sample reporting: `scripts/06_sweep.py --phase val` scores
@@ -543,6 +578,10 @@ other than the one the script runs it under. The processed panel
   with cuts of 26–59% ("Why the training seeds disagree"). Maximum effort runs all 60
   countries at the feasibility limits for 28 years at once, which no group of countries
   has done: each limit is a rate that individual countries sustained for a decade.
+  Relaxing these (`scripts/plan_sensitivity.py`) lowers the 67% cut to 63% with a
+  quarter of the efficiency gains taken back by rebound, to 60% with a quarter of the
+  low-carbon gain crowded out, to 50% with the limits at three quarters, and to 40% with
+  all three ("What changed on 2026-11-14").
 - **Short-horizon forecasting is not where this model wins.** Given the true drivers,
   the selected configuration is slightly ahead of trend-Kaya extrapolation on the test
   folds (score 8.33 against 9.49), but behind it on the validation folds (11.38 against

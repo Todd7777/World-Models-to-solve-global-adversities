@@ -20,8 +20,10 @@ The network is not run on the planned states. No country has been in them, so it
 response there would be extrapolation, and training seeds extrapolate differently: when
 the planner fed its controls back into the network (until 2026-11-13), maximum effort
 cut 2050 emissions by 26-59% depending on the seed (plan/response.py). Planned change is
-therefore assumed to persist, with no rebound and no crowding out of BAU change. Effort
-is charged on the plan, whether or not a world has room for all of it.
+therefore assumed to persist, with no rebound and no crowding out of BAU change, unless
+make_worlds is given a share of each to take back (scripts/plan_sensitivity.py). Effort
+is charged on the plan, whether or not a world has room for all of it or takes some
+back.
 
 Everything after BAU is closed-form and differentiable (the emissions layer's fixed
 physics applied to the planned energy demand and mix), so plans are optimised by
@@ -70,6 +72,8 @@ class Worlds(NamedTuple):
     gap_g: jnp.ndarray       # [W, C, Tf] extra low-carbon gain the limit leaves room for
     gap_h: jnp.ndarray       # [W, C, Tf] extra intensity fall the limit leaves room for
     clean: jnp.ndarray       # [F] how planned low-carbon energy splits across sources
+    keep_g: float = 1.0      # share of the planned low-carbon gain not crowded out
+    keep_h: float = 1.0      # share of the planned intensity fall not taken back by rebound
 
 
 def _stack(scens: list[Scenario]) -> dict:
@@ -85,10 +89,19 @@ def _stack(scens: list[Scenario]) -> dict:
     }
 
 
-def make_worlds(wm, stacked, scens: list[Scenario]) -> Worlds:
+def make_worlds(wm, stacked, scens: list[Scenario], rebound: float = 0.0,
+                crowd_out: float = 0.0) -> Worlds:
     """BAU of every member of `stacked` (parameters with a leading member axis) in every
     scenario, and the room each leaves below the feasibility limits. The network runs
-    here only, without controls."""
+    here only, without controls.
+
+    rebound is the share of a plan's extra intensity fall that higher energy use takes
+    back; crowd_out the share of its extra low-carbon gain that displaces BAU's own
+    growth instead of adding to it. Both default to 0: planned change persists in full.
+    """
+    for name, share in (("rebound", rebound), ("crowd_out", crowd_out)):
+        if not 0.0 <= share <= 1.0:
+            raise ValueError(f"{name} must be a share in [0, 1], not {share!r}")
     stk = _stack(scens)
     K = jax.tree_util.tree_leaves(stacked)[0].shape[0]
     S, C = stk["S"], stk["C"]
@@ -113,19 +126,20 @@ def make_worlds(wm, stacked, scens: list[Scenario]) -> Worlds:
         process=jnp.broadcast_to(process, (K, S) + process.shape[2:]).reshape(K * S, C, -1),
         gap_g=jnp.concatenate([jnp.maximum(0.0, s0.g_max - gain), pad], axis=-1),
         gap_h=jnp.concatenate([jnp.maximum(0.0, s0.h_max - fall), pad], axis=-1),
-        clean=jnp.asarray(s0.clean_weights))
+        clean=jnp.asarray(s0.clean_weights), keep_g=1.0 - crowd_out, keep_h=1.0 - rebound)
 
 
 def apply_plan(W: Worlds, g=None, h=None) -> dict:
     """co2 and D [W, C, Tf] and shares [W, C, Tf, F] of the plan (g, h), each [C, Tf], in
     every world; without a plan, BAU. Each world caps the plan's extra rates at the room
-    it leaves below the limits, so a plan of unlimited rates is maximum effort. The plan
-    of year t changes the state of year t+1."""
+    it leaves below the limits, so a plan of unlimited rates is maximum effort, and then
+    keeps the shares W.keep_g and W.keep_h of them (rebound and crowding out take back
+    the rest). The plan of year t changes the state of year t+1."""
     if g is None and h is None:
         return {"co2": W.co2, "D": W.D, "shares": W.shares}
     zero = jnp.zeros(W.gap_g.shape[1:])
-    gw = jnp.minimum(zero if g is None else jnp.asarray(g), W.gap_g)
-    hw = jnp.minimum(zero if h is None else jnp.asarray(h), W.gap_h)
+    gw = W.keep_g * jnp.minimum(zero if g is None else jnp.asarray(g), W.gap_g)
+    hw = W.keep_h * jnp.minimum(zero if h is None else jnp.asarray(h), W.gap_h)
     D = W.D * jnp.exp(-(jnp.cumsum(hw, axis=-1) - hw))
     fossil = jnp.zeros_like(W.shares).at[..., FOSSIL_IDX].set(W.shares[..., FOSSIL_IDX])
     F = fossil.sum(axis=-1)                                              # [W, C, Tf]
@@ -224,7 +238,8 @@ def _one(params):
 
 
 def _result(W: Worlds, g, h, scen: Scenario) -> PlanResult:
-    """The plan in the single world of W."""
+    """The plan in the single world of W: what it achieves, and the effort it costs,
+    which is charged on what it attempts (the plan within the room below the limits)."""
     run = apply_plan(W, g, h)
     co2 = np.asarray(run["co2"][0])
     gco2 = co2.sum(axis=0)
@@ -232,7 +247,8 @@ def _result(W: Worlds, g, h, scen: Scenario) -> PlanResult:
     gw = zero if g is None else np.minimum(np.asarray(g), np.asarray(W.gap_g[0]))
     hw = zero if h is None else np.minimum(np.asarray(h), np.asarray(W.gap_h[0]))
     return PlanResult(co2=co2, shares=np.asarray(run["shares"][0]), D=np.asarray(run["D"][0]),
-                      g=gw, h=hw, global_co2=gco2, cum_gt=float(gco2[1:].sum() / 1000.0),
+                      g=W.keep_g * gw, h=W.keep_h * hw, global_co2=gco2,
+                      cum_gt=float(gco2[1:].sum() / 1000.0),
                       cost=0.0 if g is None and h is None else float(_cost(gw, hw, scen)))
 
 

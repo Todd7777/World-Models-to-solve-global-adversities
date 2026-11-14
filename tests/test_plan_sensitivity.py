@@ -14,7 +14,7 @@ import pytest
 from carbon_world_model.config import default_config
 from carbon_world_model.plan import optimize as O
 from carbon_world_model.plan.ensemble import ENSEMBLE_DIR, load_ensemble, stack_members
-from carbon_world_model.plan.scenario import build_scenario
+from carbon_world_model.plan.scenario import build_scenario, ssp_ensemble
 
 
 def _rates(run, scen):
@@ -90,3 +90,26 @@ def test_committed_plan_sensitivity_matches_the_ensemble_and_plan_json(panel, wm
         np.testing.assert_allclose(stated["cut_2050_pct"], planned["cut_2050_pct"], atol=0.05)
         np.testing.assert_allclose(stated["by_seed"]["max_2050_mt"],
                                    planned["by_seed"]["max_2050_mt"], rtol=1e-4)
+
+
+def test_cost_helpers_follow_04_plan_on_a_small_problem(panel, cfg, wm):
+    """frontier_costs and robust_price on two untrained members and a short horizon: their
+    bookkeeping, not their numbers (the committed table checks those)."""
+    mod = _script()
+    stacked = stack_members([wm.init_params(seed=0), wm.init_params(seed=1)])
+    ssp2 = build_scenario(panel, cfg, end_year=2030)
+    W = O.make_worlds(wm, stacked, [ssp2])
+    floor = float(mod._cum(O.evaluate_worlds(W, *O.max_plan(W))).mean())
+    bau = float(mod._cum(O.evaluate_worlds(W)).mean())
+    fr = mod.frontier_costs(wm, stacked, ssp2, [floor - 1.0, 0.5 * (floor + bau), bau + 1.0],
+                            0.0, 0.0, 1.0, steps=30)
+    assert fr["max_effort_cum_gt"] == pytest.approx(floor)
+    infeasible, tight, loose = fr["points"]
+    assert not infeasible["feasible"] and infeasible["cost"] is None
+    assert tight["feasible"] and loose["feasible"] and 0 <= loose["cost"] < tight["cost"]
+
+    rb = mod.robust_price(wm, stacked, ssp_ensemble(panel, cfg, end_year=2030), 0.25, 0.25, 0.75,
+                          steps=30)
+    assert rb["budget_gt"] >= rb["worst_max_effort_cum_gt"]
+    assert rb["price_of_robustness_pct"] == pytest.approx(
+        100 * (rb["robust_cost"] / rb["tailored_cost"] - 1))
